@@ -31,6 +31,20 @@ a{color:inherit}
 select{padding:9px 12px;border:1px solid var(--line);border-radius:12px;background:var(--paper);font-size:16px}
 .count{font-size:14px;color:var(--muted);margin:10px 0 0}
 h2{font:800 30px var(--cond);margin:26px 0 10px;text-transform:capitalize}
+.tools{display:grid;gap:10px;margin-bottom:6px}
+.search{position:relative}
+.search input{width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:14px;font-size:17px;background:var(--paper)}
+.selects{display:flex;flex-wrap:wrap;gap:8px}
+.pill{padding:8px 14px;border:1px solid var(--line);border-radius:22px;background:var(--paper);font-weight:600;cursor:pointer;font-size:15px}
+.pill[aria-pressed=true]{background:var(--sea);border-color:var(--sea);color:#fff}
+.teambox{background:#FFF6E6;border:1px solid #F4D9A8;border-radius:18px;padding:14px 16px;margin-bottom:18px}
+.teambox h2{font:800 24px var(--cond);color:#8A5510;margin-bottom:6px}
+.teambox .row{padding:8px 0;border-top:1px solid #F4D9A8;font-size:15px}
+.teambox .row:first-of-type{border-top:0}
+.cdown{display:inline-block;font-size:13px;font-weight:700;color:var(--sea);background:var(--foam);padding:2px 9px;border-radius:20px;margin-left:6px}
+.cdown.soon{background:#FCEBD0;color:#8A5510}
+.acts a,.acts button{font-size:14px;font-weight:600;color:var(--sea);background:none;border:0;padding:0;cursor:pointer;text-decoration:none}
+.reset{align-self:flex-start;font-size:14px;color:var(--muted);text-decoration:underline;background:none;border:0;cursor:pointer}
 .ev{display:grid;grid-template-columns:62px 1fr;gap:14px;background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:10px}
 .ev.feat{border-color:var(--sun);box-shadow:inset 4px 0 0 var(--sun)}
 .date{text-align:center;color:var(--sea)}
@@ -60,9 +74,17 @@ footer{font-size:13px;color:var(--muted);margin-top:30px}
 </div></section>
 
 <main class="wrap">
-  <div class="filters" id="f-dist"></div>
-  <div class="filters" style="margin-top:10px">
-    <select id="f-region" aria-label="Regione"><option value="">Tutta Italia</option></select>
+  <div id="team-box"></div>
+  <div class="tools">
+    <div class="search"><input id="f-q" type="search" placeholder="Cerca per nome o città" autocomplete="off"></div>
+    <div class="filters" id="f-dist"></div>
+    <div class="selects">
+      <select id="f-region" aria-label="Regione"><option value="">Tutta Italia</option></select>
+      <select id="f-prov" aria-label="Provincia"><option value="">Tutte le province</option></select>
+      <select id="f-month" aria-label="Mese"><option value="">Tutti i mesi</option></select>
+      <button class="pill" id="f-soon" aria-pressed="false">Prossimi 30 giorni</button>
+    </div>
+    <button class="reset hidden" id="f-reset">Azzera i filtri</button>
   </div>
   <p class="count" id="count"></p>
   <div id="list"><p class="empty">Carico le gare…</p></div>
@@ -77,7 +99,7 @@ const now = new Date(); now.setMinutes(now.getMinutes() - now.getTimezoneOffset(
 const TODAY = now.toISOString().slice(0,10), THIS_MONTH = TODAY.slice(0,7);
 const DISTS = [["","Tutte"],["5","5 km"],["10","10 km"],["21.1","Mezza"],["42.2","Maratona"]];
 const DNAME = km => ({5:"5 km",10:"10 km",21.1:"Mezza maratona",21.1:"Mezza maratona",42.2:"Maratona"})[Math.round(km*10)/10] || `${km} km`;
-let ALL = [], dist = "", region = localStorage.getItem("cc_region") ?? "Puglia";
+let ALL = [], dist = "", region = localStorage.getItem("cc_region") ?? "", prov = "", month = "", soon = false, q = "";
 
 function key(e){ return e.event_date || (e.month_hint + "-99"); }
 function monthOf(e){ return (e.event_date || e.month_hint).slice(0,7); }
@@ -87,24 +109,78 @@ async function load(){
     .or(`event_date.gte.${TODAY},and(event_date.is.null,month_hint.gte.${THIS_MONTH})`);
   if (error){ $("list").innerHTML = `<p class="empty">Calendario non disponibile al momento.</p>`; return; }
   ALL = data.filter(e => e.date_confirmed && e.event_date).sort((a,b) => key(a).localeCompare(key(b)) || a.name.localeCompare(b.name));
-  const regions = [...new Set(ALL.map(e => e.region).filter(Boolean))].sort();
-  $("f-region").innerHTML = `<option value="">Tutta Italia</option>` + regions.map(r => `<option ${r===region?"selected":""}>${esc(r)}</option>`).join("");
-  if (region && !regions.includes(region)) region = "";
-  render();
+  const estero = r => ALL.some(e => e.region === r && e.kind === "estero");
+  const tutte = [...new Set(ALL.map(e => e.region).filter(Boolean))].sort();
+  const ita = tutte.filter(r => !estero(r)), est = tutte.filter(estero);
+  $("f-region").innerHTML = `<option value="">Tutte le gare</option><option value="__it" ${region==="__it"?"selected":""}>Solo Italia</option><option value="__es" ${region==="__es"?"selected":""}>Solo estero</option>`
+    + `<optgroup label="Regioni italiane">${ita.map(r => `<option ${r===region?"selected":""}>${esc(r)}</option>`).join("")}</optgroup>`
+    + (est.length ? `<optgroup label="Estero">${est.map(r => `<option ${r===region?"selected":""}>${esc(r)}</option>`).join("")}</optgroup>` : "");
+  if (region && !["__it","__es"].includes(region) && !tutte.includes(region)) region = "";
+  const months = [...new Set(ALL.map(e => e.event_date.slice(0,7)))].sort();
+  $("f-month").innerHTML = `<option value="">Tutti i mesi</option>` + months.map(m => {
+    const l = new Date(m+"-15T12:00:00").toLocaleDateString("it-IT",{month:"long",year:"numeric"});
+    return `<option value="${m}">${l.charAt(0).toUpperCase()+l.slice(1)}</option>`; }).join("");
+  renderTeam(); renderProv(); render();
+}
+
+const days = d => Math.round((Date.parse(d) - Date.parse(TODAY)) / 864e5);
+const slug = t => String(t).replace(/[^\w ]+/g,"").trim().replace(/\s+/g,"-").toLowerCase();
+
+function renderTeam(){
+  const team = ALL.filter(e => e.featured).slice(0,5);
+  $("team-box").innerHTML = team.length ? `<div class="teambox"><h2>Ci sarà Cozzu's Team</h2>${team.map(e => {
+    const d = new Date(e.event_date+"T12:00:00");
+    return `<div class="row"><b>${d.getDate()} ${d.toLocaleDateString("it-IT",{month:"short"})}</b> ${esc(e.name)} · ${esc(e.city||"")} · ${DNAME(+e.distance_km)}</div>`;
+  }).join("")}</div>` : "";
+}
+function renderProv(){
+  const provs = [...new Set(ALL.filter(e => !region || region === "__it" || e.region === region).map(e => e.province).filter(Boolean))].sort();
+  $("f-prov").innerHTML = `<option value="">Tutte le province</option>` + provs.map(p => `<option ${p===prov?"selected":""}>${esc(p)}</option>`).join("");
+  if (prov && !provs.includes(prov)) prov = "";
+}
+function icsFile(e){
+  const d = e.event_date.replace(/-/g,"");
+  const nxt = new Date(Date.parse(e.event_date) + 864e5).toISOString().slice(0,10).replace(/-/g,"");
+  const body = ["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Cozzu's Coach//IT","BEGIN:VEVENT",
+    `UID:gara-${e.id}@cozzuscoach.it`, `DTSTART;VALUE=DATE:${d}`, `DTEND;VALUE=DATE:${nxt}`,
+    `SUMMARY:${e.name} (${DNAME(+e.distance_km)})`,
+    `LOCATION:${[e.city, e.province].filter(Boolean).join(" ")}`,
+    `DESCRIPTION:Dal calendario gare di Cozzu's Coach${e.url ? " - " + e.url : ""}`,
+    "END:VEVENT","END:VCALENDAR"].join("\r\n");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([body], { type: "text/calendar" }));
+  a.download = slug(e.name) + ".ics"; a.click(); URL.revokeObjectURL(a.href);
+}
+function shareRace(e){
+  const d = new Date(e.event_date+"T12:00:00").toLocaleDateString("it-IT",{day:"numeric",month:"long"});
+  const txt = `${e.name} - ${d} a ${e.city||""} (${DNAME(+e.distance_km)})\nDal calendario gare di Cozzu's Coach: https://cozzuscoach.it/calendario`;
+  if (navigator.share) navigator.share({ text: txt }).catch(() => {});
+  else window.open("https://wa.me/?text=" + encodeURIComponent(txt), "_blank");
 }
 
 function render(){
   $("f-dist").innerHTML = DISTS.map(([v,l]) => `<button class="chip" data-d="${v}" aria-pressed="${v===dist}">${l}</button>`).join("");
   $("f-dist").querySelectorAll(".chip").forEach(c => c.onclick = () => { dist = c.dataset.d; render(); });
-  const list = ALL.filter(e => (!dist || Math.abs(+e.distance_km - +dist) < 0.3) && (!region || e.region === region));
-  $("count").textContent = `${list.length} ${list.length===1?"gara":"gare"}${region?` in ${region}`:" in Italia"}`;
-  if (!list.length){ $("list").innerHTML = `<p class="empty">Nessuna gara con questi filtri. Prova a cambiare regione o distanza.</p>`; return; }
+  const qq = q.trim().toLowerCase();
+  const list = ALL.filter(e =>
+    (!dist || Math.abs(+e.distance_km - +dist) < 0.3) &&
+    (!region || (region === "__it" ? e.kind !== "estero" : region === "__es" ? e.kind === "estero" : e.region === region)) &&
+    (!prov || e.province === prov) &&
+    (!month || e.event_date.slice(0,7) === month) &&
+    (!soon || days(e.event_date) <= 30) &&
+    (!qq || (e.name + " " + (e.city||"") + " " + (e.province||"")).toLowerCase().includes(qq)));
+  const filtri = dist || prov || month || soon || qq || region;
+  $("f-reset").classList.toggle("hidden", !filtri);
+  $("count").textContent = `${list.length} ${list.length===1?"gara":"gare"}${prov?` in provincia di ${prov}`:region==="__it"?" in Italia":region==="__es"?" all'estero":region?` in ${esc(region)}`:""}${soon?", nei prossimi 30 giorni":""}`;
+  if (!list.length){ $("list").innerHTML = `<p class="empty">Nessuna gara con questi filtri. Prova ad allargare la ricerca.</p>`; return; }
   const groups = {};
   list.forEach(e => (groups[monthOf(e)] = groups[monthOf(e)] || []).push(e));
   $("list").innerHTML = Object.keys(groups).sort().map(m => {
     const title = new Date(m + "-15T12:00:00").toLocaleDateString("it-IT", { month:"long", year:"numeric" });
     return `<h2>${title}</h2>` + groups[m].map(card).join("");
   }).join("");
+  $("list").querySelectorAll("[data-ics]").forEach(b => b.onclick = () => icsFile(ALL.find(e => e.id == b.dataset.ics)));
+  $("list").querySelectorAll("[data-share]").forEach(b => b.onclick = () => shareRace(ALL.find(e => e.id == b.dataset.share)));
 }
 
 function card(e){
@@ -113,18 +189,28 @@ function card(e){
     ? `<div class="date"><b>${d.getDate()}</b><span>${d.toLocaleDateString("it-IT",{weekday:"short"})}</span></div>`
     : `<div class="date tbd"><b>–</b><span>da definire</span></div>`;
   return `<article class="ev ${e.featured?"feat":""}">${date}<div>
-    <div class="name">${esc(e.name)}</div>
+    <div class="name">${esc(e.name)}${(() => { const g = days(e.event_date);
+      return g <= 60 ? `<span class="cdown ${g<=14?"soon":""}">${g === 0 ? "oggi" : g === 1 ? "domani" : "tra " + g + " giorni"}</span>` : ""; })()}</div>
     <div class="where">${esc(e.city||"")}${e.province?` (${esc(e.province)})`:""}${e.region?` · ${esc(e.region)}`:""}</div>
     <div class="tags"><span class="tag">${DNAME(+e.distance_km)}</span>
       ${e.fidal_label?`<span class="tag gold">Label ${esc(e.fidal_label)}</span>`:""}
       ${e.featured?`<span class="tag gold">Ci sarà Cozzu's Team</span>`:""}
       ${e.date_confirmed?"":`<span class="tag grey">Data da confermare</span>`}</div>
-    <div class="acts"><a class="prep" href="/app/?gara=${e.id}">Preparala con noi</a>
-      ${e.url?`<a class="off" href="${esc(e.url)}" target="_blank" rel="noopener">Sito ufficiale</a>`:""}</div>
+    <div class="acts" style="gap:14px"><a class="prep" href="/app/?gara=${e.id}">Preparala con noi</a>
+      ${e.url?`<a class="off" href="${esc(e.url)}" target="_blank" rel="noopener">Sito ufficiale</a>`:""}
+      <button data-ics="${e.id}">Aggiungi al calendario</button>
+      <button data-share="${e.id}">Condividi</button></div>
   </div></article>`;
 }
 
-$("f-region").onchange = e => { region = e.target.value; try{ localStorage.setItem("cc_region", region); }catch(_){} render(); };
+$("f-region").onchange = e => { region = e.target.value; prov = ""; try{ localStorage.setItem("cc_region", region); }catch(_){} renderProv(); render(); };
+$("f-prov").onchange = e => { prov = e.target.value; render(); };
+$("f-month").onchange = e => { month = e.target.value; render(); };
+$("f-soon").onclick = () => { soon = !soon; $("f-soon").setAttribute("aria-pressed", String(soon)); render(); };
+let qt; $("f-q").oninput = e => { q = e.target.value; clearTimeout(qt); qt = setTimeout(render, 200); };
+$("f-reset").onclick = () => { dist = ""; prov = ""; month = ""; soon = false; q = ""; region = "";
+  $("f-q").value = ""; $("f-region").value = ""; try{ localStorage.removeItem("cc_region"); }catch(_){} $("f-month").value = ""; $("f-soon").setAttribute("aria-pressed","false");
+  renderProv(); render(); };
 load();
 </script>
 </body>
