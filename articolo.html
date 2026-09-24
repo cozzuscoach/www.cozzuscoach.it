@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0A5C73">
+<title>Consigli di corsa · Cozzu's Coach</title>
+<meta name="description" content="Un consiglio di corsa di Cozzu's Coach.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<style>
+:root{--sea:#0A5C73;--sea-2:#0D7A96;--deep:#073F50;--foam:#DDF0F4;--ink:#15222A;--muted:#5B6B73;--bg:#EEF3F4;--paper:#fff;--line:#D8E2E5;--sun:#F2A93B;--ok:#4F7A28;--warn:#C0461B;--cond:"Barlow Condensed","Arial Narrow",sans-serif;--body:"Barlow",system-ui,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;scroll-padding-top:70px}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+body{font-family:var(--body);background:var(--bg);color:var(--ink);line-height:1.5;font-size:17px;-webkit-tap-highlight-color:transparent}
+a{color:inherit}
+button,input,select,textarea{font:inherit;color:inherit}
+.top{position:sticky;top:0;z-index:10;background:rgba(255,255,255,.96);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:calc(env(safe-area-inset-top,0px) + 10px) 18px 10px}
+.top>div{max-width:1040px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;gap:14px}
+.brand{font:800 23px var(--cond);color:var(--sea);text-decoration:none}
+.nav{display:none;gap:22px;font-weight:600;font-size:15px}
+.nav a{text-decoration:none;color:var(--muted)}.nav a:hover,.nav a[aria-current]{color:var(--sea)}
+@media(min-width:760px){.nav{display:flex}}
+.enter{font:700 17px var(--cond);color:#fff;background:var(--sea);padding:8px 16px;border-radius:10px;text-decoration:none}
+.wrap{max-width:1040px;margin:0 auto;padding:0 18px}
+.btn{display:inline-flex;align-items:center;justify-content:center;padding:13px 20px;border-radius:12px;font:700 19px var(--cond);text-decoration:none;border:0;cursor:pointer}
+.btn.primary{background:var(--sun);color:var(--ink)}
+.btn.primary:hover{filter:brightness(1.05)}
+.btn.sea{background:var(--sea);color:#fff}
+.btn.ghost{background:rgba(255,255,255,.14);color:#fff}
+.btn.line{background:var(--paper);color:var(--sea);border:1px solid var(--line)}
+section{padding:56px 0}
+h2{font:800 40px/1 var(--cond);margin-bottom:10px}
+.kicker{font:700 15px var(--cond);letter-spacing:1.5px;text-transform:uppercase;color:var(--sea-2);margin-bottom:6px}
+.lead{color:var(--muted);font-size:18px;max-width:620px}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:20px}
+label{display:block;font-size:14px;font-weight:600;color:var(--muted);margin-bottom:5px}
+input,select,textarea{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:12px;background:#FBFDFD;font-size:17px}
+input:focus,select:focus,textarea:focus,.btn:focus-visible,a:focus-visible{outline:3px solid #9CD3E1;outline-offset:1px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.field{margin-bottom:13px}
+.msg{margin-top:10px;font-size:15px}.msg.err{color:var(--warn)}.msg.ok{color:var(--ok)}
+footer{background:var(--deep);color:#CFE3E8;padding:36px 0 calc(env(safe-area-inset-bottom,0px) + 36px);font-size:15px}
+footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:20px}
+footer b{font:800 22px var(--cond);color:#fff}
+footer a{color:#CFE3E8;text-decoration:none;margin-right:16px}
+.hidden{display:none!important}
+.art{max-width:760px;margin:0 auto;padding:24px 18px 10px}
+.art .img{aspect-ratio:16/8;border-radius:22px;background:#0A5C73 center/cover}
+.art .lbl{display:inline-block;margin-top:18px;font:700 14px var(--cond);letter-spacing:1.3px;text-transform:uppercase;color:var(--sea-2)}
+.art h1{font:800 46px/1.0 var(--cond);margin:6px 0 8px}
+@media(min-width:760px){.art h1{font-size:60px}}
+.art .date{color:var(--muted);font-size:15px;text-transform:capitalize}
+.art .body{font-size:19px;line-height:1.65;margin-top:18px;white-space:pre-line}
+.art .btn{margin-top:20px}
+.promo{background:var(--ink);color:#fff;border-radius:18px;padding:22px;margin:30px 0 0}
+.promo b{font:800 28px/1 var(--cond);display:block;margin-bottom:6px}
+.promo p{color:#B9CBD1;margin-bottom:14px}
+.cards{display:grid;gap:16px;margin-top:16px}
+@media(min-width:640px){.cards{grid-template-columns:repeat(3,1fr)}}
+.acard{display:block;text-decoration:none;background:var(--paper);border:1px solid var(--line);border-radius:18px;overflow:hidden}
+.acard .img{aspect-ratio:16/9;background:#0A5C73 center/cover}
+.acard .t{padding:12px 14px 16px}
+.acard h3{font:700 22px/1.08 var(--cond);margin-top:4px}
+.acard .c{font-size:12px;font-weight:600;color:var(--sea-2);text-transform:uppercase;letter-spacing:1px}
+.list{max-width:1040px;margin:0 auto;padding:0 18px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:20px 0 0}
+.chip{padding:7px 13px;border:1px solid var(--line);border-radius:22px;background:var(--paper);font-weight:600;cursor:pointer;text-transform:capitalize}
+.chip[aria-pressed=true]{background:var(--sea);border-color:var(--sea);color:#fff}
+@media(min-width:960px){.list .cards{grid-template-columns:repeat(3,1fr)}}
+.acard p{font-size:15px;color:var(--muted);margin-top:6px}
+
+.lhead{background:linear-gradient(rgba(7,63,80,.72),rgba(7,63,80,.86)),url("https://images.unsplash.com/photo-1590333748338-d629e4564ad9?auto=format&fit=crop&w=1800&q=60") center/cover;color:#fff;padding:52px 0 44px}
+.lhead h1{font:800 56px/0.95 var(--cond)}
+.lhead p{opacity:.9;margin-top:10px;max-width:560px;font-size:18px}
+</style>
+</head>
+<body>
+<header class="top"><div><a class="brand" href="/">Cozzu's Coach</a>
+<nav class="nav"><a href="/consigli" aria-current="page">Consigli</a><a href="/calendario">Calendario</a><a href="/strumenti" >Strumenti</a><a href="/#metodo">Metodo</a><a href="/#team">Team</a></nav>
+<a class="enter" href="/app/">Accedi</a></div></header>
+<main><article class="art" id="art"><div style="min-height:60vh"></div></article></main>
+<footer><div class="wrap"><div><b>Cozzu's Coach</b><p style="margin-top:6px">Allenamento per runner, dal Salento.</p></div>
+<div><a href="/consigli">Consigli</a><a href="/calendario">Calendario</a><a href="/strumenti">Strumenti</a><a href="/#richiedi">Contatti</a><a href="/app/">Area atleti</a></div></div></footer>
+<script>
+const vo2 = v => -4.6 + 0.182258*v + 0.000104*v*v;
+const pct = t => 0.8 + 0.1894393*Math.exp(-0.012778*t) + 0.2989558*Math.exp(-0.1932605*t);
+const vdot = (dm, ts) => { const t = ts/60; return vo2(dm/t) / pct(t); };
+const vFor = o => { const a=0.000104, b=0.182258, c=-4.6-o; return (-b + Math.sqrt(b*b - 4*a*c)) / (2*a); };
+const paceF = (V, f) => 60000 / vFor(V*f);
+const predict = (V, dm) => { let lo = dm/600*60, hi = dm/40*60; for (let i=0;i<70;i++){ const m=(lo+hi)/2; vdot(dm,m) > V ? lo=m : hi=m; } return (lo+hi)/2; };
+const pace = s => `${Math.floor(s/60)}'${String(Math.round(s%60)).padStart(2,"0")}"`;
+const fmtT = s => { s=Math.round(s); const h=Math.floor(s/3600), m=Math.floor(s%3600/60), x=s%60; return h ? `${h}h${String(m).padStart(2,"0")}'${String(x).padStart(2,"0")}"` : `${m}'${String(x).padStart(2,"0")}"`; };
+const PAL = { consiglio:["#0A5C73","#073F50","#F2A93B"], allenamento:["#0D7A96","#0A3D4F","#F2A93B"], recupero:["#4F7A28","#2B4A14","#E7D98B"],
+  tecnica:["#6A4C93","#3D2A5C","#F2A93B"], gara:["#C0461B","#6E2408","#F6D365"], alimentazione:["#B7791F","#6B4410","#FCEBD0"],
+  forza:["#8A2E4F","#4A1328","#F2A93B"], attrezzatura:["#3B5B75","#1E3345","#9CD3E1"], sicurezza:["#15222A","#0A1117","#F2A93B"] };
+
+const U = id => `https://images.unsplash.com/photo-${id}?auto=format&fit=crop&w=1400&q=70`;
+const PHOTOS = {
+  run: ["1596460658047-1826d5921c56","1727094141271-9bea5bc8c757","1552674605-db6ffd4facb5","1590333748338-d629e4564ad9","1559166631-ef208440c75a","1480179087180-d9f0ec044897","1581889470536-467bdbe30cd0","1486218119243-13883505764c","1718248028293-934f04a578db"],
+  gara: ["1596460658047-1826d5921c56","1759674861540-afed9f86f94a","1590333748338-d629e4564ad9"],
+  allenamento: ["1744060204728-f68e434a3edf","1549896869-ca27eeffe4fb","1581889470536-467bdbe30cd0","1486218119243-13883505764c"],
+  tecnica: ["1744060204728-f68e434a3edf","1549896869-ca27eeffe4fb","1480179087180-d9f0ec044897"],
+  alimentazione: ["1512621776951-a57141f2eefd","1546069901-ba9599a7e63c","1547592180-85f173990554","1654923064926-be7e64267a31","1610441009633-b6ca9c6d4be2","1467453678174-768ec283a940"],
+  potenziamento: ["1571019613454-1cb2f99b2d8b","1649887974297-4be052375a67","1541534741688-6078c6bfb5c5","1517836357463-d25dfeac3438","1591258370814-01609b341790"],
+  recupero: ["1518611012118-696072aa579a","1518644961665-ed172691aaa1","1486218119243-13883505764c"],
+  attrezzatura: ["1571008887538-b36bb32f4571"],
+  scarpe: ["1571008887538-b36bb32f4571"],
+  periodizzazione: ["1549896869-ca27eeffe4fb","1744060204728-f68e434a3edf","1596460658047-1826d5921c56"],
+  abbigliamento: ["1480179087180-d9f0ec044897","1581889470536-467bdbe30cd0","1727094141271-9bea5bc8c757","1559166631-ef208440c75a"],
+  sicurezza: ["1727094141271-9bea5bc8c757","1559166631-ef208440c75a"]
+};
+function cover(p){
+  if (p.image_url) return p.image_url;
+  const list = PHOTOS[p.category] || PHOTOS.run;
+  return U(list[(p.id||0) % list.length]);
+}
+const excerpt = (t, n=150) => { t = String(t||""); return t.length > n ? t.slice(0, t.lastIndexOf(" ", n)) + "…" : t; };
+const artUrl = p => `/articolo?id=${p.id}`;
+const sb = supabase.createClient("https://pnoxjvssvtusjvbwpkkh.supabase.co","sb_publishable_ol7Ds9jbamCSwpNpGEPT9Q_ZZvxNHy3");
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const card = p => `<a class="acard" href="${artUrl(p)}"><div class="img" style="background-image:url('${cover(p)}')"></div><div class="t"><span class="c">${esc(p.category)}</span><h3>${esc(p.title)}</h3></div></a>`;
+(async () => {
+  const id = new URLSearchParams(location.search).get("id");
+  const { data } = await sb.from("posts").select("*").order("publish_date",{ascending:false}).limit(60);
+  const P = data || [], p = P.find(x => x.id == id) || P[0];
+  if (!p){ $("art").innerHTML = `<p class="lead">Articolo non disponibile.</p>`; return; }
+  document.title = `${p.title} · Cozzu's Coach`;
+  const d = new Date(p.publish_date+"T12:00:00").toLocaleDateString("it-IT",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
+  $("art").innerHTML = `<div class="img" style="background-image:url('${cover(p)}')"></div><span class="lbl">${esc(p.category)}</span>
+    <h1>${esc(p.title)}</h1><div class="date">${d}</div><div class="body">${esc(p.body)}</div>
+    ${p.cta_label && p.cta_url ? `<a class="btn sea" href="${esc(p.cta_url)}">${esc(p.cta_label)}</a>` : ""}
+    <div class="promo"><b>Vuoi un programma costruito su di te?</b><p>Ritmi e frequenze cardiache personali, per la tua prossima gara, seguiti dal coach.</p><a class="btn primary" href="/#richiedi">Richiedi il tuo programma</a></div>
+    <h2 style="margin-top:36px">Leggi anche</h2><div class="cards">${P.filter(x => x.id !== p.id).slice(0,3).map(card).join("")}</div>`;
+})();
+</script>
+</body>
+</html>

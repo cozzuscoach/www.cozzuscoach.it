@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0A5C73">
+<title>Calcolatore ritmi e previsione tempi · Cozzu's Coach</title>
+<meta name="description" content="Calcola le previsioni su 5 km, 10 km, mezza e maratona e i tuoi ritmi di allenamento con il metodo VDOT.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--sea:#0A5C73;--sea-2:#0D7A96;--deep:#073F50;--foam:#DDF0F4;--ink:#15222A;--muted:#5B6B73;--bg:#EEF3F4;--paper:#fff;--line:#D8E2E5;--sun:#F2A93B;--ok:#4F7A28;--warn:#C0461B;--cond:"Barlow Condensed","Arial Narrow",sans-serif;--body:"Barlow",system-ui,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;scroll-padding-top:70px}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+body{font-family:var(--body);background:var(--bg);color:var(--ink);line-height:1.5;font-size:17px;-webkit-tap-highlight-color:transparent}
+a{color:inherit}
+button,input,select,textarea{font:inherit;color:inherit}
+.top{position:sticky;top:0;z-index:10;background:rgba(255,255,255,.96);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:calc(env(safe-area-inset-top,0px) + 10px) 18px 10px}
+.top>div{max-width:1040px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;gap:14px}
+.brand{font:800 23px var(--cond);color:var(--sea);text-decoration:none}
+.nav{display:none;gap:22px;font-weight:600;font-size:15px}
+.nav a{text-decoration:none;color:var(--muted)}.nav a:hover,.nav a[aria-current]{color:var(--sea)}
+@media(min-width:760px){.nav{display:flex}}
+.enter{font:700 17px var(--cond);color:#fff;background:var(--sea);padding:8px 16px;border-radius:10px;text-decoration:none}
+.wrap{max-width:1040px;margin:0 auto;padding:0 18px}
+.btn{display:inline-flex;align-items:center;justify-content:center;padding:13px 20px;border-radius:12px;font:700 19px var(--cond);text-decoration:none;border:0;cursor:pointer}
+.btn.primary{background:var(--sun);color:var(--ink)}
+.btn.primary:hover{filter:brightness(1.05)}
+.btn.sea{background:var(--sea);color:#fff}
+.btn.ghost{background:rgba(255,255,255,.14);color:#fff}
+.btn.line{background:var(--paper);color:var(--sea);border:1px solid var(--line)}
+section{padding:56px 0}
+h2{font:800 40px/1 var(--cond);margin-bottom:10px}
+.kicker{font:700 15px var(--cond);letter-spacing:1.5px;text-transform:uppercase;color:var(--sea-2);margin-bottom:6px}
+.lead{color:var(--muted);font-size:18px;max-width:620px}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:20px}
+label{display:block;font-size:14px;font-weight:600;color:var(--muted);margin-bottom:5px}
+input,select,textarea{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:12px;background:#FBFDFD;font-size:17px}
+input:focus,select:focus,textarea:focus,.btn:focus-visible,a:focus-visible{outline:3px solid #9CD3E1;outline-offset:1px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.field{margin-bottom:13px}
+.msg{margin-top:10px;font-size:15px}.msg.err{color:var(--warn)}.msg.ok{color:var(--ok)}
+footer{background:var(--deep);color:#CFE3E8;padding:36px 0 calc(env(safe-area-inset-bottom,0px) + 36px);font-size:15px}
+footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:20px}
+footer b{font:800 22px var(--cond);color:#fff}
+footer a{color:#CFE3E8;text-decoration:none;margin-right:16px}
+.hidden{display:none!important}
+.phead{background:linear-gradient(rgba(7,63,80,.74),rgba(7,63,80,.88)),url("https://images.unsplash.com/photo-1744060204728-f68e434a3edf?auto=format&fit=crop&w=1800&q=60") center/cover;color:#fff;padding:44px 0 40px}
+.phead h1{font:800 54px/0.95 var(--cond)}
+.phead p{opacity:.85;margin-top:10px;max-width:560px}
+.preds{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:6px}
+@media(min-width:760px){.preds{grid-template-columns:repeat(4,1fr)}}
+.pred{background:var(--foam);border-radius:14px;padding:12px}
+.pred b{display:block;font:800 30px/1 var(--cond);color:var(--sea)}
+.pred span{font-size:14px;color:var(--muted)}
+table{width:100%;border-collapse:collapse;font-size:16px}
+td,th{padding:10px 6px;border-top:1px solid var(--line);text-align:left}
+th{font-size:13px;color:var(--muted);font-weight:600;border-top:0}
+td:first-child{font:700 19px var(--cond);color:var(--sea)}
+td small{display:block;color:var(--muted);font:400 13px var(--body)}
+.twrap{overflow-x:auto}
+h3{font:700 26px var(--cond);margin:0 0 10px}
+.blk{margin-top:18px}
+.cta{background:var(--ink);color:#fff;border-radius:18px;padding:22px;margin-top:22px}
+.cta h3{color:#fff}
+.cta p{color:#B9CBD1;margin-bottom:14px}
+</style>
+</head>
+<body>
+<header class="top"><div><a class="brand" href="/">Cozzu's Coach</a>
+<nav class="nav"><a href="/consigli">Consigli</a><a href="/calendario">Calendario</a><a href="/strumenti" >Strumenti</a><a href="/#metodo">Metodo</a><a href="/#team">Team</a></nav>
+<a class="enter" href="/app/">Accedi</a></div></header>
+<main><section class="phead"><div class="wrap"><h1>Calcolatore ritmi</h1><p>Da un tempo recente ricaviamo le previsioni sulle altre distanze e i ritmi per ogni tipo di allenamento, con il metodo VDOT di Jack Daniels.</p></div></section>
+<section style="padding-top:24px"><div class="wrap">
+  <div class="card">
+    <div class="g2">
+      <div class="field"><label for="d">Distanza della gara</label><select id="d"><option value="5">5 km</option><option value="10" selected>10 km</option><option value="21.0975">Mezza maratona</option><option value="42.195">Maratona</option></select></div>
+      <div class="field"><label>Tempo</label><div class="g3"><input id="h" type="number" inputmode="numeric" placeholder="ore"><input id="m" type="number" inputmode="numeric" placeholder="min" value="50"><input id="s" type="number" inputmode="numeric" placeholder="sec" value="0"></div></div>
+    </div>
+    <div class="g2">
+      <div class="field"><label for="rhr">FC a riposo (facoltativa)</label><input id="rhr" type="number" inputmode="numeric" placeholder="es. 55"></div>
+      <div class="field"><label for="hmax">FC massima (facoltativa)</label><input id="hmax" type="number" inputmode="numeric" placeholder="se la conosci"></div>
+    </div>
+    <div class="g2"><div class="field"><label for="age">Età (per stimare la FC massima)</label><input id="age" type="number" inputmode="numeric"></div></div>
+  </div>
+  <div class="card blk"><h3>Previsioni</h3><div id="vd" style="color:var(--muted);font-size:15px;margin-bottom:10px"></div><div class="preds" id="preds"></div>
+  <p style="font-size:14px;color:var(--muted);margin-top:10px">Valide se sei allenato per quella distanza: per mezza e maratona serve un volume adeguato.</p></div>
+  <div class="card blk"><h3>Ritmi di allenamento</h3><div class="twrap"><table><thead><tr><th>Zona</th><th>Ritmo /km</th><th id="hrh">FC</th></tr></thead><tbody id="zones"></tbody></table></div></div>
+  <div class="cta"><h3>Vuoi un programma costruito su questi ritmi?</h3><p>Scegli la gara e ricevi un piano settimana per settimana, seguito dal coach.</p><a class="btn primary" href="/#richiedi">Richiedi il tuo programma</a></div>
+</div></section>
+</main>
+<footer><div class="wrap"><div><b>Cozzu's Coach</b><p style="margin-top:6px">Allenamento per runner, dal Salento.</p></div>
+<div><a href="/consigli">Consigli</a><a href="/calendario">Calendario</a><a href="/strumenti">Strumenti</a><a href="/#richiedi">Contatti</a><a href="/app/">Area atleti</a></div></div></footer>
+<script>
+const vo2 = v => -4.6 + 0.182258*v + 0.000104*v*v;
+const pct = t => 0.8 + 0.1894393*Math.exp(-0.012778*t) + 0.2989558*Math.exp(-0.1932605*t);
+const vdot = (dm, ts) => { const t = ts/60; return vo2(dm/t) / pct(t); };
+const vFor = o => { const a=0.000104, b=0.182258, c=-4.6-o; return (-b + Math.sqrt(b*b - 4*a*c)) / (2*a); };
+const paceF = (V, f) => 60000 / vFor(V*f);
+const predict = (V, dm) => { let lo = dm/600*60, hi = dm/40*60; for (let i=0;i<70;i++){ const m=(lo+hi)/2; vdot(dm,m) > V ? lo=m : hi=m; } return (lo+hi)/2; };
+const pace = s => `${Math.floor(s/60)}'${String(Math.round(s%60)).padStart(2,"0")}"`;
+const fmtT = s => { s=Math.round(s); const h=Math.floor(s/3600), m=Math.floor(s%3600/60), x=s%60; return h ? `${h}h${String(m).padStart(2,"0")}'${String(x).padStart(2,"0")}"` : `${m}'${String(x).padStart(2,"0")}"`; };
+const $ = id => document.getElementById(id);
+const Z = [["Recupero","Scarico dopo i lavori intensi",.55,.60,.50,.62],["Lento","Base aerobica, ritmo da conversazione",.62,.70,.62,.72],
+  ["Medio","Ritmo maratona, resistenza specifica",.78,.82,.75,.82],["Soglia","Comodamente impegnativo, 20-30' sostenibili",.86,.88,.82,.88],
+  ["VO2max","Ripetute da 3-5', recuperi uguali",.96,1.0,.92,.98]];
+const q = new URLSearchParams(location.search);
+if (q.get("d")) $("d").value = q.get("d");
+if (q.get("t")){ const t=+q.get("t"); $("h").value = Math.floor(t/3600)||""; $("m").value = Math.floor(t%3600/60); $("s").value = t%60; }
+function run(){
+  const km = +$("d").value, t = (+$("h").value||0)*3600 + (+$("m").value||0)*60 + (+$("s").value||0);
+  if (t < 600){ $("preds").innerHTML=""; $("zones").innerHTML=""; $("vd").textContent=""; return; }
+  const V = vdot(km*1000, t);
+  $("vd").textContent = `VDOT ${V.toFixed(1)}`;
+  $("preds").innerHTML = [[5,"5 km"],[10,"10 km"],[21.0975,"Mezza"],[42.195,"Maratona"]].map(([d,l]) => { const p = predict(V,d*1000);
+    return `<div class="pred"><b>${fmtT(p)}</b><span>${l} · ${pace(p/d)}/km</span></div>`; }).join("");
+  const age = +$("age").value, rhr = +$("rhr").value || null;
+  const hmax = +$("hmax").value || (age ? Math.round(208 - 0.7*age) : null);
+  $("hrh").textContent = hmax && !rhr ? "FC (indicativa)" : "FC";
+  const hr = (a,b) => { if (!hmax) return "inserisci età o FC max"; const r = rhr || 60; return `${Math.round(r+a*(hmax-r))}-${Math.round(r+b*(hmax-r))}`; };
+  $("zones").innerHTML = Z.map(([n,d,f1,f2,h1,h2]) => `<tr><td>${n}<small>${d}</small></td><td>${pace(paceF(V,f2))}–${pace(paceF(V,f1))}</td><td>${hr(h1,h2)}</td></tr>`).join("");
+}
+["d","h","m","s","rhr","hmax","age"].forEach(id => $(id).addEventListener("input", run)); run();
+</script>
+</body>
+</html>

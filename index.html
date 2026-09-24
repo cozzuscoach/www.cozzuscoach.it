@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0A5C73">
+<title>Cozzu's Coach · Consigli, gare e programmi di corsa</title>
+<meta name="description" content="Consigli di corsa ogni giorno, calendario gare e programmi di allenamento costruiti sui tuoi tempi. Dal Salento.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<style>
+:root{--sea:#0A5C73;--sea-2:#0D7A96;--deep:#073F50;--foam:#DDF0F4;--ink:#15222A;--muted:#5B6B73;--bg:#EEF3F4;--paper:#fff;--line:#D8E2E5;--sun:#F2A93B;--ok:#4F7A28;--warn:#C0461B;--cond:"Barlow Condensed","Arial Narrow",sans-serif;--body:"Barlow",system-ui,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;scroll-padding-top:70px}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+body{font-family:var(--body);background:var(--bg);color:var(--ink);line-height:1.5;font-size:17px;-webkit-tap-highlight-color:transparent}
+a{color:inherit}
+button,input,select,textarea{font:inherit;color:inherit}
+.top{position:sticky;top:0;z-index:10;background:rgba(255,255,255,.96);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:calc(env(safe-area-inset-top,0px) + 10px) 18px 10px}
+.top>div{max-width:1040px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;gap:14px}
+.brand{font:800 23px var(--cond);color:var(--sea);text-decoration:none}
+.nav{display:none;gap:22px;font-weight:600;font-size:15px}
+.nav a{text-decoration:none;color:var(--muted)}.nav a:hover,.nav a[aria-current]{color:var(--sea)}
+@media(min-width:760px){.nav{display:flex}}
+.enter{font:700 17px var(--cond);color:#fff;background:var(--sea);padding:8px 16px;border-radius:10px;text-decoration:none}
+.wrap{max-width:1040px;margin:0 auto;padding:0 18px}
+.btn{display:inline-flex;align-items:center;justify-content:center;padding:13px 20px;border-radius:12px;font:700 19px var(--cond);text-decoration:none;border:0;cursor:pointer}
+.btn.primary{background:var(--sun);color:var(--ink)}
+.btn.primary:hover{filter:brightness(1.05)}
+.btn.sea{background:var(--sea);color:#fff}
+.btn.ghost{background:rgba(255,255,255,.14);color:#fff}
+.btn.line{background:var(--paper);color:var(--sea);border:1px solid var(--line)}
+section{padding:56px 0}
+h2{font:800 40px/1 var(--cond);margin-bottom:10px}
+.kicker{font:700 15px var(--cond);letter-spacing:1.5px;text-transform:uppercase;color:var(--sea-2);margin-bottom:6px}
+.lead{color:var(--muted);font-size:18px;max-width:620px}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:20px}
+label{display:block;font-size:14px;font-weight:600;color:var(--muted);margin-bottom:5px}
+input,select,textarea{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:12px;background:#FBFDFD;font-size:17px}
+input:focus,select:focus,textarea:focus,.btn:focus-visible,a:focus-visible{outline:3px solid #9CD3E1;outline-offset:1px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.field{margin-bottom:13px}
+.msg{margin-top:10px;font-size:15px}.msg.err{color:var(--warn)}.msg.ok{color:var(--ok)}
+footer{background:var(--deep);color:#CFE3E8;padding:36px 0 calc(env(safe-area-inset-bottom,0px) + 36px);font-size:15px}
+footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:20px}
+footer b{font:800 22px var(--cond);color:#fff}
+footer a{color:#CFE3E8;text-decoration:none;margin-right:16px}
+.hidden{display:none!important}
+.front{padding:26px 0 10px}
+.front .grid{display:grid;gap:18px}
+@media(min-width:860px){.front .grid{grid-template-columns:1.7fr 1fr}}
+.feat{display:block;text-decoration:none;background:var(--paper);border-radius:22px;overflow:hidden;border:1px solid var(--line)}
+.feat .img{aspect-ratio:16/9;background:#0A5C73 center/cover}
+.feat .txt{padding:18px 20px 22px}
+.feat h1{font:800 40px/1.0 var(--cond);margin:6px 0 10px}
+@media(min-width:860px){.feat h1{font-size:52px}}
+.feat p{color:var(--muted);font-size:17px}
+.lbl{display:inline-flex;gap:8px;align-items:center;font:700 14px var(--cond);letter-spacing:1.3px;text-transform:uppercase;color:var(--sea-2)}
+.lbl b{background:var(--sun);color:var(--ink);padding:2px 8px;border-radius:6px;letter-spacing:.5px}
+.side{display:grid;gap:12px;align-content:start}
+.mini{display:grid;grid-template-columns:110px 1fr;gap:12px;text-decoration:none;background:var(--paper);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.mini .img{background:#0A5C73 center/cover;min-height:96px}
+.mini .t{padding:10px 12px 10px 0}
+.mini h3{font:700 20px/1.1 var(--cond);margin-top:2px}
+.mini .c{font-size:12px;font-weight:600;color:var(--sea-2);text-transform:uppercase;letter-spacing:1px}
+.promo{background:var(--sun);border-radius:18px;padding:18px;display:flex;flex-direction:column;gap:10px}
+.promo b{font:800 26px/1 var(--cond)}
+.promo p{font-size:15px}
+.promo .btn{align-self:flex-start;background:var(--ink);color:#fff;font-size:17px;padding:10px 16px}
+.cards{display:grid;gap:16px;margin-top:20px}
+@media(min-width:640px){.cards{grid-template-columns:repeat(2,1fr)}}
+@media(min-width:960px){.cards{grid-template-columns:repeat(3,1fr)}}
+.acard{display:block;text-decoration:none;background:var(--paper);border:1px solid var(--line);border-radius:18px;overflow:hidden;transition:transform .15s}
+.acard:hover{transform:translateY(-3px)}
+@media (prefers-reduced-motion:reduce){.acard{transition:none}.acard:hover{transform:none}}
+.acard .img{aspect-ratio:16/9;background:#0A5C73 center/cover}
+.acard .t{padding:14px 16px 18px}
+.acard h3{font:700 24px/1.08 var(--cond);margin:4px 0 6px}
+.acard p{font-size:15px;color:var(--muted)}
+.acard .c{font-size:12px;font-weight:600;color:var(--sea-2);text-transform:uppercase;letter-spacing:1px}
+.events{display:grid;gap:12px;margin-top:22px}
+@media(min-width:760px){.events{grid-template-columns:repeat(2,1fr)}}
+.ev{display:grid;grid-template-columns:64px 1fr;gap:14px;align-items:start;text-decoration:none}
+.ev .d{text-align:center;color:var(--sea)}
+.ev .d b{display:block;font:800 36px/1 var(--cond)}
+.ev .d span{font-size:13px;color:var(--muted);text-transform:capitalize}
+.ev .n{font:700 22px/1.1 var(--cond)}
+.ev .w{font-size:14px;color:var(--muted)}
+.tag{display:inline-block;font-size:13px;font-weight:600;padding:3px 10px;border-radius:20px;background:var(--foam);color:var(--sea);margin-top:8px;margin-right:4px}
+.tag.gold{background:#FCEBD0;color:#8A5510}
+.more{margin-top:18px}
+.steps{display:grid;gap:14px;margin-top:24px;counter-reset:s}
+@media(min-width:760px){.steps{grid-template-columns:repeat(3,1fr)}}
+.step{counter-increment:s}
+.step::before{content:counter(s);display:grid;place-items:center;width:44px;height:44px;border-radius:50%;background:var(--sea);color:#fff;font:800 24px var(--cond);margin-bottom:12px}
+.step h3{font:700 24px var(--cond);margin-bottom:4px}
+.step p{color:var(--muted);font-size:16px}
+.calc{background:var(--ink);color:#fff}
+.calc .lead{color:#B9CBD1}
+.calc .card{background:#1E2F38;border-color:#2C4450;color:#fff}
+.calc label{color:#B9CBD1}
+.calc input,.calc select{background:#15222A;border-color:#2C4450;color:#fff}
+.preds{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:16px}
+@media(min-width:760px){.preds{grid-template-columns:repeat(4,1fr)}}
+.pred{background:#15222A;border-radius:14px;padding:12px}
+.pred b{display:block;font:800 30px/1 var(--cond);color:var(--sun)}
+.pred span{font-size:14px;color:#B9CBD1}
+.team{display:grid;gap:22px;align-items:center}
+@media(min-width:760px){.team{grid-template-columns:1.1fr 1fr}}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.stat{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:16px;text-align:center}
+.stat b{display:block;font:800 40px/1 var(--cond);color:var(--sea)}
+.stat span{font-size:14px;color:var(--muted)}
+.req{max-width:640px}
+.check{display:flex;gap:8px;align-items:flex-start;font-size:14px;color:var(--muted)}
+.check input{width:auto;margin-top:4px}
+.skel{background:linear-gradient(90deg,#E3EAEC,#F2F6F7,#E3EAEC);border-radius:22px;min-height:380px}
+
+.calc{background:linear-gradient(rgba(21,34,42,.88),rgba(21,34,42,.92)),url("https://images.unsplash.com/photo-1549896869-ca27eeffe4fb?auto=format&fit=crop&w=1800&q=60") center/cover}
+.teamimg{border-radius:22px;aspect-ratio:4/3;background:url("https://images.unsplash.com/photo-1552674605-db6ffd4facb5?auto=format&fit=crop&w=1200&q=70") center/cover;margin-bottom:12px}
+.feat .img,.mini .img,.acard .img{background-color:#0A5C73}
+
+/* carosello consigli */
+.carousel{position:relative;margin-top:18px}
+.track{display:flex;gap:16px;overflow-x:auto;scroll-snap-type:x mandatory;scroll-behavior:smooth;padding:4px 2px 10px;-ms-overflow-style:none;scrollbar-width:none}
+.track::-webkit-scrollbar{display:none}
+.track > *{flex:0 0 78%;scroll-snap-align:start}
+@media(min-width:640px){.track > *{flex:0 0 46%}}
+@media(min-width:960px){.track > *{flex:0 0 31%}}
+.cnav{display:flex;gap:8px;justify-content:flex-end;margin-top:2px}
+.cnav button{width:42px;height:42px;border-radius:50%;border:1px solid var(--line);background:var(--paper);font:700 20px var(--cond);color:var(--sea);display:grid;place-items:center}
+.cnav button:hover{background:var(--foam)}
+.dots{display:flex;gap:6px;justify-content:center;margin-top:8px}
+.dots i{width:7px;height:7px;border-radius:50%;background:var(--line);transition:width .2s,background .2s}
+.dots i.on{width:22px;background:var(--sea)}
+/* settimana */
+.week-strip{display:grid;gap:12px;margin-top:20px}
+@media(min-width:760px){.week-strip{grid-template-columns:repeat(3,1fr)}}
+.wcard{background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:18px;display:flex;flex-direction:column;gap:6px}
+.wcard .k{font:700 13px var(--cond);letter-spacing:1.4px;text-transform:uppercase;color:var(--sea-2)}
+.wcard b{font:800 42px/1 var(--cond);color:var(--sea)}
+.wcard .s{font-size:15px;color:var(--muted)}
+.wlist{margin-top:4px;font-size:15px}
+.wlist div{padding:6px 0;border-top:1px solid var(--line)}
+.wlist div:first-child{border-top:0}
+.wlist span{color:var(--muted)}
+/* animazioni allo scorrimento */
+.rev{opacity:0;transform:translateY(16px);transition:opacity .5s ease-out,transform .5s ease-out}
+.rev.in{opacity:1;transform:none}
+@media (prefers-reduced-motion:reduce){.rev{opacity:1;transform:none;transition:none}.track{scroll-behavior:auto}}
+.count{font-variant-numeric:tabular-nums}
+</style>
+</head>
+<body>
+<header class="top"><div><a class="brand" href="/">Cozzu's Coach</a>
+<nav class="nav"><a href="/consigli">Consigli</a><a href="/calendario">Calendario</a><a href="/strumenti" >Strumenti</a><a href="/#metodo">Metodo</a><a href="/#team">Team</a></nav>
+<a class="enter" href="/app/">Accedi</a></div></header>
+<main><section class="front"><div class="wrap">
+  <div class="grid">
+    <div id="feat"><div class="skel"></div></div>
+    <div class="side"><div id="side"></div>
+      <div class="promo"><b>Il tuo programma, su misura.</b><p>Scegli la gara e ricevi un piano con i tuoi ritmi, seguito dal coach.</p><a class="btn" href="#richiedi">Inizia ora</a></div>
+    </div>
+  </div>
+</div></section>
+<section style="padding-top:26px"><div class="wrap">
+  <div class="kicker">Da leggere</div>
+  <h2>Consigli di corsa</h2>
+  <div class="carousel"><div class="track" id="cards"></div>
+    <div class="dots" id="dots"></div>
+    <div class="cnav"><button id="c-prev" aria-label="Precedente">‹</button><button id="c-next" aria-label="Successivo">›</button></div>
+  </div>
+  <a class="btn line more" href="/consigli">Tutti i consigli</a>
+</div></section>
+<section><div class="wrap">
+  <div class="kicker">Prossime gare</div>
+  <h2>Dove correre nei prossimi mesi</h2>
+  <p class="lead">Mezze maratone, maratone e 10 km su strada, con date verificate.</p>
+  <div class="events" id="events"><p class="lead">Carico le gare…</p></div>
+  <a class="btn line more" href="/calendario">Vedi tutto il calendario</a>
+</div></section>
+<section><div class="wrap">
+  <div class="kicker">Questa settimana</div>
+  <h2>Cosa succede nei prossimi giorni</h2>
+  <div class="week-strip">
+    <div class="wcard"><span class="k">Prossima gara</span><b id="w-days">–</b><span class="s" id="w-race">Carico…</span></div>
+    <div class="wcard"><span class="k">Nei prossimi 14 giorni</span><div class="wlist" id="w-list"></div></div>
+    <div class="wcard"><span class="k">Con il Team</span><div class="wlist" id="w-team"><span class="s">Nessuna gara segnata.</span></div></div>
+  </div>
+</div></section>
+<section id="metodo" style="background:var(--paper)"><div class="wrap">
+  <div class="kicker">Come funziona</div>
+  <h2>Tre passi per arrivare pronto alla gara</h2>
+  <div class="steps">
+    <div class="step"><h3>Scegli l'obiettivo</h3><p>Una gara dal calendario o la tua. Il programma parte dalla data e lavora all'indietro.</p></div>
+    <div class="step"><h3>Racconta come corri</h3><p>Tempi recenti, chilometri a settimana, giorni disponibili e di riposo. Bastano pochi minuti.</p></div>
+    <div class="step"><h3>Allenati e registra</h3><p>Ogni giorno trovi la seduta con ritmi e FC. Registri come è andata e il piano tiene conto di come stai.</p></div>
+  </div>
+</div></section>
+<section id="calcola" class="calc"><div class="wrap">
+  <div class="kicker" style="color:var(--sun)">Prova subito</div>
+  <h2>Quanto puoi correre oggi?</h2>
+  <p class="lead">Inserisci un tempo recente: calcoliamo le previsioni sulle altre distanze.</p>
+  <div class="card" style="margin-top:20px">
+    <div class="g2">
+      <div class="field"><label for="c-d">Distanza</label><select id="c-d"><option value="5">5 km</option><option value="10" selected>10 km</option><option value="21.0975">Mezza maratona</option><option value="42.195">Maratona</option></select></div>
+      <div class="field"><label>Tempo</label><div class="g3"><input id="c-h" type="number" inputmode="numeric" placeholder="ore"><input id="c-m" type="number" inputmode="numeric" placeholder="min" value="50"><input id="c-s" type="number" inputmode="numeric" placeholder="sec" value="0"></div></div>
+    </div>
+    <div class="preds" id="preds"></div>
+    <p style="margin-top:16px"><a class="btn primary" href="/strumenti" id="c-more">Vedi i tuoi ritmi di allenamento</a></p>
+  </div>
+</div></section>
+<section id="team"><div class="wrap team">
+  <div>
+    <div class="kicker">Cozzu's Team</div>
+    <h2>Un gruppo che corre insieme, in Salento</h2>
+    <p class="lead">Runner di ogni livello che si allenano con lo stesso metodo, condividono le gare e crescono insieme. Dal primo 10 km alla mezza maratona in cerca del personale.</p>
+    <p style="margin-top:18px"><a class="btn sea" href="#richiedi">Unisciti al Team</a></p>
+  </div>
+  <div><div class="teamimg" role="img" aria-label="Runner in allenamento"></div><div class="stats">
+    <div class="stat"><b>20+</b><span>atleti seguiti</span></div>
+    <div class="stat"><b id="st-ev">–</b><span>gare in calendario</span></div>
+    <div class="stat"><b>1</b><span>programma per ognuno</span></div>
+  </div></div>
+</div></section>
+<section id="richiedi" style="background:var(--paper)"><div class="wrap req">
+  <div class="kicker">Inizia</div>
+  <h2>Vuoi un programma per la tua prossima gara?</h2>
+  <p class="lead">Lascia i tuoi dati: ti contattiamo e attiviamo il tuo accesso all'area personale.</p>
+  <div style="margin-top:20px">
+    <div class="g2"><div class="field"><label for="r-n">Nome e cognome</label><input id="r-n" autocomplete="name"></div>
+    <div class="field"><label for="r-e">Email</label><input id="r-e" type="email" autocomplete="email"></div></div>
+    <div class="g2"><div class="field"><label for="r-p">Telefono (facoltativo)</label><input id="r-p" type="tel" autocomplete="tel"></div>
+    <div class="field"><label for="r-c">Città</label><input id="r-c"></div></div>
+    <div class="g2"><div class="field"><label for="r-g">Gara obiettivo</label><input id="r-g" placeholder="es. Mezza di Monopoli"></div>
+    <div class="field"><label for="r-k">Km a settimana, oggi</label><input id="r-k" type="number" inputmode="numeric"></div></div>
+    <div class="field"><label for="r-m">Qualcosa da aggiungere?</label><textarea id="r-m" rows="3"></textarea></div>
+    <label class="check field"><input id="r-ok" type="checkbox"> Acconsento al trattamento dei miei dati per essere ricontattato.</label>
+    <button class="btn sea" id="r-send">Invia la richiesta</button>
+    <div id="r-msg" class="msg"></div>
+  </div>
+</div></section>
+</main>
+<footer><div class="wrap"><div><b>Cozzu's Coach</b><p style="margin-top:6px">Allenamento per runner, dal Salento.</p></div>
+<div><a href="/consigli">Consigli</a><a href="/calendario">Calendario</a><a href="/strumenti">Strumenti</a><a href="/#richiedi">Contatti</a><a href="/app/">Area atleti</a></div></div></footer>
+<script>
+const vo2 = v => -4.6 + 0.182258*v + 0.000104*v*v;
+const pct = t => 0.8 + 0.1894393*Math.exp(-0.012778*t) + 0.2989558*Math.exp(-0.1932605*t);
+const vdot = (dm, ts) => { const t = ts/60; return vo2(dm/t) / pct(t); };
+const vFor = o => { const a=0.000104, b=0.182258, c=-4.6-o; return (-b + Math.sqrt(b*b - 4*a*c)) / (2*a); };
+const paceF = (V, f) => 60000 / vFor(V*f);
+const predict = (V, dm) => { let lo = dm/600*60, hi = dm/40*60; for (let i=0;i<70;i++){ const m=(lo+hi)/2; vdot(dm,m) > V ? lo=m : hi=m; } return (lo+hi)/2; };
+const pace = s => `${Math.floor(s/60)}'${String(Math.round(s%60)).padStart(2,"0")}"`;
+const fmtT = s => { s=Math.round(s); const h=Math.floor(s/3600), m=Math.floor(s%3600/60), x=s%60; return h ? `${h}h${String(m).padStart(2,"0")}'${String(x).padStart(2,"0")}"` : `${m}'${String(x).padStart(2,"0")}"`; };
+const PAL = { consiglio:["#0A5C73","#073F50","#F2A93B"], allenamento:["#0D7A96","#0A3D4F","#F2A93B"], recupero:["#4F7A28","#2B4A14","#E7D98B"],
+  tecnica:["#6A4C93","#3D2A5C","#F2A93B"], gara:["#C0461B","#6E2408","#F6D365"], alimentazione:["#B7791F","#6B4410","#FCEBD0"],
+  forza:["#8A2E4F","#4A1328","#F2A93B"], attrezzatura:["#3B5B75","#1E3345","#9CD3E1"], sicurezza:["#15222A","#0A1117","#F2A93B"] };
+
+const U = id => `https://images.unsplash.com/photo-${id}?auto=format&fit=crop&w=1400&q=70`;
+const PHOTOS = {
+  run: ["1596460658047-1826d5921c56","1727094141271-9bea5bc8c757","1552674605-db6ffd4facb5","1590333748338-d629e4564ad9","1559166631-ef208440c75a","1480179087180-d9f0ec044897","1581889470536-467bdbe30cd0","1486218119243-13883505764c","1718248028293-934f04a578db"],
+  gara: ["1596460658047-1826d5921c56","1759674861540-afed9f86f94a","1590333748338-d629e4564ad9"],
+  allenamento: ["1744060204728-f68e434a3edf","1549896869-ca27eeffe4fb","1581889470536-467bdbe30cd0","1486218119243-13883505764c"],
+  tecnica: ["1744060204728-f68e434a3edf","1549896869-ca27eeffe4fb","1480179087180-d9f0ec044897"],
+  alimentazione: ["1512621776951-a57141f2eefd","1546069901-ba9599a7e63c","1547592180-85f173990554","1654923064926-be7e64267a31","1610441009633-b6ca9c6d4be2","1467453678174-768ec283a940"],
+  forza: ["1571019613454-1cb2f99b2d8b","1649887974297-4be052375a67","1541534741688-6078c6bfb5c5","1517836357463-d25dfeac3438","1591258370814-01609b341790"],
+  recupero: ["1518611012118-696072aa579a","1518644961665-ed172691aaa1","1486218119243-13883505764c"],
+  attrezzatura: ["1571008887538-b36bb32f4571"],
+  sicurezza: ["1727094141271-9bea5bc8c757","1559166631-ef208440c75a"]
+};
+function cover(p){
+  if (p.image_url) return p.image_url;
+  const list = PHOTOS[p.category] || PHOTOS.run;
+  return U(list[(p.id||0) % list.length]);
+}
+const excerpt = (t, n=150) => { t = String(t||""); return t.length > n ? t.slice(0, t.lastIndexOf(" ", n)) + "…" : t; };
+const artUrl = p => `/articolo?id=${p.id}`;
+const sb = supabase.createClient("https://pnoxjvssvtusjvbwpkkh.supabase.co","sb_publishable_ol7Ds9jbamCSwpNpGEPT9Q_ZZvxNHy3");
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const d0 = new Date(); d0.setMinutes(d0.getMinutes()-d0.getTimezoneOffset()); const TODAY = d0.toISOString().slice(0,10);
+const DN = km => ({5:"5 km",10:"10 km",21.1:"Mezza maratona",42.2:"Maratona"})[Math.round(km*10)/10] || `${km} km`;
+(async () => {
+  const { data } = await sb.from("events").select("*").eq("date_confirmed", true).gte("event_date", TODAY).order("event_date").limit(300);
+  const all = data || [];
+  $("st-ev").textContent = all.length || "–";
+  const score = e => (e.featured ? 0 : e.region === "Puglia" ? 1 : 2);
+  const pick = [...all].sort((a,b) => score(a)-score(b) || a.event_date.localeCompare(b.event_date)).slice(0,4)
+    .sort((a,b) => a.event_date.localeCompare(b.event_date));
+  $("events").innerHTML = pick.length ? pick.map(e => { const d = new Date(e.event_date+"T12:00:00");
+    return `<a class="card ev" href="/app/?gara=${e.id}"><div class="d"><b>${d.getDate()}</b><span>${d.toLocaleDateString("it-IT",{month:"short"})}</span></div>
+      <div><div class="n">${esc(e.name)}</div><div class="w">${esc(e.city||"")}${e.province?` (${esc(e.province)})`:""}</div>
+      <span class="tag">${DN(+e.distance_km)}</span>${e.featured?`<span class="tag gold">Cozzu's Team</span>`:""}${e.fidal_label?`<span class="tag gold">Label ${esc(e.fidal_label)}</span>`:""}</div></a>`; }).join("")
+    : `<p class="lead">Nessuna gara in programma.</p>`;
+})();
+(async () => {
+  const { data } = await sb.from("posts").select("id,title,body,category,image_url,publish_date").order("publish_date",{ascending:false}).limit(10);
+  const P = data || [];
+  if (!P.length){ $("feat").innerHTML = ""; return; }
+  const f = P[0];
+  $("feat").innerHTML = `<a class="feat" href="${artUrl(f)}"><div class="img" style="background-image:url('${cover(f)}')"></div>
+    <div class="txt"><span class="lbl"><b>Oggi</b>${esc(f.category)}</span><h1>${esc(f.title)}</h1><p>${esc(excerpt(f.body,170))}</p></div></a>`;
+  $("side").innerHTML = P.slice(1,4).map(p => `<a class="mini" href="${artUrl(p)}"><div class="img" style="background-image:url('${cover(p)}')"></div>
+    <div class="t"><span class="c">${esc(p.category)}</span><h3>${esc(p.title)}</h3></div></a>`).join("");
+  $("side").style.cssText = "display:grid;gap:12px";
+  $("cards").innerHTML = P.slice(4,12).map(p => `<a class="acard" href="${artUrl(p)}"><div class="img" style="background-image:url('${cover(p)}')"></div>
+    <div class="t"><span class="c">${esc(p.category)}</span><h3>${esc(p.title)}</h3><p>${esc(excerpt(p.body,110))}</p></div></a>`).join("");
+  if (P.length <= 4) $("cards").closest("section").style.display = "none";
+  initCarousel();
+  reveal();
+})();
+
+/* carosello */
+function initCarousel(){
+  const t = $("cards"), dots = $("dots");
+  if (!t || !t.children.length) return;
+  const step = () => t.firstElementChild.getBoundingClientRect().width + 16;
+  $("c-prev").onclick = () => t.scrollBy({ left: -step() });
+  $("c-next").onclick = () => t.scrollBy({ left: step() });
+  dots.innerHTML = [...t.children].map(() => "<i></i>").join("");
+  const mark = () => { const i = Math.round(t.scrollLeft / step());
+    [...dots.children].forEach((d,k) => d.classList.toggle("on", k === i)); };
+  t.addEventListener("scroll", () => window.requestAnimationFrame(mark));
+  mark();
+  // scorrimento automatico, si ferma appena l'utente interagisce
+  let auto = setInterval(() => {
+    if (t.scrollLeft + t.clientWidth >= t.scrollWidth - 8) t.scrollTo({ left: 0 });
+    else t.scrollBy({ left: step() });
+  }, 6000);
+  const stop = () => { clearInterval(auto); auto = null; };
+  ["pointerdown","wheel","touchstart"].forEach(e => t.addEventListener(e, stop, { once: true }));
+  [$("c-prev"), $("c-next")].forEach(b => b.addEventListener("click", stop, { once: true }));
+}
+
+/* animazioni allo scorrimento */
+function reveal(){
+  document.querySelectorAll("section > .wrap > *, .feat, .mini, .acard, .wcard").forEach(el => el.classList.add("rev"));
+  const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting){ e.target.classList.add("in"); io.unobserve(e.target); } }), { threshold: .12 });
+  document.querySelectorAll(".rev").forEach(el => io.observe(el));
+}
+
+/* questa settimana */
+(async () => {
+  const in14 = new Date(Date.parse(TODAY) + 14*864e5).toISOString().slice(0,10);
+  const { data } = await sb.from("events").select("*").eq("date_confirmed", true)
+    .gte("event_date", TODAY).order("event_date").limit(200);
+  const all = data || [];
+  const region = (localStorage.getItem("cc_region") ?? "Puglia") || null;
+  const vicine = all.filter(e => e.event_date <= in14 && (!region || e.region === region));
+  const next = vicine[0] || all.find(e => !region || e.region === region) || all[0];
+  if (next){
+    const g = Math.round((Date.parse(next.event_date) - Date.parse(TODAY)) / 864e5);
+    const el = $("w-days"); const target = g;
+    el.textContent = "0"; el.classList.add("count");
+    let n = 0; const t0 = performance.now();
+    const tick = now => { const k = Math.min(1, (now - t0)/700); n = Math.round(target * k); el.textContent = n; if (k < 1) requestAnimationFrame(tick); };
+    requestAnimationFrame(tick);
+    $("w-race").innerHTML = `giorni a <b>${esc(next.name)}</b><br>${esc(next.city||"")} · ${DN(+next.distance_km)}`;
+  } else { $("w-days").textContent = "–"; $("w-race").textContent = "Nessuna gara in programma."; }
+  $("w-list").innerHTML = vicine.length
+    ? vicine.slice(0,5).map(e => { const d = new Date(e.event_date+"T12:00:00");
+        return `<div><b>${d.getDate()} ${d.toLocaleDateString("it-IT",{month:"short"})}</b> ${esc(e.name)}<br><span>${esc(e.city||"")} · ${DN(+e.distance_km)}</span></div>`; }).join("")
+    : `<span class="s">Nessuna gara nei prossimi 14 giorni${region?" in "+region:""}.</span>`;
+  const team = all.filter(e => e.featured).slice(0,4);
+  if (team.length) $("w-team").innerHTML = team.map(e => { const d = new Date(e.event_date+"T12:00:00");
+    return `<div><b>${d.getDate()} ${d.toLocaleDateString("it-IT",{month:"short"})}</b> ${esc(e.name)}<br><span>${esc(e.city||"")}</span></div>`; }).join("");
+})();
+function calc(){
+  const km = +$("c-d").value, s = (+$("c-h").value||0)*3600 + (+$("c-m").value||0)*60 + (+$("c-s").value||0);
+  if (s < 600){ $("preds").innerHTML = ""; return; }
+  const V = vdot(km*1000, s);
+  $("preds").innerHTML = [[5,"5 km"],[10,"10 km"],[21.0975,"Mezza"],[42.195,"Maratona"]].map(([d,l]) => { const t = predict(V, d*1000);
+    return `<div class="pred"><b>${fmtT(t)}</b><span>${l} · ${pace(t/d)}/km</span></div>`; }).join("");
+  $("c-more").href = `/strumenti?d=${km}&t=${s}`;
+}
+["c-d","c-h","c-m","c-s"].forEach(id => $(id).addEventListener("input", calc)); calc();
+$("r-send").onclick = async () => {
+  const m = $("r-msg"); m.textContent = "";
+  const row = { full_name:$("r-n").value.trim(), email:$("r-e").value.trim(), phone:$("r-p").value.trim()||null, city:$("r-c").value.trim()||null,
+    goal:$("r-g").value.trim()||null, weekly_km: $("r-k").value ? +$("r-k").value : null, message:$("r-m").value.trim()||null };
+  if (!row.full_name || !/^\S+@\S+\.\S+$/.test(row.email)){ m.className="msg err"; m.textContent="Inserisci nome e un'email valida."; return; }
+  if (!$("r-ok").checked){ m.className="msg err"; m.textContent="Serve il consenso per poterti ricontattare."; return; }
+  $("r-send").disabled = true;
+  const { error } = await sb.from("access_requests").insert(row);
+  $("r-send").disabled = false;
+  if (error){ m.className="msg err"; m.textContent="Invio non riuscito, riprova tra poco."; return; }
+  m.className="msg ok"; m.textContent="Richiesta inviata. Ti ricontatteremo a breve.";
+  ["r-n","r-e","r-p","r-c","r-g","r-k","r-m"].forEach(id => $(id).value = ""); $("r-ok").checked = false;
+};
+</script>
+</body>
+</html>

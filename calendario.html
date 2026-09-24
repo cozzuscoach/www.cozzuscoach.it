@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0A5C73">
+<meta name="description" content="Calendario delle gare di corsa su strada in Puglia e in Italia: mezze maratone, 10 km e 5 km certificate.">
+<title>Calendario gare · Cozzu's Coach</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<style>
+:root{--sea:#0A5C73;--sea-2:#0D7A96;--deep:#073F50;--foam:#DDF0F4;--ink:#15222A;--muted:#5B6B73;--bg:#EEF3F4;--paper:#fff;--line:#D8E2E5;--sun:#F2A93B;--cond:"Barlow Condensed","Arial Narrow",sans-serif;--body:"Barlow",system-ui,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--body);background:var(--bg);color:var(--ink);line-height:1.45;-webkit-tap-highlight-color:transparent}
+button,select{font:inherit;color:inherit}
+a{color:inherit}
+.top{background:var(--paper);border-bottom:1px solid var(--line);padding:calc(env(safe-area-inset-top,0px) + 12px) 18px 12px}
+.top div{max-width:760px;margin:0 auto;display:flex;justify-content:space-between;align-items:center}
+.brand{font:800 22px var(--cond);color:var(--sea);text-decoration:none}
+.nav{display:none;gap:18px;font-weight:600;font-size:15px}.nav a{text-decoration:none;color:var(--muted)}.nav a:hover{color:var(--sea)}@media(min-width:760px){.nav{display:flex}}
+.enter{font:700 16px var(--cond);color:#fff;background:var(--sea);padding:8px 14px;border-radius:10px;text-decoration:none}
+.hero{background:linear-gradient(rgba(7,63,80,.7),rgba(7,63,80,.88)),url("https://images.unsplash.com/photo-1759674861540-afed9f86f94a?auto=format&fit=crop&w=1800&q=60") center/cover;color:#fff;padding:34px 18px 30px}
+.hero div{max-width:760px;margin:0 auto}
+.hero h1{font:800 50px/0.95 var(--cond)}
+.hero p{opacity:.85;margin-top:10px;font-size:17px;max-width:520px}
+.wrap{max-width:760px;margin:0 auto;padding:18px 18px calc(env(safe-area-inset-bottom,0px) + 50px)}
+.filters{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:6px}
+.chip{padding:8px 14px;border:1px solid var(--line);border-radius:22px;background:var(--paper);font-weight:600;cursor:pointer}
+.chip[aria-pressed=true]{background:var(--sea);border-color:var(--sea);color:#fff}
+select{padding:9px 12px;border:1px solid var(--line);border-radius:12px;background:var(--paper);font-size:16px}
+.count{font-size:14px;color:var(--muted);margin:10px 0 0}
+h2{font:800 30px var(--cond);margin:26px 0 10px;text-transform:capitalize}
+.ev{display:grid;grid-template-columns:62px 1fr;gap:14px;background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:10px}
+.ev.feat{border-color:var(--sun);box-shadow:inset 4px 0 0 var(--sun)}
+.date{text-align:center;color:var(--sea)}
+.date b{display:block;font:800 32px/1 var(--cond)}
+.date span{font-size:13px;color:var(--muted);text-transform:capitalize}
+.date.tbd b{font-size:20px;color:var(--muted)}
+.name{font:700 21px/1.15 var(--cond)}
+.where{font-size:14px;color:var(--muted);margin-top:2px}
+.tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.tag{font-size:13px;font-weight:600;padding:3px 10px;border-radius:20px;background:var(--foam);color:var(--sea)}
+.tag.gold{background:#FCEBD0;color:#8A5510}
+.tag.grey{background:#EDEFF0;color:var(--muted)}
+.acts{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px;align-items:center}
+.prep{font:700 17px var(--cond);background:var(--sea);color:#fff;padding:9px 14px;border-radius:10px;text-decoration:none}
+.prep:hover{background:var(--sea-2)}
+.off{font-size:14px;font-weight:600;color:var(--sea)}
+.empty{color:var(--muted);padding:20px 0}
+footer{font-size:13px;color:var(--muted);margin-top:30px}
+@media (min-width:640px){.hero h1{font-size:64px}}
+</style>
+</head>
+<body>
+<header class="top"><div><a class="brand" href="/">Cozzu's Coach</a><nav class="nav"><a href="/consigli">Consigli</a><a href="/calendario">Calendario</a><a href="/strumenti">Strumenti</a><a href="/#metodo">Metodo</a><a href="/#team">Team</a></nav><a class="enter" href="/app/">Accedi</a></div></header>
+<section class="hero"><div>
+  <h1>Calendario gare</h1>
+  <p>Mezze maratone, 10 km e 5 km su strada. Scegli la tua prossima gara e preparala con un programma costruito su di te.</p>
+</div></section>
+
+<main class="wrap">
+  <div class="filters" id="f-dist"></div>
+  <div class="filters" style="margin-top:10px">
+    <select id="f-region" aria-label="Regione"><option value="">Tutta Italia</option></select>
+  </div>
+  <p class="count" id="count"></p>
+  <div id="list"><p class="empty">Carico le gare…</p></div>
+  <footer>Dati da calendari e certificazioni FIDAL. Date, orari e iscrizioni vanno sempre verificati sul sito ufficiale dell'organizzatore.</footer>
+</main>
+
+<script>
+const sb = supabase.createClient("https://pnoxjvssvtusjvbwpkkh.supabase.co","sb_publishable_ol7Ds9jbamCSwpNpGEPT9Q_ZZvxNHy3");
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const now = new Date(); now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+const TODAY = now.toISOString().slice(0,10), THIS_MONTH = TODAY.slice(0,7);
+const DISTS = [["","Tutte"],["5","5 km"],["10","10 km"],["21.1","Mezza"],["42.2","Maratona"]];
+const DNAME = km => ({5:"5 km",10:"10 km",21.1:"Mezza maratona",21.1:"Mezza maratona",42.2:"Maratona"})[Math.round(km*10)/10] || `${km} km`;
+let ALL = [], dist = "", region = localStorage.getItem("cc_region") ?? "Puglia";
+
+function key(e){ return e.event_date || (e.month_hint + "-99"); }
+function monthOf(e){ return (e.event_date || e.month_hint).slice(0,7); }
+
+async function load(){
+  const { data, error } = await sb.from("events").select("*")
+    .or(`event_date.gte.${TODAY},and(event_date.is.null,month_hint.gte.${THIS_MONTH})`);
+  if (error){ $("list").innerHTML = `<p class="empty">Calendario non disponibile al momento.</p>`; return; }
+  ALL = data.filter(e => e.date_confirmed && e.event_date).sort((a,b) => key(a).localeCompare(key(b)) || a.name.localeCompare(b.name));
+  const regions = [...new Set(ALL.map(e => e.region).filter(Boolean))].sort();
+  $("f-region").innerHTML = `<option value="">Tutta Italia</option>` + regions.map(r => `<option ${r===region?"selected":""}>${esc(r)}</option>`).join("");
+  if (region && !regions.includes(region)) region = "";
+  render();
+}
+
+function render(){
+  $("f-dist").innerHTML = DISTS.map(([v,l]) => `<button class="chip" data-d="${v}" aria-pressed="${v===dist}">${l}</button>`).join("");
+  $("f-dist").querySelectorAll(".chip").forEach(c => c.onclick = () => { dist = c.dataset.d; render(); });
+  const list = ALL.filter(e => (!dist || Math.abs(+e.distance_km - +dist) < 0.3) && (!region || e.region === region));
+  $("count").textContent = `${list.length} ${list.length===1?"gara":"gare"}${region?` in ${region}`:" in Italia"}`;
+  if (!list.length){ $("list").innerHTML = `<p class="empty">Nessuna gara con questi filtri. Prova a cambiare regione o distanza.</p>`; return; }
+  const groups = {};
+  list.forEach(e => (groups[monthOf(e)] = groups[monthOf(e)] || []).push(e));
+  $("list").innerHTML = Object.keys(groups).sort().map(m => {
+    const title = new Date(m + "-15T12:00:00").toLocaleDateString("it-IT", { month:"long", year:"numeric" });
+    return `<h2>${title}</h2>` + groups[m].map(card).join("");
+  }).join("");
+}
+
+function card(e){
+  const d = e.event_date ? new Date(e.event_date + "T12:00:00") : null;
+  const date = d
+    ? `<div class="date"><b>${d.getDate()}</b><span>${d.toLocaleDateString("it-IT",{weekday:"short"})}</span></div>`
+    : `<div class="date tbd"><b>–</b><span>da definire</span></div>`;
+  return `<article class="ev ${e.featured?"feat":""}">${date}<div>
+    <div class="name">${esc(e.name)}</div>
+    <div class="where">${esc(e.city||"")}${e.province?` (${esc(e.province)})`:""}${e.region?` · ${esc(e.region)}`:""}</div>
+    <div class="tags"><span class="tag">${DNAME(+e.distance_km)}</span>
+      ${e.fidal_label?`<span class="tag gold">Label ${esc(e.fidal_label)}</span>`:""}
+      ${e.featured?`<span class="tag gold">Ci sarà Cozzu's Team</span>`:""}
+      ${e.date_confirmed?"":`<span class="tag grey">Data da confermare</span>`}</div>
+    <div class="acts"><a class="prep" href="/app/?gara=${e.id}">Preparala con noi</a>
+      ${e.url?`<a class="off" href="${esc(e.url)}" target="_blank" rel="noopener">Sito ufficiale</a>`:""}</div>
+  </div></article>`;
+}
+
+$("f-region").onchange = e => { region = e.target.value; try{ localStorage.setItem("cc_region", region); }catch(_){} render(); };
+load();
+</script>
+</body>
+</html>
