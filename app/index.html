@@ -1873,7 +1873,7 @@ let ST_P = "w";
 
 function sparkline(points, fmt){
   const vals = points.filter(p => p.v != null);
-  if (vals.length < 2) return `<div class="empty">Servono almeno due rilevazioni.</div>`;
+  if (vals.length < 2) return `<div class="empty">Ancora pochi dati: servono almeno due rilevazioni nel periodo.</div>`;
   const W = 320, H = 100, pad = 8;
   const min = Math.min(...vals.map(p => p.v)), max = Math.max(...vals.map(p => p.v));
   const span = (max - min) || 1;
@@ -1913,7 +1913,7 @@ function renderStats(){
   const kmIn = b => W.filter(w => w.day >= b.from && w.day < b.to).reduce((t,w) => t + (+w.distance_km||0), 0);
   const vol = buckets.map(b => ({ ...b, km: kmIn(b) }));
   const cur = vol[vol.length-1], prev = vol[vol.length-2] || { km: 0 };
-  const media = vol.slice(0,-1).filter(v => v.km > 0);
+  const media = vol.filter(v => v.km > 0);
   const mediaKm = media.length ? media.reduce((t,v) => t+v.km, 0)/media.length : 0;
   const maxKm = Math.max(...vol.map(v => v.km), 1);
   const anno = W.filter(w => w.day >= TODAY.slice(0,4)+"-01-01").reduce((t,w) => t + (+w.distance_km||0), 0);
@@ -1939,7 +1939,17 @@ function renderStats(){
   const sogHr = sog.filter(w => w.avg_hr).length ? Math.round(sog.filter(w=>w.avg_hr).reduce((t,w)=>t+w.avg_hr,0)/sog.filter(w=>w.avg_hr).length) : null;
 
   // serie per i grafici, aggregate sul periodo scelto
-  const serie = (rows, key, val) => buckets.map(b => {
+  // i grafici usano una granularità più fine della vista scelta
+  const gb = [];
+  if (ST_P === "w"){ for (let i = 29; i >= 0; i--){ const d = addDays(TODAY, -i);
+      gb.push({ from: d, to: addDays(d,1), lbl: dayParts(d).n }); } }
+  else if (ST_P === "m"){ for (let i = 11; i >= 0; i--){ const mon = addDays(monday(TODAY), -7*i);
+      gb.push({ from: mon, to: addDays(mon,7), lbl: dayParts(mon).n }); } }
+  else { for (let i = 11; i >= 0; i--){ const d = dt(TODAY); d.setDate(1); d.setMonth(d.getMonth()-i);
+      const d2 = new Date(d); d2.setMonth(d2.getMonth()+1);
+      gb.push({ from: iso(d), to: iso(d2), lbl: d.toLocaleDateString("it-IT",{month:"narrow"}) }); } }
+  const granLbl = { w:"ultimi 30 giorni", m:"ultime 12 settimane", y:"ultimi 12 mesi" }[ST_P];
+  const serie = (rows, key, val) => gb.map(b => {
     const v = rows.filter(r => r[key] >= b.from && r[key] < b.to).map(val).filter(x => x != null);
     return { lbl: b.lbl, v: v.length ? Math.round(v.reduce((a,c)=>a+c,0)/v.length) : null };
   });
@@ -1953,6 +1963,7 @@ function renderStats(){
   const ultimo = s => { const v = s.filter(x => x.v != null); return v.length ? v[v.length-1].v : null; };
   const chart = (titolo, s, fmt, nota) => `<div class="card chartbox">
       <div class="hd"><b>${titolo}</b><span>${ultimo(s) != null ? "ultimo: " + fmt(ultimo(s)) : ""}</span></div>
+      <div class="sub" style="margin-bottom:4px">${granLbl}</div>
       ${sparkline(s, fmt)}${nota?`<div class="hint">${nota}</div>`:""}</div>`;
   const n0 = v => String(v), hhmm = v => Math.floor(v/60)+"h"+String(v%60).padStart(2,"0");
 
@@ -1964,9 +1975,9 @@ function renderStats(){
     <h2>Volumi</h2>
     <div class="kpi">
       <div class="box"><b>${cur.km.toFixed(0)}</b><span>km ${etichetta} ${delta(cur.km, prev.km, true)} sul${ST_P==="w"?"la":""} ${etichettaPrec}</span></div>
-      <div class="box"><b>${mediaKm.toFixed(0)}</b><span>media per ${ST_P==="w"?"settimana":ST_P==="m"?"mese":"anno"}</span></div>
+      <div class="box"><b>${mediaKm.toFixed(0)}</b><span>media per ${ST_P==="w"?"settimana":ST_P==="m"?"mese":"anno"}, sui periodi con attività</span></div>
     </div>
-    <div class="card bars-wrap" style="margin-top:14px"><div class="sub">Ultim${ST_P==="y"?"i":"e"} ${P.n} ${P.lbl}</div>
+    <div class="card bars-wrap" style="margin-top:14px"><div class="sub">Ultim${ST_P==="y"?"i":"e"} ${P.n} ${P.lbl}${ST_P==="y"?" solari (1 gennaio - 31 dicembre)":""}</div>
       <div class="bars">${vol.map((v,i) => `<div class="${i===vol.length-1?"now":""}" style="height:${Math.max(3, v.km/maxKm*100)}%" title="${v.km.toFixed(1)} km"><span>${v.lbl}</span></div>`).join("")}</div></div>
 
     ${V ? `<h2>La tua forma</h2>
