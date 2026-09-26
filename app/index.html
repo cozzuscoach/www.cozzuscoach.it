@@ -603,12 +603,13 @@ function sheetWorkout(ds){
     const [h,m,x] = hms(b.duration_s);
     return `<div class="blk ${PHASE_CLS[b.phase]||""}" data-i="${i}">
       <div class="bh"><b>${PHASE_LBL[b.phase]||b.phase}</b><button type="button" data-del="${i}">Togli</button></div>
-      <div class="field"><input data-f="label" placeholder="Cosa hai fatto: es. 5 × 1000 m a 3'20&quot;" value="${esc(b.label)}"></div>
+      ${b.phase === "lavoro" || b.phase === "altro" ? `<div class="field"><input data-f="label" placeholder="Cosa hai fatto: es. 5 × 1000 m a 3'20&quot;" value="${esc(b.label)}"></div>` : ""}
       <div class="g2">
         <div class="field"><label>Distanza (km)</label><input data-f="distance_km" type="number" step="0.01" inputmode="decimal" value="${b.distance_km??""}"></div>
         <div class="field"><label>FC media</label><input data-f="avg_hr" type="number" inputmode="numeric" value="${b.avg_hr??""}"></div>
       </div>
       <label>Durata</label><div class="g3"><input data-f="h" type="number" placeholder="ore" inputmode="numeric" value="${h||""}"><input data-f="m" type="number" placeholder="min" inputmode="numeric" value="${b.duration_s?m:""}"><input data-f="s" type="number" placeholder="sec" inputmode="numeric" value="${b.duration_s?x:""}"></div>
+      ${b.distance_km && b.duration_s ? `<div class="hint" style="margin-top:6px">Passo: <b>${pace(b.duration_s / b.distance_km)}/km</b></div>` : ""}
     </div>`;
   };
   const read = () => {
@@ -639,11 +640,12 @@ function sheetWorkout(ds){
     <div class="sportrow" id="w-sport">${SPORTS.map(([v,l])=>`<button type="button" data-v="${v}" aria-pressed="${sport===v}">${l}</button>`).join("")}</div>
     <div class="g2"><div class="field"><label for="w-day">Giorno</label><input id="w-day" type="date" value="${ex?ex.day:TODAY}" max="${TODAY}"></div>
     <div class="field"><label for="w-no">Allenamento del giorno</label><select id="w-no"><option value="1" ${ex?.session_no!==2?"selected":""}>Primo</option><option value="2" ${ex?.session_no===2?"selected":""}>Secondo</option></select></div></div>
-    <div class="field" id="w-type-f"><label for="w-type">Tipo di seduta</label><select id="w-type">${Object.entries(TYPES).filter(([k])=>k!=="riposo").map(([k,v])=>`<option value="${k}" ${(ex?ex.type:ses?.type)===k?"selected":""}>${v}</option>`).join("")}</select></div>
+    <div class="field" id="w-type-f"><label for="w-type">Tipo di seduta (che cosa allenavi)</label><select id="w-type">${Object.entries(TYPES).filter(([k])=>k!=="riposo").map(([k,v])=>`<option value="${k}" ${(ex?ex.type:ses?.type)===k?"selected":""}>${v}</option>`).join("")}</select></div>
     <div id="w-blocks"></div>
-    <div class="selects" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
-      <select id="w-addphase">${PHASES_W.map(([v,l])=>`<option value="${v}">${l}</option>`).join("")}</select>
-      <button class="btn soft" id="w-add" style="padding:10px 14px">+ Aggiungi fase</button></div>
+    <div class="field"><label for="w-addphase">Aggiungi un'altra fase</label>
+      <div style="display:flex;gap:8px"><select id="w-addphase" style="flex:1">${PHASES_W.map(([v,l])=>`<option value="${v}">${l}</option>`).join("")}</select>
+      <button class="btn soft" id="w-add" style="padding:10px 16px;white-space:nowrap">Aggiungi</button></div>
+      <div class="hint">Per esempio un secondo blocco di lavoro, o un tratto di corsa lenta in mezzo.</div></div>
     <div class="tot" id="w-tot"></div>
     <div class="field"><label>Fatica percepita (RPE) di tutta la seduta</label>${scale("w-rpe",10,ex?.rpe)}<div class="hint">1 = passeggiata, 10 = massimo sforzo</div></div>
     <div class="field"><label for="w-notes">Com'è andata?</label><textarea id="w-notes" rows="3" placeholder="Sensazioni, fastidi, condizioni">${esc(ex?.notes)}</textarea></div>
