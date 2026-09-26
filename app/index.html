@@ -174,7 +174,7 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid #
 .blk{border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px;background:#FBFDFD}
 .blk .bh{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
 .blk .bh b{font:700 17px var(--cond);letter-spacing:.3px}
-.blk .bh button{color:var(--warn);font-size:14px}
+.blk .bh button{color:var(--warn);font-size:15px;font-weight:600;padding:8px 12px;margin:-8px -8px -8px 0;min-height:44px}
 .phase-ris{border-left:5px solid var(--sea-2)} .phase-lav{border-left:5px solid var(--sun)}
 .phase-def{border-left:5px solid var(--ok)} .phase-alt{border-left:5px solid var(--line)}
 .tot{background:var(--foam);border-radius:12px;padding:10px 12px;font-size:15px;margin:10px 0}
@@ -648,7 +648,7 @@ function sheetWorkout(ds){
         <div class="field"><label>FC media</label><input data-f="avg_hr" type="number" inputmode="numeric" value="${b.avg_hr??""}"></div>
       </div>
       <label>Durata</label><div class="g3"><input data-f="h" type="number" placeholder="ore" inputmode="numeric" value="${h||""}"><input data-f="m" type="number" placeholder="min" inputmode="numeric" value="${b.duration_s?m:""}"><input data-f="s" type="number" placeholder="sec" inputmode="numeric" value="${b.duration_s?x:""}"></div>
-      ${b.distance_km && b.duration_s ? `<div class="hint" style="margin-top:6px">Passo: <b>${pace(b.duration_s / b.distance_km)}/km</b></div>` : ""}
+      <div class="hint blkpace" style="margin-top:6px">${b.distance_km && b.duration_s ? `Passo: <b>${pace(b.duration_s / b.distance_km)}/km</b>` : ""}</div>
     </div>`;
   };
   const read = () => {
@@ -667,12 +667,21 @@ function sheetWorkout(ds){
     const lkm = lav.reduce((t,b) => t + +b.distance_km, 0), lsec = lav.reduce((t,b) => t + +b.duration_s, 0);
     return { km, sec, pace: km && sec ? sec/km : null, work: lkm && lsec ? lsec/lkm : null };
   };
-  const paint = () => {
-    $("w-blocks").innerHTML = blocks.map(blockHtml).join("");
+  const paintTot = () => {
     const t = totals();
     $("w-tot").innerHTML = `Totale: <b>${t.km ? t.km.toFixed(1) : "–"} km</b> · <b>${t.sec ? dur(t.sec) : "–"}</b>${t.pace?` · <b>${pace(t.pace)}/km</b>`:""}${t.work?` · lavoro <b>${pace(t.work)}/km</b>`:""}`;
-    $("w-blocks").querySelectorAll("[data-del]").forEach(b => b.onclick = () => { read(); blocks.splice(+b.dataset.del,1); paint(); });
-    $("w-blocks").querySelectorAll("input").forEach(inp => inp.onchange = () => { read(); paint(); });
+    document.querySelectorAll("#w-blocks .blk").forEach(el => {
+      const b = blocks[+el.dataset.i], p = el.querySelector(".blkpace");
+      if (p) p.innerHTML = b && b.distance_km && b.duration_s ? `Passo: <b>${pace(b.duration_s / b.distance_km)}/km</b>` : "";
+    });
+  };
+  const paint = () => {
+    $("w-blocks").innerHTML = blocks.map(blockHtml).join("");
+    paintTot();
+    // il tocco su "Togli" viene registrato prima che il campo perda il fuoco
+    $("w-blocks").querySelectorAll("[data-del]").forEach(b => b.addEventListener("pointerdown", ev => {
+      ev.preventDefault(); read(); blocks.splice(+b.dataset.del,1); paint(); }));
+    $("w-blocks").querySelectorAll("input").forEach(inp => inp.oninput = () => { read(); paintTot(); });
   };
 
   openSheet(`<h3>${ex?"Modifica allenamento":"Allenamento"}</h3>
@@ -1655,7 +1664,12 @@ const VAPID_PUBLIC = "BPrLEqfKVRLESWY_D4jQPpK9f-ROW-jy2HSvWRd5444fiVLoEnpCrca63B
 const b64u = s => { const p = "=".repeat((4 - s.length % 4) % 4); const r = atob((s + p).replace(/-/g,"+").replace(/_/g,"/")); return Uint8Array.from([...r].map(c => c.charCodeAt(0))); };
 const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
 const standalone = window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
-if ("serviceWorker" in navigator) navigator.serviceWorker.register("/app/sw.js", { scope: "/app/" }).catch(() => {});
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("/app/sw.js", { scope: "/app/" })
+  .then(reg => { reg.update();
+    // se arriva una versione nuova mentre l'app è aperta, si aggiorna al prossimo avvio
+    reg.addEventListener("updatefound", () => { const w = reg.installing;
+      if (w) w.addEventListener("statechange", () => { if (w.state === "installed" && navigator.serviceWorker.controller) location.reload(); }); });
+  }).catch(() => {});
 async function renderPush(){
   const box = $("push-box"); if (!box) return;
   const supported = "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
