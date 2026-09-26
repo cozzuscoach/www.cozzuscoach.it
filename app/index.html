@@ -367,7 +367,7 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid #
 <div id="sheet-root"></div>
 
 <script>
-const APP_VERSION = "2026-09-26 · 4";
+const APP_VERSION = "2026-09-26 · 5";
 const sb = supabase.createClient("https://pnoxjvssvtusjvbwpkkh.supabase.co","sb_publishable_ol7Ds9jbamCSwpNpGEPT9Q_ZZvxNHy3");
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -655,7 +655,7 @@ function sheetWorkout(ds){
   };
   const read = () => {
     document.querySelectorAll("#w-blocks .blk").forEach(el => {
-      const i = +el.dataset.i, g = f => el.querySelector(`[data-f="${f}"]`).value;
+      const i = +el.dataset.i, g = f => { const n = el.querySelector(`[data-f="${f}"]`); return n ? n.value : ""; };
       const secs = (+g("h")||0)*3600 + (+g("m")||0)*60 + (+g("s")||0);
       blocks[i] = { ...blocks[i], label: g("label").trim() || null,
         distance_km: g("distance_km") === "" ? null : +g("distance_km"),
