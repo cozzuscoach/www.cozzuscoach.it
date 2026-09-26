@@ -313,6 +313,7 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid #
       <div class="card" id="push-box"></div>
       <button class="btn soft full" id="btn-pwd">Cambia password</button>
       <button class="btn full" id="logout" style="color:var(--warn)">Esci</button>
+      <p class="hint" style="text-align:center;margin-top:10px">Versione app <span id="app-ver"></span></p>
     </section>
   </div>
 
@@ -366,6 +367,7 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid #
 <div id="sheet-root"></div>
 
 <script>
+const APP_VERSION = "2026-09-26 · 4";
 const sb = supabase.createClient("https://pnoxjvssvtusjvbwpkkh.supabase.co","sb_publishable_ol7Ds9jbamCSwpNpGEPT9Q_ZZvxNHy3");
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -1787,6 +1789,7 @@ async function renderMeActions(){
   $("req-state").className = "msg";
   $("req-state").textContent = data && data.length ? "Hai già una richiesta in attesa: il coach ti risponderà a breve." : "";
 }
+$("app-ver").textContent = APP_VERSION;
 $("btn-dati").onclick = () => sheetDati();
 $("btn-req").onclick = () => sheetRichiesta();
 
