@@ -131,7 +131,8 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid #
 
 /* TAB BAR */
 .tabs{position:fixed;left:0;right:0;bottom:0;z-index:10;background:rgba(255,255,255,.96);backdrop-filter:blur(8px);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
-.tabs nav{max-width:560px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr);height:var(--tabh)}
+.tabs nav{max-width:560px;margin:0 auto;display:grid;grid-template-columns:repeat(5,1fr);height:var(--tabh)}
+.tabs button{font-size:11px}
 .tabs button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:12px;font-weight:600;color:var(--muted)}
 .tabs button svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .tabs button[aria-current=page]{color:var(--sea)}
@@ -146,6 +147,21 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid #
 .athlete strong{font:700 22px var(--cond)}
 .athlete .when{font-size:14px;color:var(--muted)}
 .athlete .when.good{color:var(--ok)}
+.kpi{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:12px}
+.kpi .box{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:14px}
+.kpi .box b{display:block;font:800 30px/1 var(--cond);color:var(--sea)}
+.kpi .box span{font-size:13px;color:var(--muted)}
+.kpi .box i{font-style:normal;font-size:13px;font-weight:600}
+.up-good{color:var(--ok)} .down-bad{color:var(--warn)}
+.bars{display:flex;align-items:flex-end;gap:4px;height:120px;margin-top:14px}
+.bars div{flex:1;background:var(--foam);border-radius:4px 4px 0 0;position:relative;min-height:3px}
+.bars div.now{background:var(--sea)}
+.bars div span{position:absolute;bottom:-18px;left:0;right:0;text-align:center;font-size:10px;color:var(--muted)}
+.bars-wrap{padding-bottom:22px}
+.pred{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:10px}
+.pred div{background:var(--bg);border-radius:12px;padding:10px}
+.pred b{display:block;font:800 24px/1 var(--cond)}
+.pred span{font-size:13px;color:var(--muted)}
 .blk{border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px;background:#FBFDFD}
 .blk .bh{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
 .blk .bh b{font:700 17px var(--cond);letter-spacing:.3px}
@@ -260,6 +276,14 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid #
       <div class="card" id="diary-list"></div>
     </section>
 
+    <!-- ANDAMENTO -->
+    <section id="t-stats" class="hidden">
+      <h1>Andamento</h1>
+      <p class="lead" id="st-lead"></p>
+      <div id="st-body"></div>
+      <p class="hint" style="margin-top:18px">Stime calcolate con formule pubbliche (VDOT di Daniels e riserva cardiaca) sui dati che inserisci: servono a seguire l'andamento nel tempo, non sostituiscono un test sul campo o in laboratorio.</p>
+    </section>
+
     <!-- PROFILO -->
     <section id="t-me" class="hidden">
       <h1 id="me-name"></h1>
@@ -281,7 +305,8 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid #
   <div class="tabs"><nav>
     <button data-tab="home" aria-current="page"><svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Oggi</button>
     <button data-tab="plan"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Programma</button>
-    <button data-tab="diary"><svg viewBox="0 0 24 24"><path d="M3 17l5-5 4 4 8-8"/><path d="M15 8h5v5"/></svg>Diario</button>
+    <button data-tab="diary"><svg viewBox="0 0 24 24"><path d="M4 19h16"/><rect x="5" y="11" width="3" height="7"/><rect x="10.5" y="7" width="3" height="11"/><rect x="16" y="13" width="3" height="5"/></svg>Diario</button>
+    <button data-tab="stats"><svg viewBox="0 0 24 24"><path d="M3 17l5-5 4 4 8-8"/><path d="M15 8h5v5"/></svg>Andamento</button>
     <button data-tab="me"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/></svg>Profilo</button>
   </nav></div>
 </div>
@@ -394,7 +419,7 @@ async function loadAthlete(){
   $("hello").textContent = "Ciao " + (me.full_name||"").split(" ")[0];
   $("me-name").textContent = me.full_name;
   S = await fetchAthlete(me.id);
-  renderHome(); renderPlan(); renderDiary(S, $("diary-list"), true); renderRaces(); renderMe(); renderPush(); renderMeActions();
+  renderHome(); renderPlan(); renderDiary(S, $("diary-list"), true); renderRaces(); renderMe(); renderStats(); renderPush(); renderMeActions();
   // arriva dal calendario con una gara scelta: diventa una richiesta al coach
   const g = pendingGara();
   if (g){ clearGara(); await loadEvents(); const e = EVENTS.find(x => x.id == g);
@@ -557,7 +582,7 @@ function renderRaces(){
 document.querySelectorAll("[data-tab]").forEach(b => b.onclick = () => {
   document.querySelectorAll("[data-tab]").forEach(x => x.removeAttribute("aria-current"));
   b.setAttribute("aria-current","page");
-  ["home","plan","diary","me"].forEach(t => $("t-"+t).classList.toggle("hidden", t!==b.dataset.tab));
+  ["home","plan","diary","stats","me"].forEach(t => $("t-"+t).classList.toggle("hidden", t!==b.dataset.tab));
   window.scrollTo(0,0);
 });
 
@@ -1825,6 +1850,108 @@ async function renderPlanRequests(){
     await sb.from("plan_requests").update({ status:"rifiutata", handled_at:new Date().toISOString() }).eq("id", b.dataset.rqno);
     renderPlanRequests();
   });
+}
+
+
+/* ---------- ANDAMENTO ---------- */
+const monday = d => addDays(d, -((dt(d).getDay()+6)%7));
+function renderStats(){
+  const box = $("st-body"), W = S.workouts.filter(w => w.sport === "corsa" || !w.sport);
+  if (!W.length && !S.checkins.length){ $("st-lead").textContent = ""; box.innerHTML = `<div class="card"><div class="empty">Registra i primi allenamenti: qui vedrai volumi, stime e andamento nel tempo.</div></div>`; return; }
+  const m0 = monday(TODAY);
+  const weeks = Array.from({length:12}, (_,i) => { const mon = addDays(m0, -7*(11-i));
+    const km = W.filter(w => w.day >= mon && w.day < addDays(mon,7)).reduce((t,w) => t + (+w.distance_km||0), 0);
+    return { mon, km }; });
+  const thisW = weeks[11].km, lastW = weeks[10].km;
+  const avg4 = weeks.slice(7,11).reduce((t,w) => t+w.km, 0) / 4;
+  const mese = W.filter(w => w.day >= TODAY.slice(0,8)+"01").reduce((t,w) => t + (+w.distance_km||0), 0);
+  const anno = W.filter(w => w.day >= TODAY.slice(0,4)+"-01-01").reduce((t,w) => t + (+w.distance_km||0), 0);
+  const maxKm = Math.max(...weeks.map(w => w.km), 1);
+  $("st-lead").textContent = `${W.length} allenamenti registrati · ${Math.round(anno)} km quest'anno`;
+
+  // stima forma dai risultati registrati (gare e test) o dai personal best
+  const vo2 = v => -4.6 + 0.182258*v + 0.000104*v*v;
+  const pct = t => 0.8 + 0.1894393*Math.exp(-0.012778*t) + 0.2989558*Math.exp(-0.1932605*t);
+  const vdot = (dm, ts) => vo2(dm/(ts/60)) / pct(ts/60);
+  const vFor = o => { const a=0.000104,b=0.182258,c=-4.6-o; return (-b + Math.sqrt(b*b-4*a*c))/(2*a); };
+  const predict = (V, dm) => { let lo=dm/600*60, hi=dm/40*60; for(let i=0;i<70;i++){ const m=(lo+hi)/2; vdot(dm,m)>V?lo=m:hi=m; } return (lo+hi)/2; };
+  let V = null, fonte = "";
+  const prove = W.filter(w => ["gara","test"].includes(w.type) && w.distance_km >= 3 && w.duration_s)
+                 .sort((a,b) => b.day.localeCompare(a.day));
+  if (prove.length){ const p = prove[0]; V = vdot(p.distance_km*1000, p.duration_s);
+    fonte = `dal tuo ${p.type === "gara" ? "ultimo risultato in gara" : "ultimo test"} del ${dayParts(p.day).n} ${dayParts(p.day).m}`; }
+  else if (me.pbs?.length){ const best = me.pbs.filter(x => x.km && x.s).map(x => vdot(x.km*1000, x.s)).sort((a,b)=>b-a)[0];
+    if (best){ V = best; fonte = "dai tempi che hai dichiarato"; } }
+
+  // soglia reale dalle sedute di soglia
+  const sog = W.filter(w => w.type === "soglia" && (w.work_pace_s || w.avg_pace_s) && w.day >= addDays(TODAY,-60));
+  const sogPace = sog.length ? Math.round(sog.reduce((t,w) => t + (w.work_pace_s||w.avg_pace_s), 0) / sog.length) : null;
+  const sogHr = sog.filter(w => w.avg_hr).length ? Math.round(sog.filter(w=>w.avg_hr).reduce((t,w)=>t+w.avg_hr,0)/sog.filter(w=>w.avg_hr).length) : null;
+
+  // efficienza: FC media nei lenti a parità di passo
+  const lenti = W.filter(w => ["lento","recupero"].includes(w.type) && w.avg_hr && w.avg_pace_s);
+  const eff = arr => arr.length ? Math.round(arr.reduce((t,w) => t + w.avg_hr, 0)/arr.length) : null;
+  const effNow = eff(lenti.filter(w => w.day >= addDays(TODAY,-21)));
+  const effOld = eff(lenti.filter(w => w.day < addDays(TODAY,-21) && w.day >= addDays(TODAY,-60)));
+
+  // recupero
+  const avgOf = (arr, k) => { const v = arr.map(c => c[k]).filter(Boolean); return v.length ? Math.round(v.reduce((a,b)=>a+b,0)/v.length) : null; };
+  const c7 = S.checkins.filter(c => c.day >= addDays(TODAY,-7));
+  const c30 = S.checkins.filter(c => c.day < addDays(TODAY,-7) && c.day >= addDays(TODAY,-28));
+  const rhr7 = avgOf(c7,"rhr_bpm"), rhr30 = avgOf(c30,"rhr_bpm");
+  const hrv7 = avgOf(c7,"hrv_ms"), hrv30 = avgOf(c30,"hrv_ms");
+  const sl7 = avgOf(c7,"sleep_min");
+
+  // costanza
+  const giorni30 = new Set(W.filter(w => w.day >= addDays(TODAY,-30)).map(w => w.day)).size;
+
+  const delta = (now, old, buonoSeSale) => { if (now == null || old == null) return "";
+    const d = now - old; if (!d) return `<i>stabile</i>`;
+    const good = buonoSeSale ? d > 0 : d < 0;
+    return `<i class="${good?"up-good":"down-bad"}">${d > 0 ? "+" : ""}${d}</i>`; };
+
+  box.innerHTML = `
+    <h2>Volumi</h2>
+    <div class="kpi">
+      <div class="box"><b>${thisW.toFixed(0)}</b><span>km questa settimana ${delta(Math.round(thisW), Math.round(lastW), true)}</span></div>
+      <div class="box"><b>${avg4.toFixed(0)}</b><span>media delle ultime 4 settimane</span></div>
+      <div class="box"><b>${mese.toFixed(0)}</b><span>km questo mese</span></div>
+      <div class="box"><b>${anno.toFixed(0)}</b><span>km dall'inizio dell'anno</span></div>
+    </div>
+    <div class="card bars-wrap" style="margin-top:14px"><div class="sub">Ultime 12 settimane</div>
+      <div class="bars">${weeks.map((w,i) => `<div class="${i===11?"now":""}" style="height:${Math.max(3, w.km/maxKm*100)}%" title="${w.km.toFixed(1)} km"><span>${i%2?"":dayParts(w.mon).n}</span></div>`).join("")}</div></div>
+
+    ${V ? `<h2>La tua forma</h2>
+    <div class="card"><div class="sub">Stimata ${fonte}</div>
+      <div style="font:800 46px/1 var(--cond);color:var(--sea);margin:6px 0">VDOT ${V.toFixed(1)}</div>
+      <div class="sub">Tempi che potresti fare oggi, se allenato su quella distanza:</div>
+      <div class="pred">${[[5,"5 km"],[10,"10 km"],[21.0975,"Mezza"],[42.195,"Maratona"]].map(([d,l]) => {
+        const t = predict(V, d*1000);
+        return `<div><b>${fmtT(t)}</b><span>${l} · ${pace(t/d)}/km</span></div>`; }).join("")}</div></div>` : ""}
+
+    <h2>Soglia</h2>
+    <div class="card">
+      ${sogPace ? `<div class="sub">Media delle tue ${sog.length} sedute in soglia degli ultimi 60 giorni</div>
+        <div style="font:800 40px/1 var(--cond);color:var(--sea);margin:6px 0">${pace(sogPace)}<span style="font-size:20px">/km</span></div>
+        ${sogHr ? `<div class="sub">FC media ${sogHr}${S.zones?.T?` · zona teorica ${S.zones.T.hr_min}-${S.zones.T.hr_max}`:""}</div>` : ""}
+        ${S.zones?.T ? `<div class="sub">Ritmo di riferimento del programma: ${pace(S.zones.T.pace_min_s)}–${pace(S.zones.T.pace_max_s)}/km</div>` : ""}`
+        : `<div class="empty">Registra qualche seduta di soglia: qui comparirà il ritmo medio reale, da confrontare con quello teorico.</div>`}
+    </div>
+
+    <h2>Efficienza e recupero</h2>
+    <div class="kpi">
+      <div class="box"><b>${effNow ?? "–"}</b><span>FC media nei lenti, ultime 3 settimane ${delta(effNow, effOld, false)}</span></div>
+      <div class="box"><b>${rhr7 ?? "–"}</b><span>FC a riposo, media 7 giorni ${delta(rhr7, rhr30, false)}</span></div>
+      <div class="box"><b>${hrv7 ?? "–"}</b><span>HRV, media 7 giorni ${delta(hrv7, hrv30, true)}</span></div>
+      <div class="box"><b>${sl7 ? Math.floor(sl7/60)+"h"+String(sl7%60).padStart(2,"0") : "–"}</b><span>sonno, media 7 giorni</span></div>
+    </div>
+    <p class="hint" style="margin-top:8px">Nei lenti una FC più bassa a parità di ritmo è il segnale più chiaro di miglioramento aerobico.</p>
+
+    <h2>Costanza</h2>
+    <div class="kpi">
+      <div class="box"><b>${giorni30}</b><span>giorni con allenamento negli ultimi 30</span></div>
+      <div class="box"><b>${S.checkins.filter(c => c.day >= addDays(TODAY,-30)).length}</b><span>check-in del mattino negli ultimi 30 giorni</span></div>
+    </div>`;
 }
 
 route();
