@@ -146,6 +146,19 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid #
 .athlete strong{font:700 22px var(--cond)}
 .athlete .when{font-size:14px;color:var(--muted)}
 .athlete .when.good{color:var(--ok)}
+.blk{border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px;background:#FBFDFD}
+.blk .bh{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.blk .bh b{font:700 17px var(--cond);letter-spacing:.3px}
+.blk .bh button{color:var(--warn);font-size:14px}
+.phase-ris{border-left:5px solid var(--sea-2)} .phase-lav{border-left:5px solid var(--sun)}
+.phase-def{border-left:5px solid var(--ok)} .phase-alt{border-left:5px solid var(--line)}
+.tot{background:var(--foam);border-radius:12px;padding:10px 12px;font-size:15px;margin:10px 0}
+.tot b{font:700 18px var(--cond)}
+.sportrow{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.sportrow button{flex:1;min-width:76px;padding:9px 6px;border:1px solid var(--line);border-radius:12px;background:#FBFDFD;font-weight:600;font-size:14px}
+.sportrow button[aria-pressed=true]{background:var(--sea);border-color:var(--sea);color:#fff}
+.phases{font-size:14px;color:var(--muted);margin-top:6px}
+.phases span{display:inline-block;margin-right:10px}
 .coachnote{background:#FFF6E6;border:1px solid #F4D9A8;border-radius:16px;padding:14px 16px;margin-top:14px}
 .coachnote b{font:700 15px var(--cond);letter-spacing:1px;text-transform:uppercase;color:#8A5510;display:block;margin-bottom:4px}
 .coachnote p{white-space:pre-line}
@@ -365,11 +378,13 @@ async function fetchAthlete(id){
     sb.from("zones").select("*").eq("athlete_id",id).order("valid_from",{ascending:false})
   ]);
   const { data: extra } = await sb.from("daily_checkins").select("*").eq("athlete_id",id).gte("day",from);
+  const { data: blocks } = await sb.from("workout_blocks").select("*").eq("athlete_id",id).order("ord");
   const { data: plan } = await sb.from("plans").select("*").eq("athlete_id",id).order("created_at",{ascending:false}).limit(1).maybeSingle();
   const ex = Object.fromEntries((extra||[]).map(e => [e.day,e]));
   const zmap = {}; (zones.data||[]).forEach(z => { if(!zmap[z.code]) zmap[z.code]=z; });
   return {
-    races: races.data||[], sessions: sessions.data||[], workouts: workouts.data||[],
+    races: races.data||[], sessions: sessions.data||[],
+    workouts: (workouts.data||[]).map(w => ({ ...w, blocks: (blocks||[]).filter(b => b.workout_id === w.id) })),
     checkins: (checkins.data||[]).map(c => ({...ex[c.day], ...c})), zones: zmap, plan
   };
 }
@@ -512,14 +527,16 @@ function renderDiary(D, box, own){
     const hrvLow = c?.hrv_ms && c?.hrv_avg7 && c.hrv_ms < c.hrv_avg7*0.85;
     const rhrHigh = c?.rhr_bpm && c?.rhr_avg7 && c.rhr_bpm >= c.rhr_avg7+5;
     return `<div class="dentry">
-      <div class="dh"><b>${p.W} ${p.n} ${p.m}</b><span>${ws.map(w=>TYPES[w.type]||"Corsa").join(" + ")}</span></div>
+      <div class="dh"><b>${p.W} ${p.n} ${p.m}</b><span>${ws.map(w=>SPORT_LBL[w.sport]||TYPES[w.type]||"Corsa").join(" + ")}</span></div>
       ${own?`<div class="hint">Tocca una riga per correggerla</div>`:""}
       ${ws.map(w => `<div class="metrics" ${own?`data-open="workout" data-edit="${w.id}" style="cursor:pointer"`:""}>
         <div class="metric"><div class="v">${w.distance_km??"–"}</div><div class="k">km</div></div>
         <div class="metric"><div class="v">${dur(w.duration_s)}</div><div class="k">tempo</div></div>
         <div class="metric"><div class="v">${w.distance_km&&w.duration_s?pace(w.duration_s/w.distance_km):"–"}</div><div class="k">/km</div></div>
         <div class="metric"><div class="v">${w.avg_hr??"–"}</div><div class="k">FC · RPE ${w.rpe}</div></div>
-      </div>${w.notes && (own||!w.notes_private)?`<div class="note">${esc(w.notes)}</div>`:""}`).join("")}
+      </div>
+      ${w.blocks?.length?`<div class="phases">${w.blocks.map(b => `<span><b>${PHASE_LBL[b.phase]||b.phase}</b> ${b.label?esc(b.label)+" · ":""}${b.distance_km?b.distance_km+" km":""}${b.duration_s?" "+dur(b.duration_s):""}${b.avg_hr?" · FC "+b.avg_hr:""}</span>`).join("")}</div>`:""}
+      ${w.notes && (own||!w.notes_private)?`<div class="note">${esc(w.notes)}</div>`:""}`).join("")}
       ${c ? `<div class="morning" ${own?`data-open="morning" data-day="${c.day}" style="cursor:pointer"`:""}>Mattino: HRV <b class="${hrvLow?"flag":""}">${c.hrv_ms??"–"}</b> · FC <b class="${rhrHigh?"flag":""}">${c.rhr_bpm??"–"}</b> · sonno <b>${sleep(c.sleep_min)}</b>${c.legs_feel?` · gambe <b>${c.legs_feel}/5</b>`:""}</div>
         ${c.notes && (own||!c.notes_private)?`<div class="note">${esc(c.notes)}</div>`:""}` : ""}
     </div>`;
@@ -567,36 +584,109 @@ async function save(btn, promise, okText){
   closeSheet(); await loadAthlete(); return true;
 }
 
+const SPORTS = [["corsa","Corsa"],["palestra","Palestra"],["bici","Bici"],["nuoto","Nuoto"],["altro","Altro"]];
+const SPORT_LBL = Object.fromEntries(SPORTS);
+const PHASES_W = [["riscaldamento","Riscaldamento"],["lavoro","Lavoro"],["defaticamento","Defaticamento"],["altro","Altro"]];
+const PHASE_LBL = Object.fromEntries(PHASES_W);
+const PHASE_CLS = { riscaldamento:"phase-ris", lavoro:"phase-lav", defaticamento:"phase-def", altro:"phase-alt" };
+
 function sheetWorkout(ds){
   const ex = ds.edit ? S.workouts.find(w => w.id == ds.edit) : null;
-  const ses = ds.session ? S.sessions.find(s=>s.id==ds.session) : S.sessions.find(s=>s.session_date===TODAY);
-  const [wh,wm,ws] = ex ? hms(ex.duration_s) : ["","",""];
+  const ses = ds.session ? S.sessions.find(x=>x.id==ds.session) : S.sessions.find(x=>x.session_date===TODAY);
+  let sport = ex?.sport || "corsa";
+  let blocks = ex?.blocks?.length ? ex.blocks.map(b => ({...b}))
+    : (ex ? [{ phase:"lavoro", label:null, distance_km: ex.distance_km, duration_s: ex.duration_s, avg_hr: ex.avg_hr, rpe: ex.rpe }]
+          : [{ phase:"riscaldamento" }, { phase:"lavoro" }, { phase:"defaticamento" }]);
+  const [dh,dm] = [0,0];
+
+  const blockHtml = (b,i) => {
+    const [h,m,x] = hms(b.duration_s);
+    return `<div class="blk ${PHASE_CLS[b.phase]||""}" data-i="${i}">
+      <div class="bh"><b>${PHASE_LBL[b.phase]||b.phase}</b><button type="button" data-del="${i}">Togli</button></div>
+      <div class="field"><input data-f="label" placeholder="Cosa hai fatto: es. 5 × 1000 m a 3'20&quot;" value="${esc(b.label)}"></div>
+      <div class="g2">
+        <div class="field"><label>Distanza (km)</label><input data-f="distance_km" type="number" step="0.01" inputmode="decimal" value="${b.distance_km??""}"></div>
+        <div class="field"><label>FC media</label><input data-f="avg_hr" type="number" inputmode="numeric" value="${b.avg_hr??""}"></div>
+      </div>
+      <label>Durata</label><div class="g3"><input data-f="h" type="number" placeholder="ore" inputmode="numeric" value="${h||""}"><input data-f="m" type="number" placeholder="min" inputmode="numeric" value="${b.duration_s?m:""}"><input data-f="s" type="number" placeholder="sec" inputmode="numeric" value="${b.duration_s?x:""}"></div>
+    </div>`;
+  };
+  const read = () => {
+    document.querySelectorAll("#w-blocks .blk").forEach(el => {
+      const i = +el.dataset.i, g = f => el.querySelector(`[data-f="${f}"]`).value;
+      const secs = (+g("h")||0)*3600 + (+g("m")||0)*60 + (+g("s")||0);
+      blocks[i] = { ...blocks[i], label: g("label").trim() || null,
+        distance_km: g("distance_km") === "" ? null : +g("distance_km"),
+        avg_hr: g("avg_hr") === "" ? null : +g("avg_hr"), duration_s: secs || null };
+    });
+  };
+  const totals = () => {
+    const km = blocks.reduce((t,b) => t + (+b.distance_km||0), 0);
+    const sec = blocks.reduce((t,b) => t + (+b.duration_s||0), 0);
+    const lav = blocks.filter(b => b.phase === "lavoro" && b.distance_km && b.duration_s);
+    const lkm = lav.reduce((t,b) => t + +b.distance_km, 0), lsec = lav.reduce((t,b) => t + +b.duration_s, 0);
+    return { km, sec, pace: km && sec ? sec/km : null, work: lkm && lsec ? lsec/lkm : null };
+  };
+  const paint = () => {
+    $("w-blocks").innerHTML = blocks.map(blockHtml).join("");
+    const t = totals();
+    $("w-tot").innerHTML = `Totale: <b>${t.km ? t.km.toFixed(1) : "–"} km</b> · <b>${t.sec ? dur(t.sec) : "–"}</b>${t.pace?` · <b>${pace(t.pace)}/km</b>`:""}${t.work?` · lavoro <b>${pace(t.work)}/km</b>`:""}`;
+    $("w-blocks").querySelectorAll("[data-del]").forEach(b => b.onclick = () => { read(); blocks.splice(+b.dataset.del,1); paint(); });
+    $("w-blocks").querySelectorAll("input").forEach(inp => inp.onchange = () => { read(); paint(); });
+  };
+
   openSheet(`<h3>${ex?"Modifica allenamento":"Allenamento"}</h3>
+    <div class="sportrow" id="w-sport">${SPORTS.map(([v,l])=>`<button type="button" data-v="${v}" aria-pressed="${sport===v}">${l}</button>`).join("")}</div>
     <div class="g2"><div class="field"><label for="w-day">Giorno</label><input id="w-day" type="date" value="${ex?ex.day:TODAY}" max="${TODAY}"></div>
-    <div class="field"><label for="w-type">Tipo</label><select id="w-type">${Object.entries(TYPES).filter(([k])=>k!=="riposo").map(([k,v])=>`<option value="${k}" ${(ex?ex.type:ses?.type)===k?"selected":""}>${v}</option>`).join("")}</select></div></div>
-    <div class="field"><label for="w-km">Distanza (km)</label><input id="w-km" type="number" inputmode="decimal" step="0.01" value="${ex?.distance_km??""}"></div>
-    <label>Durata</label><div class="g3"><input id="w-h" type="number" inputmode="numeric" placeholder="ore" value="${wh||""}"><input id="w-m" type="number" inputmode="numeric" placeholder="min" value="${ex?wm:""}"><input id="w-s" type="number" inputmode="numeric" placeholder="sec" value="${ex?ws:""}"></div>
-    <div class="g2" style="margin-top:13px"><div class="field"><label for="w-hr">FC media</label><input id="w-hr" type="number" inputmode="numeric" value="${ex?.avg_hr??""}"></div>
-    <div class="field"><label for="w-mhr">FC max</label><input id="w-mhr" type="number" inputmode="numeric" value="${ex?.max_hr??""}"></div></div>
-    <div class="field"><label>Fatica percepita (RPE)</label>${scale("w-rpe",10,ex?.rpe)}<div class="hint">1 = passeggiata, 10 = massimo sforzo</div></div>
+    <div class="field"><label for="w-no">Allenamento del giorno</label><select id="w-no"><option value="1" ${ex?.session_no!==2?"selected":""}>Primo</option><option value="2" ${ex?.session_no===2?"selected":""}>Secondo</option></select></div></div>
+    <div class="field" id="w-type-f"><label for="w-type">Tipo di seduta</label><select id="w-type">${Object.entries(TYPES).filter(([k])=>k!=="riposo").map(([k,v])=>`<option value="${k}" ${(ex?ex.type:ses?.type)===k?"selected":""}>${v}</option>`).join("")}</select></div>
+    <div id="w-blocks"></div>
+    <div class="selects" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+      <select id="w-addphase">${PHASES_W.map(([v,l])=>`<option value="${v}">${l}</option>`).join("")}</select>
+      <button class="btn soft" id="w-add" style="padding:10px 14px">+ Aggiungi fase</button></div>
+    <div class="tot" id="w-tot"></div>
+    <div class="field"><label>Fatica percepita (RPE) di tutta la seduta</label>${scale("w-rpe",10,ex?.rpe)}<div class="hint">1 = passeggiata, 10 = massimo sforzo</div></div>
     <div class="field"><label for="w-notes">Com'è andata?</label><textarea id="w-notes" rows="3" placeholder="Sensazioni, fastidi, condizioni">${esc(ex?.notes)}</textarea></div>
     <label class="check field"><input id="w-priv" type="checkbox" ${ex?.notes_private?"checked":""}> Nota visibile solo a me</label>
     <button class="btn primary full" id="w-save">${ex?"Salva le modifiche":"Salva allenamento"}</button>
     ${ex?`<button class="btn full" id="w-del" style="color:var(--warn)">Elimina questo allenamento</button>`:""}
-    <div id="f-msg" class="msg"></div>`,
-  () => { bindScale("w-rpe");
-    $("w-save").onclick = () => {
-      const rpe = sv("w-rpe"); if (!rpe){ $("f-msg").className="msg err"; $("f-msg").textContent="Indica la fatica percepita (RPE)."; return; }
-      const secs = (nv("w-h")||0)*3600 + (nv("w-m")||0)*60 + (nv("w-s")||0);
-      const day = $("w-day").value;
-      const ps = S.sessions.find(s=>s.session_date===day);
-      const row = {
-        athlete_id: me.id, day, type: $("w-type").value, planned_session_id: ps?.id ?? null,
-        distance_km: nv("w-km"), duration_s: secs||null,
-        avg_pace_s: secs && nv("w-km") ? Math.round(secs/nv("w-km")) : null,
-        avg_hr: nv("w-hr"), max_hr: nv("w-mhr"), rpe,
-        notes: $("w-notes").value.trim()||null, notes_private: $("w-priv").checked, source:"manuale" };
-      save($("w-save"), ex ? sb.from("workouts").update(row).eq("id", ex.id) : sb.from("workouts").insert(row));
+    <div id="f-msg" class="msg"></div>`, () => {
+    bindScale("w-rpe"); paint();
+    const syncSport = () => $("w-type-f").classList.toggle("hidden", sport !== "corsa");
+    syncSport();
+    document.querySelectorAll("#w-sport button").forEach(b => b.onclick = () => {
+      sport = b.dataset.v;
+      document.querySelectorAll("#w-sport button").forEach(x => x.setAttribute("aria-pressed", String(x===b)));
+      syncSport();
+    });
+    $("w-add").onclick = () => { read(); blocks.push({ phase: $("w-addphase").value }); paint(); };
+    $("w-save").onclick = async () => {
+      read();
+      const rpe = sv("w-rpe");
+      if (!rpe){ $("f-msg").className="msg err"; $("f-msg").textContent="Indica la fatica percepita (RPE)."; return; }
+      const t = totals(), day = $("w-day").value;
+      if (!t.km && !t.sec){ $("f-msg").className="msg err"; $("f-msg").textContent="Inserisci almeno distanza o durata in una fase."; return; }
+      const ps = S.sessions.find(x => x.session_date === day);
+      const row = { athlete_id: me.id, day, sport, session_no: +$("w-no").value,
+        type: sport === "corsa" ? $("w-type").value : "altro",
+        planned_session_id: sport === "corsa" ? (ps?.id ?? null) : null,
+        distance_km: t.km || null, duration_s: t.sec || null,
+        avg_pace_s: t.pace ? Math.round(t.pace) : null,
+        work_pace_s: t.work ? Math.round(t.work) : null,
+        avg_hr: (() => { const h = blocks.filter(b => b.avg_hr && b.duration_s);
+          return h.length ? Math.round(h.reduce((s,b) => s + b.avg_hr*b.duration_s, 0) / h.reduce((s,b) => s + b.duration_s, 0)) : null; })(),
+        rpe, notes: $("w-notes").value.trim()||null, notes_private: $("w-priv").checked, source:"manuale" };
+      $("w-save").disabled = true;
+      const r = ex ? await sb.from("workouts").update(row).eq("id", ex.id).select().single()
+                   : await sb.from("workouts").insert(row).select().single();
+      if (r.error){ $("w-save").disabled = false; $("f-msg").className="msg err"; $("f-msg").textContent="Non salvato: "+r.error.message; return; }
+      const wid = r.data.id;
+      await sb.from("workout_blocks").delete().eq("workout_id", wid);
+      const rows = blocks.filter(b => b.distance_km || b.duration_s || b.label).map((b,i) => ({
+        workout_id: wid, athlete_id: me.id, ord: i+1, phase: b.phase, label: b.label || null,
+        distance_km: b.distance_km ?? null, duration_s: b.duration_s ?? null, avg_hr: b.avg_hr ?? null }));
+      if (rows.length) await sb.from("workout_blocks").insert(rows);
+      closeSheet(); await loadAthlete();
     };
     if ($("w-del")) $("w-del").onclick = async () => {
       if (!confirm("Eliminare questo allenamento dal diario?")) return;
