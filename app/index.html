@@ -385,7 +385,7 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid #
 <div id="sheet-root"></div>
 
 <script>
-const APP_VERSION = "2026-09-27 · 15";
+const APP_VERSION = "2026-09-27 · 16";
 const sb = supabase.createClient("https://pnoxjvssvtusjvbwpkkh.supabase.co","sb_publishable_ol7Ds9jbamCSwpNpGEPT9Q_ZZvxNHy3");
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -2211,15 +2211,50 @@ function sheetCibo(ds){
           return `<div class="foodline"><span>${esc(f?.[0] || it.k)}${f?`<br><span class="hint">${f[1]*it.q} g carbo · ${f[2]*it.q} g prot · ${f[3]*it.q} g grassi</span>`:""}</span>
           <span class="q"><button type="button" data-m="${k}" data-i="${i}" data-d="-1">−</button><b>${it.q}</b><button type="button" data-m="${k}" data-i="${i}" data-d="1">+</button></span></div>`; }).join("")
           : `<div class="hint">Niente registrato.</div>`}
-        <button class="btn soft" data-add="${k}" style="margin-top:6px;padding:9px 14px;font-size:16px">+ Aggiungi a ${l.toLowerCase()}</button></div>`;
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
+          <button class="btn soft" data-add="${k}" style="padding:9px 14px;font-size:16px">+ Dall'elenco</button>
+          <button class="btn soft" data-altro="${k}" style="padding:9px 14px;font-size:16px">+ Altro</button></div>
+        <div class="nf" id="nf-${k}"></div></div>`;
     }).join("");
     $("c-meals").querySelectorAll("[data-d]").forEach(b => b.onclick = () => {
       const it = stato[b.dataset.m].items[+b.dataset.i];
       it.q += +b.dataset.d; if (it.q <= 0) stato[b.dataset.m].items.splice(+b.dataset.i,1); paint(true); });
     if (!skipPicker && $("c-picker")) paintPicker(true);
+    $("c-meals").querySelectorAll("[data-altro]").forEach(b => b.onclick = () => altroInline(b.dataset.altro));
     $("c-meals").querySelectorAll("[data-add]").forEach(b => b.onclick = () => { apri = b.dataset.add; paintPicker();
       $("c-picker-box").scrollIntoView({ behavior: "smooth", block: "center" });
       $("c-cerca").focus({ preventScroll: true }); });
+  };
+  const altroInline = k => {
+    const host = $("nf-" + k);
+    if (host.innerHTML){ host.innerHTML = ""; return; }
+    host.innerHTML = `<div class="card" style="margin-top:8px">
+      <div class="field"><label>Che cosa hai mangiato</label><input class="nf-n" placeholder="es. Focaccia barese, 1 trancio"></div>
+      <div class="field"><label>Porzione tipo (se non conosci i valori)</label><div class="chips nf-preset">
+        <button type="button" class="chip" data-v="60,10,3">Carboidrati</button>
+        <button type="button" class="chip" data-v="30,5,8">Spuntino dolce</button>
+        <button type="button" class="chip" data-v="0,30,8">Proteine</button>
+        <button type="button" class="chip" data-v="20,8,20">Piatto ricco</button>
+        <button type="button" class="chip" data-v="6,2,0">Frutta o verdura</button></div></div>
+      <div class="g3">
+        <div class="field"><label>Carbo (g)</label><input class="nf-c" type="number" inputmode="numeric"></div>
+        <div class="field"><label>Prot (g)</label><input class="nf-p" type="number" inputmode="numeric"></div>
+        <div class="field"><label>Grassi (g)</label><input class="nf-f" type="number" inputmode="numeric"></div>
+      </div>
+      <button class="btn primary full nf-add">Aggiungi a ${(MEALS.find(m => m[0] === k)?.[1] || "").toLowerCase()}</button></div>`;
+    const g = c => host.querySelector("." + c);
+    host.querySelectorAll(".nf-preset .chip").forEach(b => b.onclick = () => {
+      const [c,pr,f] = b.dataset.v.split(",");
+      g("nf-c").value = c; g("nf-p").value = pr; g("nf-f").value = f;
+      host.querySelectorAll(".nf-preset .chip").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+    });
+    g("nf-add").onclick = () => {
+      const n = g("nf-n").value.trim();
+      if (!n){ g("nf-n").focus(); return; }
+      stato[k].items.push({ k:"x", n, c:+g("nf-c").value||0, p:+g("nf-p").value||0, f:+g("nf-f").value||0, q:1 });
+      paint(true);
+    };
+    host.scrollIntoView({ behavior:"smooth", block:"center" });
   };
   const paintPicker = (skipPaint) => {
     const q = cerca.toLowerCase();
@@ -2245,52 +2280,11 @@ function sheetCibo(ds){
       <div class="chips" id="c-target" style="margin-bottom:8px"></div>
       <input id="c-cerca" type="search" placeholder="Cerca un alimento">
       <div class="picker" id="c-picker"></div>
-      <button class="btn soft full" id="c-altro" style="margin-top:8px">+ Altro alimento non in elenco</button></div>
+      </div>
     <div class="field"><label for="c-note">Note</label><textarea id="c-note" rows="2" placeholder="Digestione, appetito, cosa cambieresti">${esc(stato.cena.notes)}</textarea></div>
     <button class="btn primary full" id="c-save">Salva</button><div id="f-msg" class="msg"></div>`, () => {
     paint(); paintPicker();
     $("c-cerca").oninput = e => { cerca = e.target.value; paintPicker(); };
-    $("c-altro").onclick = () => {
-      const box = $("c-altro");
-      if ($("c-newfood")){ $("c-newfood").remove(); box.textContent = "+ Altro alimento non in elenco"; return; }
-      box.textContent = "Annulla";
-      const d = document.createElement("div");
-      d.id = "c-newfood"; d.className = "card"; d.style.marginTop = "10px";
-      d.innerHTML = `<div class="field"><label for="nf-n">Che cosa hai mangiato</label><input id="nf-n" placeholder="es. Focaccia barese, 1 trancio"></div>
-        <div class="field"><label for="nf-meal">In quale pasto</label><select id="nf-meal">${MEALS.map(([k,l])=>`<option value="${k}" ${k===apri?"selected":""}>${l}</option>`).join("")}</select></div>
-        <div class="field"><label>Porzione tipo (se non conosci i valori)</label>
-          <div class="chips" id="nf-preset">
-            <button type="button" class="chip" data-v="60,10,3">Piatto di carboidrati</button>
-            <button type="button" class="chip" data-v="30,5,8">Spuntino dolce</button>
-            <button type="button" class="chip" data-v="0,30,8">Porzione di proteine</button>
-            <button type="button" class="chip" data-v="20,8,20">Piatto ricco o condito</button>
-            <button type="button" class="chip" data-v="6,2,0">Verdura o frutta</button>
-          </div></div>
-        <div class="g3">
-          <div class="field"><label for="nf-c">Carboidrati (g)</label><input id="nf-c" type="number" inputmode="numeric"></div>
-          <div class="field"><label for="nf-p">Proteine (g)</label><input id="nf-p" type="number" inputmode="numeric"></div>
-          <div class="field"><label for="nf-f">Grassi (g)</label><input id="nf-f" type="number" inputmode="numeric"></div>
-        </div>
-        <button class="btn primary full" id="nf-add">Aggiungi</button>
-        <p class="hint" style="margin-top:6px">Se non conosci i valori esatti scegli una porzione tipo: per l'andamento settimanale è più che sufficiente.</p>`;
-      box.after(d);
-      d.querySelectorAll("#nf-preset .chip").forEach(b => b.onclick = () => {
-        const [c,pr,f] = b.dataset.v.split(","); $("nf-c").value = c; $("nf-p").value = pr; $("nf-f").value = f;
-        d.querySelectorAll("#nf-preset .chip").forEach(x => x.setAttribute("aria-pressed", String(x === b))); });
-      $("nf-add").onclick = () => {
-        const n = $("nf-n").value.trim();
-        if (!n){ $("nf-n").focus(); return; }
-        const dove = $("nf-meal").value;
-        stato[dove].items.push({ k: "x", n, c: +$("nf-c").value||0, p: +$("nf-p").value||0, f: +$("nf-f").value||0, q: 1 });
-        d.remove(); box.textContent = "+ Altro alimento non in elenco";
-        apri = dove; paint(); 
-        const target = [...$("c-meals").querySelectorAll(".mealbox")][MEALS.findIndex(m => m[0] === dove)];
-        if (target){ target.scrollIntoView({ behavior:"smooth", block:"center" });
-          target.style.transition = "background .6s"; target.style.background = "#FFF6E6";
-          setTimeout(() => { target.style.background = ""; }, 1200); }
-      };
-      d.scrollIntoView({ behavior: "smooth", block: "center" });
-    };
     $("c-save").onclick = async () => {
       $("c-save").disabled = true;
       const rows = MEALS.map(([k]) => ({ athlete_id: me.id, day, meal: k,
