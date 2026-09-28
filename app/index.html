@@ -385,7 +385,7 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid #
 <div id="sheet-root"></div>
 
 <script>
-const APP_VERSION = "2026-09-27 · 12";
+const APP_VERSION = "2026-09-27 · 13";
 const sb = supabase.createClient("https://pnoxjvssvtusjvbwpkkh.supabase.co","sb_publishable_ol7Ds9jbamCSwpNpGEPT9Q_ZZvxNHy3");
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -2200,7 +2200,7 @@ function sheetCibo(ds){
   let apri = "colazione", cerca = "";
 
   const tot = () => sommaPasti(MEALS.map(([k]) => ({ items: stato[k].items })));
-  const paint = () => {
+  const paint = (skipPicker) => {
     const t = tot();
     $("c-tot").innerHTML = `Totale giornata: <b>${Math.round(t.cho)} g</b> carboidrati · <b>${Math.round(t.pro)} g</b> proteine · <b>${Math.round(t.fat)} g</b> grassi<br><span class="hint">circa ${Math.round(t.cho*4 + t.pro*4 + t.fat*9)} kcal</span>`;
     $("c-meals").innerHTML = MEALS.map(([k,l]) => {
@@ -2214,12 +2214,13 @@ function sheetCibo(ds){
     }).join("");
     $("c-meals").querySelectorAll("[data-d]").forEach(b => b.onclick = () => {
       const it = stato[b.dataset.m].items[+b.dataset.i];
-      it.q += +b.dataset.d; if (it.q <= 0) stato[b.dataset.m].items.splice(+b.dataset.i,1); paint(); });
+      it.q += +b.dataset.d; if (it.q <= 0) stato[b.dataset.m].items.splice(+b.dataset.i,1); paint(true); });
+    if (!skipPicker && $("c-picker")) paintPicker(true);
     $("c-meals").querySelectorAll("[data-add]").forEach(b => b.onclick = () => { apri = b.dataset.add; paintPicker();
       $("c-picker-box").scrollIntoView({ behavior: "smooth", block: "center" });
       $("c-cerca").focus({ preventScroll: true }); });
   };
-  const paintPicker = () => {
+  const paintPicker = (skipPaint) => {
     const q = cerca.toLowerCase();
     $("c-picker-title").textContent = "Aggiungi a " + (MEALS.find(m => m[0] === apri)?.[1] || "").toLowerCase();
     $("c-target").innerHTML = MEALS.map(([k,l]) => `<button type="button" class="chip" data-t="${k}" aria-pressed="${k===apri}">${l}</button>`).join("");
@@ -2231,7 +2232,8 @@ function sheetCibo(ds){
     $("c-picker").querySelectorAll("[data-food]").forEach(b => b.onclick = () => {
       const k = b.dataset.food, arr = stato[apri].items, ex = arr.find(x => x.k === k);
       if (ex) ex.q++; else arr.push({ k, q: 1 });
-      paint();
+      paint(true);
+      b.textContent = "✓"; setTimeout(() => { b.textContent = "+"; }, 700);
     });
   };
 
