@@ -385,7 +385,7 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid #
 <div id="sheet-root"></div>
 
 <script>
-const APP_VERSION = "2026-09-27 · 17";
+const APP_VERSION = "2026-09-28 · 19";
 const sb = supabase.createClient("https://pnoxjvssvtusjvbwpkkh.supabase.co","sb_publishable_ol7Ds9jbamCSwpNpGEPT9Q_ZZvxNHy3");
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -2195,40 +2195,24 @@ async function renderNutri(){
 
 function sheetCibo(ds){
   const day = (ds && ds.day) || TODAY;
-  let stato = {};
+  const stato = {};
   MEALS.forEach(([k]) => { const m = (S.meals||[]).find(x => x.meal === k && x.day === day);
     stato[k] = { items: m?.items ? JSON.parse(JSON.stringify(m.items)) : [], notes: m?.notes || "" }; });
-  let apri = "colazione", cerca = "";
+  let aperto = null, modo = null, cerca = "";
 
   const tot = () => sommaPasti(MEALS.map(([k]) => ({ items: stato[k].items })));
-  const paint = (skipPicker) => {
-    const t = tot();
-    $("c-tot").innerHTML = `Totale giornata: <b>${Math.round(t.cho)} g</b> carboidrati · <b>${Math.round(t.pro)} g</b> proteine · <b>${Math.round(t.fat)} g</b> grassi<br><span class="hint">circa ${Math.round(t.cho*4 + t.pro*4 + t.fat*9)} kcal</span>`;
-    $("c-meals").innerHTML = MEALS.map(([k,l]) => {
-      const sel = stato[k].items;
-      return `<div class="mealbox"><h4>${l}</h4>
-        ${sel.length ? sel.map((it,i) => { const f = foodOf(it);
-          return `<div class="foodline"><span>${esc(f?.[0] || it.k)}${f?`<br><span class="hint">${f[1]*it.q} g carbo · ${f[2]*it.q} g prot · ${f[3]*it.q} g grassi</span>`:""}</span>
-          <span class="q"><button type="button" data-m="${k}" data-i="${i}" data-d="-1">−</button><b>${it.q}</b><button type="button" data-m="${k}" data-i="${i}" data-d="1">+</button></span></div>`; }).join("")
-          : `<div class="hint">Niente registrato.</div>`}
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
-          <button class="btn soft" data-add="${k}" style="padding:9px 14px;font-size:16px">+ Dall'elenco</button>
-          <button class="btn soft" data-altro="${k}" style="padding:9px 14px;font-size:16px">+ Altro</button></div>
-        <div class="nf" id="nf-${k}"></div></div>`;
-    }).join("");
-    $("c-meals").querySelectorAll("[data-d]").forEach(b => b.onclick = () => {
-      const it = stato[b.dataset.m].items[+b.dataset.i];
-      it.q += +b.dataset.d; if (it.q <= 0) stato[b.dataset.m].items.splice(+b.dataset.i,1); paint(true); });
-    if (!skipPicker && $("c-picker")) paintPicker(true);
-    $("c-meals").querySelectorAll("[data-altro]").forEach(b => b.onclick = () => altroInline(b.dataset.altro));
-    $("c-meals").querySelectorAll("[data-add]").forEach(b => b.onclick = () => { apri = b.dataset.add; paintPicker();
-      $("c-picker-box").scrollIntoView({ behavior: "smooth", block: "center" });
-      $("c-cerca").focus({ preventScroll: true }); });
+
+  const listaAlimenti = () => {
+    const q = cerca.toLowerCase();
+    return `<div class="card" style="margin-top:8px">
+      <input class="nf-cerca" type="search" placeholder="Cerca un alimento" value="${esc(cerca)}">
+      <div class="picker">${Object.entries(FOOD).filter(([,f]) => !q || f[0].toLowerCase().includes(q))
+        .map(([kk,f]) => `<div class="foodline"><span>${esc(f[0])}<br><span class="hint">${f[1]} g carbo · ${f[2]} g prot · ${f[3]} g grassi · ${f[1]*4+f[2]*4+f[3]*9} kcal</span></span>
+          <span class="q"><button type="button" class="pick" data-food="${kk}">+</button></span></div>`).join("")
+        || `<div class="hint">Nessun alimento trovato: usa "+ Altro".</div>`}</div>
+      <button class="btn soft full chiudi" style="margin-top:8px">Chiudi</button></div>`;
   };
-  const altroInline = k => {
-    const host = $("nf-" + k);
-    if (host.innerHTML){ host.innerHTML = ""; return; }
-    host.innerHTML = `<div class="card" style="margin-top:8px">
+  const formAltro = k => `<div class="card" style="margin-top:8px">
       <div class="field"><label>Che cosa hai mangiato</label><input class="nf-n" placeholder="es. Focaccia barese, 1 trancio"></div>
       <div class="field"><label>Porzione tipo (se non conosci i valori)</label><div class="chips nf-preset">
         <button type="button" class="chip" data-v="60,10,3">Carboidrati</button>
@@ -2239,52 +2223,65 @@ function sheetCibo(ds){
       <div class="g3">
         <div class="field"><label>Carbo (g)</label><input class="nf-c" type="number" inputmode="numeric"></div>
         <div class="field"><label>Prot (g)</label><input class="nf-p" type="number" inputmode="numeric"></div>
-        <div class="field"><label>Grassi (g)</label><input class="nf-f" type="number" inputmode="numeric"></div>
-      </div>
-      <button class="btn primary full nf-add">Aggiungi a ${(MEALS.find(m => m[0] === k)?.[1] || "").toLowerCase()}</button></div>`;
-    const g = c => host.querySelector("." + c);
-    host.querySelectorAll(".nf-preset .chip").forEach(b => b.onclick = () => {
-      const [c,pr,f] = b.dataset.v.split(",");
-      g("nf-c").value = c; g("nf-p").value = pr; g("nf-f").value = f;
-      host.querySelectorAll(".nf-preset .chip").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
-    });
-    g("nf-add").onclick = () => {
-      const n = g("nf-n").value.trim();
-      if (!n){ g("nf-n").focus(); return; }
-      stato[k].items.push({ k:"x", n, c:+g("nf-c").value||0, p:+g("nf-p").value||0, f:+g("nf-f").value||0, q:1 });
-      paint(true);
-    };
-    host.scrollIntoView({ behavior:"smooth", block:"center" });
+        <div class="field"><label>Grassi (g)</label><input class="nf-f" type="number" inputmode="numeric"></div></div>
+      <button class="btn primary full nf-add">Aggiungi a ${(MEALS.find(m => m[0] === k)?.[1] || "").toLowerCase()}</button>
+      <button class="btn soft full chiudi" style="margin-top:8px">Chiudi</button></div>`;
+
+  const paint = () => {
+    const t = tot();
+    $("c-tot").innerHTML = `Totale giornata: <b>${Math.round(t.cho)} g</b> carboidrati · <b>${Math.round(t.pro)} g</b> proteine · <b>${Math.round(t.fat)} g</b> grassi<br><span class="hint">circa ${Math.round(t.cho*4 + t.pro*4 + t.fat*9)} kcal</span>`;
+    $("c-meals").innerHTML = MEALS.map(([k,l]) => {
+      const sel = stato[k].items;
+      return `<div class="mealbox" data-meal="${k}"><h4>${l}</h4>
+        ${sel.length ? sel.map((it,i) => { const f = foodOf(it);
+          return `<div class="foodline"><span>${esc(f?.[0] || "alimento")}${f?`<br><span class="hint">${f[1]*it.q} g carbo · ${f[2]*it.q} g prot · ${f[3]*it.q} g grassi</span>`:""}</span>
+            <span class="q"><button type="button" data-m="${k}" data-i="${i}" data-d="-1">−</button><b>${it.q}</b><button type="button" data-m="${k}" data-i="${i}" data-d="1">+</button></span></div>`; }).join("")
+          : `<div class="hint">Niente registrato.</div>`}
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
+          <button class="btn soft" data-apri="${k}" data-modo="elenco" style="padding:9px 14px;font-size:16px">+ Dall'elenco</button>
+          <button class="btn soft" data-apri="${k}" data-modo="altro" style="padding:9px 14px;font-size:16px">+ Altro</button></div>
+        ${aperto === k ? (modo === "altro" ? formAltro(k) : listaAlimenti()) : ""}</div>`;
+    }).join("");
+    bind();
   };
-  const paintPicker = (skipPaint) => {
-    const q = cerca.toLowerCase();
-    $("c-picker-title").textContent = "Aggiungi a " + (MEALS.find(m => m[0] === apri)?.[1] || "").toLowerCase();
-    $("c-target").innerHTML = MEALS.map(([k,l]) => `<button type="button" class="chip" data-t="${k}" aria-pressed="${k===apri}">${l}</button>`).join("");
-    $("c-target").querySelectorAll("[data-t]").forEach(b => b.onclick = () => { apri = b.dataset.t; paintPicker(); });
-    $("c-picker").innerHTML = Object.entries(FOOD)
-      .filter(([k,f]) => !q || f[0].toLowerCase().includes(q))
-      .map(([k,f]) => `<div class="foodline"><span>${esc(f[0])}<br><span class="hint">${f[1]} g carbo · ${f[2]} g prot · ${f[3]} g grassi · ${f[1]*4 + f[2]*4 + f[3]*9} kcal</span></span>
-        <span class="q"><button type="button" data-food="${k}">+</button></span></div>`).join("");
-    $("c-picker").querySelectorAll("[data-food]").forEach(b => b.onclick = () => {
-      const k = b.dataset.food, arr = stato[apri].items, ex = arr.find(x => x.k === k);
-      if (ex) ex.q++; else arr.push({ k, q: 1 });
-      paint(true);
-      b.textContent = "✓"; setTimeout(() => { b.textContent = "+"; }, 700);
-    });
+
+  const bind = () => {
+    const box = $("c-meals");
+    box.querySelectorAll("[data-d]").forEach(b => b.onclick = () => {
+      const it = stato[b.dataset.m].items[+b.dataset.i];
+      it.q += +b.dataset.d; if (it.q <= 0) stato[b.dataset.m].items.splice(+b.dataset.i, 1); paint(); });
+    box.querySelectorAll("[data-apri]").forEach(b => b.onclick = () => {
+      const stessa = aperto === b.dataset.apri && modo === b.dataset.modo;
+      aperto = stessa ? null : b.dataset.apri; modo = stessa ? null : b.dataset.modo; cerca = "";
+      paint();
+      if (aperto){ const el = box.querySelector(`[data-meal="${aperto}"]`); el && el.scrollIntoView({ behavior:"smooth", block:"center" }); } });
+    box.querySelectorAll(".chiudi").forEach(b => b.onclick = () => { aperto = null; modo = null; paint(); });
+    box.querySelectorAll(".pick").forEach(b => b.onclick = () => {
+      const arr = stato[aperto].items, ex = arr.find(x => x.k === b.dataset.food);
+      if (ex) ex.q++; else arr.push({ k: b.dataset.food, q: 1 });
+      paint(); });
+    const cer = box.querySelector(".nf-cerca");
+    if (cer) cer.oninput = e => { cerca = e.target.value; const pos = e.target.selectionStart; paint();
+      const n = $("c-meals").querySelector(".nf-cerca"); if (n){ n.focus(); try { n.setSelectionRange(pos, pos); } catch(_){} } };
+    const add = box.querySelector(".nf-add");
+    if (add) add.onclick = () => {
+      const g = c => box.querySelector("." + c);
+      const n = (g("nf-n").value || "").trim();
+      if (!n){ alert("Scrivi prima che cosa hai mangiato."); g("nf-n").focus(); return; }
+      stato[aperto].items.push({ k:"x", n, c:+g("nf-c").value||0, p:+g("nf-p").value||0, f:+g("nf-f").value||0, q:1 });
+      aperto = null; modo = null; paint(); };
+    box.querySelectorAll(".nf-preset .chip").forEach(b => b.onclick = () => {
+      const [c,pr,f] = b.dataset.v.split(",");
+      box.querySelector(".nf-c").value = c; box.querySelector(".nf-p").value = pr; box.querySelector(".nf-f").value = f;
+      box.querySelectorAll(".nf-preset .chip").forEach(x => x.setAttribute("aria-pressed", String(x === b))); });
   };
 
   openSheet(`<h3>Alimentazione${day!==TODAY?" · "+dayParts(day).n+" "+dayParts(day).m:""}</h3>
     <div class="tot" id="c-tot"></div>
     <div id="c-meals"></div>
-    <div class="field" id="c-picker-box"><label id="c-picker-title"></label>
-      <div class="chips" id="c-target" style="margin-bottom:8px"></div>
-      <input id="c-cerca" type="search" placeholder="Cerca un alimento">
-      <div class="picker" id="c-picker"></div>
-      </div>
     <div class="field"><label for="c-note">Note</label><textarea id="c-note" rows="2" placeholder="Digestione, appetito, cosa cambieresti">${esc(stato.cena.notes)}</textarea></div>
     <button class="btn primary full" id="c-save">Salva</button><div id="f-msg" class="msg"></div>`, () => {
-    paint(); paintPicker();
-    $("c-cerca").oninput = e => { cerca = e.target.value; paintPicker(); };
+    paint();
     $("c-save").onclick = async () => {
       $("c-save").disabled = true;
       const rows = MEALS.map(([k]) => ({ athlete_id: me.id, day, meal: k,
