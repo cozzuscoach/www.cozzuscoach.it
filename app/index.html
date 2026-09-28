@@ -334,6 +334,8 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid #
     <div id="coach-list">
       <h1>Il gruppo</h1><p class="lead" id="coach-sub"></p>
       <div id="athletes" style="margin-top:14px"></div>
+      <button class="link" id="ex-tog" style="margin-top:10px">Mostra atleti non più seguiti</button>
+      <div id="ex-list" class="hidden" style="margin-top:12px"></div>
     </div>
     <div id="coach-post" class="hidden">
       <h1>Consigli</h1><p class="lead" id="post-sub"></p>
@@ -343,6 +345,7 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid #
     </div>
     <div id="coach-req" class="hidden">
       <h1>Richieste di accesso</h1><p class="lead" id="req-sub"></p>
+      <div class="chips" style="margin-bottom:12px"><button class="chip" id="req-tog" aria-pressed="false">Mostra anche quelle gestite</button></div>
       <div class="card" id="req-list"></div>
     </div>
     <div id="coach-events" class="hidden">
@@ -354,6 +357,7 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid #
     <div id="coach-detail" class="hidden">
       <button class="link" id="back">Torna al gruppo</button>
       <h1 id="detail-name" style="margin-top:10px"></h1>
+      <button class="link" id="detail-remove" style="color:var(--warn)">Non seguo più questo atleta</button>
       <div id="detail-race" style="margin-top:12px"></div>
       <div id="detail-req"></div>
       <div id="detail-adj"></div>
@@ -367,7 +371,7 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid #
 <div id="sheet-root"></div>
 
 <script>
-const APP_VERSION = "2026-09-26 · 5";
+const APP_VERSION = "2026-09-26 · 8";
 const sb = supabase.createClient("https://pnoxjvssvtusjvbwpkkh.supabase.co","sb_publishable_ol7Ds9jbamCSwpNpGEPT9Q_ZZvxNHy3");
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -857,6 +861,16 @@ async function openAthlete(a){
   CUR = { a, D }; await renderPlanRequests(); await renderAdjustments(); await renderCoachPlan();
 }
 $("back").onclick = loadCoach;
+$("ex-tog").onclick = () => { EX_OPEN = !EX_OPEN; renderEx(); };
+$("detail-remove").onclick = async () => {
+  if (!CUR?.a) return;
+  if (!confirm(`Togliere ${CUR.a.full_name} dal gruppo?
+
+I suoi dati e il suo diario restano, ma non comparirà più nell'elenco e non riceverà più proposte. Potrai riportarlo nel gruppo quando vuoi.`)) return;
+  const { error } = await sb.from("profiles").update({ coach_id: null }).eq("id", CUR.a.id);
+  if (error){ alert("Non riuscito: " + error.message); return; }
+  loadCoach();
+};
 
 
 /* =====================================================
@@ -1446,11 +1460,17 @@ $("ev-import").onclick = () => {
 
 
 /* ---------- COACH: RICHIESTE DI ACCESSO ---------- */
+let REQ_ALL = false;
 async function renderRequests(){
-  const { data, error } = await sb.from("access_requests").select("*").order("created_at",{ascending:false}).limit(100);
+  $("req-tog").setAttribute("aria-pressed", String(REQ_ALL));
+  $("req-tog").textContent = REQ_ALL ? "Mostra solo quelle da gestire" : "Mostra anche quelle gestite";
+  $("req-tog").onclick = () => { REQ_ALL = !REQ_ALL; renderRequests(); };
+  let qy = sb.from("access_requests").select("*").order("created_at",{ascending:false}).limit(100);
+  if (!REQ_ALL) qy = qy.eq("status","nuova");
+  const { data, error } = await qy;
   if (error){ $("req-list").innerHTML = `<div class="empty">${esc(error.message)}</div>`; return; }
   const open = data.filter(r => r.status === "nuova").length;
-  $("req-sub").textContent = `${open} da gestire`;
+  $("req-sub").textContent = REQ_ALL ? `${data.length} richieste · ${open} da gestire` : `${open} da gestire`;
   const v = x => x ? esc(x) : '<span style="color:var(--muted)">non indicato</span>';
   const wa = t => { let d = String(t||"").replace(/[^\d]/g,""); if (d.startsWith("00")) d = d.slice(2); if (d.length === 10 && d.startsWith("3")) d = "39" + d; return d; };
   $("req-list").innerHTML = data.length ? data.map(r => `<div class="dentry">
@@ -1467,10 +1487,15 @@ async function renderRequests(){
       ${r.phone?`<a class="btn primary" style="text-decoration:none" target="_blank" rel="noopener" href="https://wa.me/${wa(r.phone)}?text=${encodeURIComponent(`Ciao ${r.full_name.split(" ")[0]}, sono Biagio di Cozzu's Coach: ho ricevuto la tua richiesta.`)}">WhatsApp</a>`:""}
       <a class="btn soft" style="text-decoration:none" href="mailto:${esc(r.email)}?subject=${encodeURIComponent("Cozzu's Coach - la tua richiesta")}">Email</a>
     </div>
-    ${r.status==="nuova"?`<button class="link" data-rq="${r.id}" style="margin-top:10px">Segna come gestita</button>`:""}
-  </div>`).join("") : `<div class="empty">Nessuna richiesta.</div>`;
+    <div style="margin-top:10px;display:flex;gap:16px">
+      ${r.status==="nuova"?`<button class="link" data-rq="${r.id}">Segna come gestita</button>`:""}
+      <button class="link" data-rqdel="${r.id}" style="color:var(--warn)">Elimina</button></div>
+  </div>`).join("") : `<div class="empty">${REQ_ALL?"Nessuna richiesta.":"Nessuna richiesta da gestire."}</div>`;
   $("req-list").querySelectorAll("[data-rq]").forEach(b => b.onclick = async () => {
     await sb.from("access_requests").update({ status:"gestita" }).eq("id", b.dataset.rq); renderRequests(); });
+  $("req-list").querySelectorAll("[data-rqdel]").forEach(b => b.onclick = async () => {
+    if (!confirm("Eliminare definitivamente questa richiesta?")) return;
+    await sb.from("access_requests").delete().eq("id", b.dataset.rqdel); renderRequests(); });
 }
 
 
@@ -1628,8 +1653,10 @@ async function renderCoachPlan(){
     if (publish){ upd.status = "pubblicato"; upd.published_at = new Date().toISOString(); }
     const { error } = await sb.from("plans").update(upd).eq("id", plan.id);
     if (error){ $("cp-msg").className="msg err"; $("cp-msg").textContent=error.message; return; }
+    if (publish) await avvisaAtleta(a.id, "Il tuo programma è pronto",
+      (upd.coach_note ? upd.coach_note.slice(0,150) : "Il coach ha pubblicato il tuo programma: apri l'app per vederlo."));
     await renderCoachPlan();
-    $("cp-msg").className="msg ok"; $("cp-msg").textContent = publish ? "Programma pubblicato: l'atleta ora lo vede." : "Messaggio salvato.";
+    $("cp-msg").className="msg ok"; $("cp-msg").textContent = publish ? "Programma pubblicato: l'atleta ora lo vede e ha ricevuto la notifica." : "Messaggio salvato.";
   };
   if ($("cp-pub")) $("cp-pub").onclick = () => { if (confirm("Pubblicare il programma? L'atleta lo vedrà subito.")) saveNote(true); };
   if ($("cp-savenote")) $("cp-savenote").onclick = () => saveNote(false);
@@ -1645,6 +1672,7 @@ function sheetCoachSession(x){
     <div class="field"><label for="cs-de">Svolgimento (riscaldamento, parte centrale, ritmi, recuperi)</label><textarea id="cs-de" rows="6">${esc(isNew?"":rest.join("\n"))}</textarea></div>
     <div class="g2"><div class="field"><label for="cs-km">Km previsti</label><input id="cs-km" type="number" step="0.5" value="${x.target_km??""}"></div><div></div></div>
     <div class="field"><label for="cs-n">Nota per l'atleta</label><textarea id="cs-n" rows="2" placeholder="es. Se hai dormito poco, chiudi a 3 ripetute">${esc(x.coach_note)}</textarea></div>
+    <label class="check field"><input id="cs-avvisa" type="checkbox" checked> Avvisa l'atleta con una notifica</label>
     <button class="btn primary full" id="cs-save">Salva</button>
     ${isNew?"":`<div class="actions"><button class="btn soft" id="cs-rest">Trasforma in riposo</button><button class="btn" id="cs-del" style="color:var(--warn)">Elimina</button></div>`}
     <div id="f-msg" class="msg"></div>`, () => {
@@ -1654,8 +1682,12 @@ function sheetCoachSession(x){
       const row = { session_date:$("cs-d").value, type:$("cs-t").value, title,
         description: [$("cs-p").value.trim(), $("cs-de").value.trim()].filter(Boolean).join("\n") || null,
         target_km: $("cs-km").value ? +$("cs-km").value : null, coach_note: $("cs-n").value.trim() || null, edited_by_coach: true };
-      done(isNew ? await sb.from("planned_sessions").insert({ ...row, plan_id: CUR.plan.id, athlete_id: CUR.a.id, is_current: true, priority: 3 })
-                 : await sb.from("planned_sessions").update(row).eq("id", x.id));
+      const res = isNew ? await sb.from("planned_sessions").insert({ ...row, plan_id: CUR.plan.id, athlete_id: CUR.a.id, is_current: true, priority: 3 })
+                        : await sb.from("planned_sessions").update(row).eq("id", x.id);
+      if (!res.error && $("cs-avvisa").checked && CUR.plan?.status === "pubblicato")
+        await avvisaAtleta(CUR.a.id, isNew ? "Nuova seduta" : "Seduta aggiornata",
+          `${dayParts(row.session_date).n} ${dayParts(row.session_date).m}: ${row.title}${row.coach_note ? " · " + row.coach_note : ""}`);
+      done(res);
     };
     if (!isNew){
       $("cs-rest").onclick = async () => done(await sb.from("planned_sessions").update({ type:"riposo", title:"Riposo", description:"Il recupero fa parte dell'allenamento.", target_km:0, structure:null, edited_by_coach:true, coach_note: $("cs-n").value.trim()||null }).eq("id", x.id));
@@ -1718,6 +1750,11 @@ async function renderPush(){
 }
 
 
+/* ---------- COACH: NOTIFICHE ALL'ATLETA ---------- */
+async function avvisaAtleta(athlete_id, title, body){
+  try { await sb.functions.invoke("daily-push", { body: { notify: { athlete_id, title, body } } }); } catch (_) {}
+}
+
 /* ---------- COACH: PROPOSTE DI ADATTAMENTO ---------- */
 const SEV = { allarme:["Allarme","#8E2F0E","#F7DAD0"], rilevante:["Da decidere","#8A5510","#FCEBD0"], minore:["Segnalazione","var(--sea)","var(--foam)"] };
 async function renderAdjustments(){
@@ -1775,6 +1812,10 @@ async function applyAdjustment(x){
     if (r.error) return fail(r.error.message);
   }
   await sb.from("adjustments").update({ status:"approvata", reviewed_at:new Date().toISOString() }).eq("id", x.id);
+  await avvisaAtleta(CUR.a.id,
+    x.kind === "zone" ? "Ritmi aggiornati" : "Allenamento aggiornato",
+    x.kind === "zone" ? "Il coach ha aggiornato i tuoi ritmi di riferimento. Li trovi nel Programma."
+      : `Il coach ha modificato la seduta: ${x.proposal?.title || "apri l'app per vederla"}.`);
   const D = await fetchAthlete(CUR.a.id); CUR.D = D;
   await renderAdjustments(); await renderCoachPlan();
 }
@@ -2038,6 +2079,24 @@ function renderStats(){
       <div class="box"><b>${new Set(W.filter(w => w.day >= addDays(TODAY,-30)).map(w => w.day)).size}</b><span>giorni con allenamento negli ultimi 30</span></div>
       <div class="box"><b>${S.checkins.filter(c => c.day >= addDays(TODAY,-30)).length}</b><span>check-in del mattino negli ultimi 30 giorni</span></div>
     </div>`;
+}
+
+
+/* ---------- COACH: GESTIONE DEL GRUPPO ---------- */
+let EX_OPEN = false;
+async function renderEx(){
+  $("ex-tog").textContent = EX_OPEN ? "Nascondi atleti non più seguiti" : "Mostra atleti non più seguiti";
+  $("ex-list").classList.toggle("hidden", !EX_OPEN);
+  if (!EX_OPEN) return;
+  const { data } = await sb.from("profiles").select("id,full_name").eq("role","athlete").is("coach_id", null).order("full_name");
+  $("ex-list").innerHTML = data?.length
+    ? data.map(a => `<div class="athlete"><div><strong>${esc(a.full_name)}</strong><div class="when">non più nel gruppo</div></div>
+        <button class="link" data-back="${a.id}">Riporta nel gruppo</button></div>`).join("")
+    : `<div class="empty">Nessun atleta rimosso.</div>`;
+  $("ex-list").querySelectorAll("[data-back]").forEach(b => b.onclick = async () => {
+    await sb.from("profiles").update({ coach_id: me.id }).eq("id", b.dataset.back);
+    renderEx(); loadCoach();
+  });
 }
 
 route();
