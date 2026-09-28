@@ -171,6 +171,18 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid #
 .pred div{background:var(--bg);border-radius:12px;padding:10px}
 .pred b{display:block;font:800 24px/1 var(--cond)}
 .pred span{font-size:13px;color:var(--muted)}
+.nutri{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.nutri div{background:var(--bg);border-radius:12px;padding:10px;text-align:center}
+.nutri b{display:block;font:800 22px/1 var(--cond);color:var(--sea)}
+.nutri span{font-size:12px;color:var(--muted)}
+.nutri .ok b{color:var(--ok)} .nutri .low b{color:var(--warn)}
+.foodline{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--line);font-size:15px}
+.foodline:first-child{border-top:0}
+.foodline .q{display:flex;align-items:center;gap:8px}
+.foodline .q button{width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:var(--paper);font:700 18px var(--cond);color:var(--sea)}
+.mealbox{margin-bottom:14px}
+.mealbox h4{font:700 20px var(--cond);margin-bottom:4px}
+.picker{max-height:230px;overflow-y:auto;border:1px solid var(--line);border-radius:12px;padding:6px 10px;margin-top:6px}
 .blk{border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px;background:#FBFDFD}
 .blk .bh{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
 .blk .bh b{font:700 17px var(--cond);letter-spacing:.3px}
@@ -282,6 +294,8 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid #
       <h1>Diario</h1>
       <p class="lead" id="diary-lead"></p>
       <div class="actions"><button class="btn primary" data-open="workout">+ Allenamento</button><button class="btn soft" data-open="morning">+ Mattino</button></div>
+      <button class="btn soft full" data-open="cibo">+ Alimentazione di oggi</button>
+      <div id="nutri-card"></div>
       <div class="card" id="diary-list"></div>
     </section>
 
@@ -371,7 +385,7 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid #
 <div id="sheet-root"></div>
 
 <script>
-const APP_VERSION = "2026-09-26 · 8";
+const APP_VERSION = "2026-09-27 · 9";
 const sb = supabase.createClient("https://pnoxjvssvtusjvbwpkkh.supabase.co","sb_publishable_ol7Ds9jbamCSwpNpGEPT9Q_ZZvxNHy3");
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -439,7 +453,7 @@ async function loadAthlete(){
   $("hello").textContent = "Ciao " + (me.full_name||"").split(" ")[0];
   $("me-name").textContent = me.full_name;
   S = await fetchAthlete(me.id);
-  renderHome(); renderPlan(); renderDiary(S, $("diary-list"), true); renderRaces(); renderMe(); renderStats(); renderPush(); renderMeActions();
+  renderHome(); renderPlan(); renderDiary(S, $("diary-list"), true); renderRaces(); renderMe(); renderStats(); renderPush(); renderMeActions(); renderNutri();
   // arriva dal calendario con una gara scelta: diventa una richiesta al coach
   const g = pendingGara();
   if (g){ clearGara(); await loadEvents(); const e = EVENTS.find(x => x.id == g);
@@ -609,7 +623,7 @@ document.querySelectorAll("[data-tab]").forEach(b => b.onclick = () => {
 /* ---------- SHEETS (form) ---------- */
 document.addEventListener("click", e => {
   const t = e.target.closest("[data-open]"); if (!t) return;
-  ({workout:sheetWorkout, morning:sheetMorning, race:sheetRace})[t.dataset.open](t.dataset);
+  ({workout:sheetWorkout, morning:sheetMorning, race:sheetRace, cibo:sheetCibo})[t.dataset.open](t.dataset);
 });
 function openSheet(html, onMount){
   $("sheet-root").innerHTML = `<div class="sheet-bg" id="sbg"><div class="sheet" role="dialog" aria-modal="true"><div class="grab"></div>${html}</div></div>`;
@@ -2096,6 +2110,145 @@ async function renderEx(){
   $("ex-list").querySelectorAll("[data-back]").forEach(b => b.onclick = async () => {
     await sb.from("profiles").update({ coach_id: me.id }).eq("id", b.dataset.back);
     renderEx(); loadCoach();
+  });
+}
+
+
+/* =====================================================
+   ALIMENTAZIONE
+   ===================================================== */
+// valori per porzione: carboidrati, proteine, grassi (g)
+const FOOD = {
+  pasta:        ["Pasta o riso, 80 g a crudo", 60, 10, 1],
+  pane:         ["Pane, 50 g", 25, 4, 1],
+  patate:       ["Patate, 200 g", 32, 4, 0],
+  pizza:        ["Pizza margherita, 1 porzione", 70, 20, 15],
+  cereali:      ["Cereali o fiocchi d'avena, 60 g", 40, 7, 4],
+  fette:        ["Fette biscottate, 4", 30, 4, 3],
+  cornetto:     ["Cornetto o brioche", 35, 5, 12],
+  banana:       ["Banana", 25, 1, 0],
+  frutta:       ["Frutto medio (mela, pera, arancia)", 18, 1, 0],
+  frutta_secca: ["Frutta secca, 30 g", 6, 6, 18],
+  marmellata:   ["Miele o marmellata, 20 g", 15, 0, 0],
+  yogurt:       ["Yogurt greco, 170 g", 6, 17, 4],
+  latte:        ["Latte o bevanda vegetale, 250 ml", 12, 8, 6],
+  uova:         ["Uova, 2", 1, 13, 10],
+  pollo:        ["Pollo o tacchino, 150 g", 0, 33, 4],
+  carne_rossa:  ["Carne rossa magra, 150 g", 0, 32, 9],
+  pesce:        ["Pesce bianco, 180 g", 0, 34, 3],
+  pesce_azzurro:["Pesce azzurro o salmone, 150 g", 0, 30, 15],
+  tonno:        ["Tonno in scatola, 100 g", 0, 25, 3],
+  legumi:       ["Legumi cotti, 200 g", 28, 15, 2],
+  formaggio:    ["Formaggio stagionato, 50 g", 1, 13, 14],
+  ricotta:      ["Ricotta o fiocchi di latte, 150 g", 4, 17, 9],
+  prosciutto:   ["Affettato magro, 80 g", 1, 22, 6],
+  verdura:      ["Verdura, porzione abbondante", 6, 3, 0],
+  olio:         ["Olio d'oliva, 1 cucchiaio", 0, 0, 14],
+  dolce:        ["Dolce o dessert, 1 porzione", 45, 5, 15],
+  gel:          ["Gel energetico", 25, 0, 0],
+  barretta:     ["Barretta energetica", 30, 4, 5],
+  sport_drink:  ["Bevanda sportiva, 500 ml", 30, 0, 0],
+  recupero:     ["Bevanda di recupero o frullato", 40, 20, 3],
+};
+const MEALS = [["colazione","Colazione"],["spuntino","Spuntino"],["pranzo","Pranzo"],["durante","Durante l'allenamento"],["merenda","Merenda"],["cena","Cena"]];
+
+// fabbisogno indicativo in base al peso e alla seduta del giorno
+function fabbisogno(tipo){
+  const kg = +me.weight_kg || null;
+  if (!kg) return null;
+  const q = { riposo:[3,4], recupero:[4,5], lento:[5,6], medio:[6,7], soglia:[6,7], vo2max:[6,7], ritmo_gara:[6,7],
+              test:[6,7], lungo:[7,8], lungo_progressivo:[7,8], gara:[7,8] }[tipo] || [5,6];
+  const cho = [Math.round(kg*q[0]), Math.round(kg*q[1])];
+  return { kg, cho, pro: [Math.round(kg*1.7), Math.round(kg*2.0)], fat: Math.round(kg*1.0),
+           pasti: Math.round(kg*0.35), durante: ["lungo","lungo_progressivo","gara"].includes(tipo) };
+}
+const sommaPasti = rows => rows.reduce((t,m) => {
+  (m.items||[]).forEach(it => { const f = FOOD[it.k]; if (!f) return;
+    t.cho += f[1]*it.q; t.pro += f[2]*it.q; t.fat += f[3]*it.q; });
+  return t; }, { cho:0, pro:0, fat:0 });
+
+async function renderNutri(){
+  const box = $("nutri-card"); if (!box) return;
+  const ses = S.sessions.find(x => x.session_date === TODAY);
+  const f = fabbisogno(ses?.type);
+  const { data } = await sb.from("meals").select("*").eq("athlete_id", me.id).eq("day", TODAY);
+  S.meals = data || [];
+  const t = sommaPasti(S.meals);
+  if (!f){ box.innerHTML = `<div class="card"><b>Alimentazione</b><p class="sub" style="margin-top:6px">Inserisci il tuo peso in Profilo → Aggiorna i miei dati per vedere le indicazioni giornaliere.</p></div>`; return; }
+  const cls = (v, min) => v >= min ? "ok" : v >= min*0.7 ? "" : "low";
+  box.innerHTML = `<div class="card">
+    <div class="dh"><b style="font:700 20px var(--cond)">Alimentazione di oggi</b><span class="tag">${ses ? (TYPES[ses.type]||"") : "giorno libero"}</span></div>
+    <div class="nutri">
+      <div class="${cls(t.cho, f.cho[0])}"><b>${Math.round(t.cho)}</b><span>carboidrati<br>obiettivo ${f.cho[0]}-${f.cho[1]} g</span></div>
+      <div class="${cls(t.pro, f.pro[0])}"><b>${Math.round(t.pro)}</b><span>proteine<br>obiettivo ${f.pro[0]}-${f.pro[1]} g</span></div>
+      <div class="${cls(t.fat, f.fat)}"><b>${Math.round(t.fat)}</b><span>grassi<br>almeno ${f.fat} g</span></div>
+    </div>
+    <p class="hint" style="margin-top:10px">${f.durante
+      ? `Oggi è una seduta lunga: durante la corsa servono 30-60 g di carboidrati all'ora oltre i 75 minuti, e 400-800 ml di liquidi all'ora.`
+      : `Distribuisci le proteine in 4 assunzioni da circa ${f.pasti} g ciascuna: conta più la ripartizione della quantità totale.`}</p>
+    <button class="btn soft full" data-open="cibo">${S.meals.length ? "Aggiorna quello che hai mangiato" : "Registra i pasti di oggi"}</button>
+    <p class="hint" style="margin-top:8px">Indicazioni generali di orientamento, non un piano alimentare personale: per obiettivi di peso, problemi digestivi ricorrenti o diete particolari serve un professionista.</p>
+  </div>`;
+}
+
+function sheetCibo(ds){
+  const day = (ds && ds.day) || TODAY;
+  let stato = {};
+  MEALS.forEach(([k]) => { const m = (S.meals||[]).find(x => x.meal === k && x.day === day);
+    stato[k] = { items: m?.items ? JSON.parse(JSON.stringify(m.items)) : [], notes: m?.notes || "" }; });
+  let apri = "colazione", cerca = "";
+
+  const tot = () => sommaPasti(MEALS.map(([k]) => ({ items: stato[k].items })));
+  const paint = () => {
+    const t = tot();
+    $("c-tot").innerHTML = `Totale giornata: <b>${Math.round(t.cho)} g</b> carboidrati · <b>${Math.round(t.pro)} g</b> proteine · <b>${Math.round(t.fat)} g</b> grassi`;
+    $("c-meals").innerHTML = MEALS.map(([k,l]) => {
+      const sel = stato[k].items;
+      return `<div class="mealbox"><h4>${l}</h4>
+        ${sel.length ? sel.map((it,i) => `<div class="foodline"><span>${esc(FOOD[it.k]?.[0] || it.k)}</span>
+          <span class="q"><button type="button" data-m="${k}" data-i="${i}" data-d="-1">−</button><b>${it.q}</b><button type="button" data-m="${k}" data-i="${i}" data-d="1">+</button></span></div>`).join("")
+          : `<div class="hint">Niente registrato.</div>`}
+        <button class="link" data-add="${k}" style="margin-top:6px">+ Aggiungi a ${l.toLowerCase()}</button></div>`;
+    }).join("");
+    $("c-meals").querySelectorAll("[data-d]").forEach(b => b.onclick = () => {
+      const it = stato[b.dataset.m].items[+b.dataset.i];
+      it.q += +b.dataset.d; if (it.q <= 0) stato[b.dataset.m].items.splice(+b.dataset.i,1); paint(); });
+    $("c-meals").querySelectorAll("[data-add]").forEach(b => b.onclick = () => { apri = b.dataset.add; paintPicker(); });
+  };
+  const paintPicker = () => {
+    const q = cerca.toLowerCase();
+    $("c-picker-title").textContent = "Aggiungi a " + (MEALS.find(m => m[0] === apri)?.[1] || "").toLowerCase();
+    $("c-picker").innerHTML = Object.entries(FOOD)
+      .filter(([k,f]) => !q || f[0].toLowerCase().includes(q))
+      .map(([k,f]) => `<div class="foodline"><span>${esc(f[0])}<br><span class="hint">${f[1]} g carbo · ${f[2]} g prot</span></span>
+        <span class="q"><button type="button" data-food="${k}">+</button></span></div>`).join("");
+    $("c-picker").querySelectorAll("[data-food]").forEach(b => b.onclick = () => {
+      const k = b.dataset.food, arr = stato[apri].items, ex = arr.find(x => x.k === k);
+      if (ex) ex.q++; else arr.push({ k, q: 1 });
+      paint();
+    });
+  };
+
+  openSheet(`<h3>Alimentazione${day!==TODAY?" · "+dayParts(day).n+" "+dayParts(day).m:""}</h3>
+    <div class="tot" id="c-tot"></div>
+    <div id="c-meals"></div>
+    <div class="field"><label id="c-picker-title"></label>
+      <input id="c-cerca" type="search" placeholder="Cerca un alimento">
+      <div class="picker" id="c-picker"></div></div>
+    <div class="field"><label for="c-note">Note</label><textarea id="c-note" rows="2" placeholder="Digestione, appetito, cosa cambieresti">${esc(stato.cena.notes)}</textarea></div>
+    <button class="btn primary full" id="c-save">Salva</button><div id="f-msg" class="msg"></div>`, () => {
+    paint(); paintPicker();
+    $("c-cerca").oninput = e => { cerca = e.target.value; paintPicker(); };
+    $("c-save").onclick = async () => {
+      $("c-save").disabled = true;
+      const rows = MEALS.map(([k]) => ({ athlete_id: me.id, day, meal: k,
+        items: stato[k].items, notes: k === "cena" ? ($("c-note").value.trim() || null) : null }))
+        .filter(r => r.items.length || r.notes);
+      await sb.from("meals").delete().eq("athlete_id", me.id).eq("day", day);
+      if (rows.length){ const r = await sb.from("meals").insert(rows);
+        if (r.error){ $("c-save").disabled = false; $("f-msg").className="msg err"; $("f-msg").textContent = r.error.message; return; } }
+      closeSheet(); await loadAthlete();
+    };
   });
 }
 
