@@ -385,7 +385,7 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid #
 <div id="sheet-root"></div>
 
 <script>
-const APP_VERSION = "2026-09-27 · 14";
+const APP_VERSION = "2026-09-27 · 15";
 const sb = supabase.createClient("https://pnoxjvssvtusjvbwpkkh.supabase.co","sb_publishable_ol7Ds9jbamCSwpNpGEPT9Q_ZZvxNHy3");
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -2257,6 +2257,7 @@ function sheetCibo(ds){
       const d = document.createElement("div");
       d.id = "c-newfood"; d.className = "card"; d.style.marginTop = "10px";
       d.innerHTML = `<div class="field"><label for="nf-n">Che cosa hai mangiato</label><input id="nf-n" placeholder="es. Focaccia barese, 1 trancio"></div>
+        <div class="field"><label for="nf-meal">In quale pasto</label><select id="nf-meal">${MEALS.map(([k,l])=>`<option value="${k}" ${k===apri?"selected":""}>${l}</option>`).join("")}</select></div>
         <div class="field"><label>Porzione tipo (se non conosci i valori)</label>
           <div class="chips" id="nf-preset">
             <button type="button" class="chip" data-v="60,10,3">Piatto di carboidrati</button>
@@ -2270,7 +2271,7 @@ function sheetCibo(ds){
           <div class="field"><label for="nf-p">Proteine (g)</label><input id="nf-p" type="number" inputmode="numeric"></div>
           <div class="field"><label for="nf-f">Grassi (g)</label><input id="nf-f" type="number" inputmode="numeric"></div>
         </div>
-        <button class="btn primary full" id="nf-add">Aggiungi a ${(MEALS.find(m => m[0] === apri)?.[1] || "").toLowerCase()}</button>
+        <button class="btn primary full" id="nf-add">Aggiungi</button>
         <p class="hint" style="margin-top:6px">Se non conosci i valori esatti scegli una porzione tipo: per l'andamento settimanale è più che sufficiente.</p>`;
       box.after(d);
       d.querySelectorAll("#nf-preset .chip").forEach(b => b.onclick = () => {
@@ -2279,9 +2280,14 @@ function sheetCibo(ds){
       $("nf-add").onclick = () => {
         const n = $("nf-n").value.trim();
         if (!n){ $("nf-n").focus(); return; }
-        stato[apri].items.push({ k: "x", n, c: +$("nf-c").value||0, p: +$("nf-p").value||0, f: +$("nf-f").value||0, q: 1 });
+        const dove = $("nf-meal").value;
+        stato[dove].items.push({ k: "x", n, c: +$("nf-c").value||0, p: +$("nf-p").value||0, f: +$("nf-f").value||0, q: 1 });
         d.remove(); box.textContent = "+ Altro alimento non in elenco";
-        paint(true);
+        apri = dove; paint(); 
+        const target = [...$("c-meals").querySelectorAll(".mealbox")][MEALS.findIndex(m => m[0] === dove)];
+        if (target){ target.scrollIntoView({ behavior:"smooth", block:"center" });
+          target.style.transition = "background .6s"; target.style.background = "#FFF6E6";
+          setTimeout(() => { target.style.background = ""; }, 1200); }
       };
       d.scrollIntoView({ behavior: "smooth", block: "center" });
     };
