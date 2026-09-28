@@ -385,7 +385,7 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid #
 <div id="sheet-root"></div>
 
 <script>
-const APP_VERSION = "2026-09-27 · 13";
+const APP_VERSION = "2026-09-27 · 14";
 const sb = supabase.createClient("https://pnoxjvssvtusjvbwpkkh.supabase.co","sb_publishable_ol7Ds9jbamCSwpNpGEPT9Q_ZZvxNHy3");
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -2163,8 +2163,9 @@ function fabbisogno(tipo){
   return { kg, cho, pro: [Math.round(kg*1.7), Math.round(kg*2.0)], fat: Math.round(kg*1.0),
            pasti: Math.round(kg*0.35), durante: ["lungo","lungo_progressivo","gara"].includes(tipo) };
 }
+const foodOf = it => FOOD[it.k] || (it.n ? [it.n, +it.c||0, +it.p||0, +it.f||0] : null);
 const sommaPasti = rows => rows.reduce((t,m) => {
-  (m.items||[]).forEach(it => { const f = FOOD[it.k]; if (!f) return;
+  (m.items||[]).forEach(it => { const f = foodOf(it); if (!f) return;
     t.cho += f[1]*it.q; t.pro += f[2]*it.q; t.fat += f[3]*it.q; });
   return t; }, { cho:0, pro:0, fat:0 });
 
@@ -2206,7 +2207,7 @@ function sheetCibo(ds){
     $("c-meals").innerHTML = MEALS.map(([k,l]) => {
       const sel = stato[k].items;
       return `<div class="mealbox"><h4>${l}</h4>
-        ${sel.length ? sel.map((it,i) => { const f = FOOD[it.k];
+        ${sel.length ? sel.map((it,i) => { const f = foodOf(it);
           return `<div class="foodline"><span>${esc(f?.[0] || it.k)}${f?`<br><span class="hint">${f[1]*it.q} g carbo · ${f[2]*it.q} g prot · ${f[3]*it.q} g grassi</span>`:""}</span>
           <span class="q"><button type="button" data-m="${k}" data-i="${i}" data-d="-1">−</button><b>${it.q}</b><button type="button" data-m="${k}" data-i="${i}" data-d="1">+</button></span></div>`; }).join("")
           : `<div class="hint">Niente registrato.</div>`}
@@ -2243,11 +2244,47 @@ function sheetCibo(ds){
     <div class="field" id="c-picker-box"><label id="c-picker-title"></label>
       <div class="chips" id="c-target" style="margin-bottom:8px"></div>
       <input id="c-cerca" type="search" placeholder="Cerca un alimento">
-      <div class="picker" id="c-picker"></div></div>
+      <div class="picker" id="c-picker"></div>
+      <button class="btn soft full" id="c-altro" style="margin-top:8px">+ Altro alimento non in elenco</button></div>
     <div class="field"><label for="c-note">Note</label><textarea id="c-note" rows="2" placeholder="Digestione, appetito, cosa cambieresti">${esc(stato.cena.notes)}</textarea></div>
     <button class="btn primary full" id="c-save">Salva</button><div id="f-msg" class="msg"></div>`, () => {
     paint(); paintPicker();
     $("c-cerca").oninput = e => { cerca = e.target.value; paintPicker(); };
+    $("c-altro").onclick = () => {
+      const box = $("c-altro");
+      if ($("c-newfood")){ $("c-newfood").remove(); box.textContent = "+ Altro alimento non in elenco"; return; }
+      box.textContent = "Annulla";
+      const d = document.createElement("div");
+      d.id = "c-newfood"; d.className = "card"; d.style.marginTop = "10px";
+      d.innerHTML = `<div class="field"><label for="nf-n">Che cosa hai mangiato</label><input id="nf-n" placeholder="es. Focaccia barese, 1 trancio"></div>
+        <div class="field"><label>Porzione tipo (se non conosci i valori)</label>
+          <div class="chips" id="nf-preset">
+            <button type="button" class="chip" data-v="60,10,3">Piatto di carboidrati</button>
+            <button type="button" class="chip" data-v="30,5,8">Spuntino dolce</button>
+            <button type="button" class="chip" data-v="0,30,8">Porzione di proteine</button>
+            <button type="button" class="chip" data-v="20,8,20">Piatto ricco o condito</button>
+            <button type="button" class="chip" data-v="6,2,0">Verdura o frutta</button>
+          </div></div>
+        <div class="g3">
+          <div class="field"><label for="nf-c">Carboidrati (g)</label><input id="nf-c" type="number" inputmode="numeric"></div>
+          <div class="field"><label for="nf-p">Proteine (g)</label><input id="nf-p" type="number" inputmode="numeric"></div>
+          <div class="field"><label for="nf-f">Grassi (g)</label><input id="nf-f" type="number" inputmode="numeric"></div>
+        </div>
+        <button class="btn primary full" id="nf-add">Aggiungi a ${(MEALS.find(m => m[0] === apri)?.[1] || "").toLowerCase()}</button>
+        <p class="hint" style="margin-top:6px">Se non conosci i valori esatti scegli una porzione tipo: per l'andamento settimanale è più che sufficiente.</p>`;
+      box.after(d);
+      d.querySelectorAll("#nf-preset .chip").forEach(b => b.onclick = () => {
+        const [c,pr,f] = b.dataset.v.split(","); $("nf-c").value = c; $("nf-p").value = pr; $("nf-f").value = f;
+        d.querySelectorAll("#nf-preset .chip").forEach(x => x.setAttribute("aria-pressed", String(x === b))); });
+      $("nf-add").onclick = () => {
+        const n = $("nf-n").value.trim();
+        if (!n){ $("nf-n").focus(); return; }
+        stato[apri].items.push({ k: "x", n, c: +$("nf-c").value||0, p: +$("nf-p").value||0, f: +$("nf-f").value||0, q: 1 });
+        d.remove(); box.textContent = "+ Altro alimento non in elenco";
+        paint(true);
+      };
+      d.scrollIntoView({ behavior: "smooth", block: "center" });
+    };
     $("c-save").onclick = async () => {
       $("c-save").disabled = true;
       const rows = MEALS.map(([k]) => ({ athlete_id: me.id, day, meal: k,
