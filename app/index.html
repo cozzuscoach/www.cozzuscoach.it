@@ -385,7 +385,7 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid #
 <div id="sheet-root"></div>
 
 <script>
-const APP_VERSION = "2026-09-28 · 20";
+const APP_VERSION = "2026-09-28 · 21";
 const sb = supabase.createClient("https://pnoxjvssvtusjvbwpkkh.supabase.co","sb_publishable_ol7Ds9jbamCSwpNpGEPT9Q_ZZvxNHy3");
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -2240,7 +2240,11 @@ function sheetCibo(ds){
       <button class="btn soft full chiudi" style="margin-top:8px">Chiudi</button></div>`;
   };
   const formAltro = k => `<div class="card" style="margin-top:8px">
-      <div class="field"><label>Che cosa hai mangiato</label><input class="nf-n" placeholder="es. Focaccia barese, 1 trancio"></div>
+      <div class="field"><label>Scrivi che cosa hai mangiato</label>
+        <textarea class="nf-ai" rows="2" placeholder="es. due fette di focaccia barese e uno yogurt alla frutta"></textarea>
+        <button class="btn soft full nf-calc" style="margin-top:8px">Calcola i nutrienti</button>
+        <div class="hint nf-aimsg" style="margin-top:6px">Descrivi a parole, anche più alimenti insieme: vengono aggiunti con i valori stimati, che puoi correggere.</div></div>
+      <div class="field"><label>Oppure inseriscili a mano</label><input class="nf-n" placeholder="es. Focaccia barese, 1 trancio"></div>
       <div class="field"><label>Porzione tipo (se non conosci i valori)</label><div class="chips nf-preset">
         <button type="button" class="chip" data-v="60,10,3">Carboidrati</button>
         <button type="button" class="chip" data-v="30,5,8">Spuntino dolce</button>
@@ -2292,6 +2296,20 @@ function sheetCibo(ds){
     const cer = box.querySelector(".nf-cerca");
     if (cer) cer.oninput = e => { cerca = e.target.value; const pos = e.target.selectionStart; paint();
       const n = $("c-meals").querySelector(".nf-cerca"); if (n){ n.focus(); try { n.setSelectionRange(pos, pos); } catch(_){} } };
+    const calc = box.querySelector(".nf-calc");
+    if (calc) calc.onclick = async () => {
+      const ta = box.querySelector(".nf-ai"), msg = box.querySelector(".nf-aimsg");
+      const testo = (ta.value || "").trim();
+      if (testo.length < 3){ ta.focus(); return; }
+      calc.disabled = true; msg.textContent = "Sto calcolando…";
+      const { data, error } = await sb.functions.invoke("nutrienti", { body: { text: testo } });
+      calc.disabled = false;
+      if (error || data?.error){ msg.textContent = "Non riuscito: " + (data?.error || error.message) + ". Puoi inserire i valori a mano."; return; }
+      const items = data?.items || [];
+      if (!items.length){ msg.textContent = "Non ho riconosciuto alimenti: prova a riscriverlo in modo più semplice."; return; }
+      items.forEach(it => stato[aperto].items.push({ k:"x", n: it.n, c: it.c, p: it.p, f: it.f, q: 1 }));
+      aperto = null; modo = null; paint();
+    };
     const add = box.querySelector(".nf-add");
     if (add) add.onclick = () => {
       const g = c => box.querySelector("." + c);
