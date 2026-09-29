@@ -385,7 +385,7 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid #
 <div id="sheet-root"></div>
 
 <script>
-const APP_VERSION = "2026-09-28 · 21";
+const APP_VERSION = "2026-09-28 · 22";
 const sb = supabase.createClient("https://pnoxjvssvtusjvbwpkkh.supabase.co","sb_publishable_ol7Ds9jbamCSwpNpGEPT9Q_ZZvxNHy3");
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -2304,7 +2304,12 @@ function sheetCibo(ds){
       calc.disabled = true; msg.textContent = "Sto calcolando…";
       const { data, error } = await sb.functions.invoke("nutrienti", { body: { text: testo } });
       calc.disabled = false;
-      if (error || data?.error){ msg.textContent = "Non riuscito: " + (data?.error || error.message) + ". Puoi inserire i valori a mano."; return; }
+      let det = data?.error;
+      if (!det && error){
+        det = error.message;
+        try { const b = await error.context?.json(); if (b?.error) det = b.error; } catch (_) {}
+      }
+      if (det){ msg.textContent = "Non riuscito: " + det + ". Puoi inserire i valori a mano."; return; }
       const items = data?.items || [];
       if (!items.length){ msg.textContent = "Non ho riconosciuto alimenti: prova a riscriverlo in modo più semplice."; return; }
       items.forEach(it => stato[aperto].items.push({ k:"x", n: it.n, c: it.c, p: it.p, f: it.f, q: 1 }));
