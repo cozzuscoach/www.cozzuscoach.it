@@ -385,7 +385,7 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid #
 <div id="sheet-root"></div>
 
 <script>
-const APP_VERSION = "2026-09-28 · 19";
+const APP_VERSION = "2026-09-28 · 20";
 const sb = supabase.createClient("https://pnoxjvssvtusjvbwpkkh.supabase.co","sb_publishable_ol7Ds9jbamCSwpNpGEPT9Q_ZZvxNHy3");
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -527,7 +527,7 @@ function renderHome(){
 function renderMorning(){
   const c = S.checkins.find(x => x.day===TODAY);
   $("morning-card").innerHTML = c
-    ? `<div class="status ok"><div class="ic">✓</div><div><b>Check-in del mattino fatto</b><div class="sub">HRV ${c.hrv_ms??"–"} · FC ${c.rhr_bpm??"–"} · sonno ${sleep(c.sleep_min)}</div></div></div>
+    ? `<div class="status ok"><div class="ic">✓</div><div><b>Check-in del mattino fatto</b><div class="sub">HRV ${c.hrv_ms??"–"} · FC ${c.rhr_bpm??"–"} · sonno ${sleep(c.sleep_min)}${c.weight_kg?` · ${c.weight_kg} kg`:""}</div></div></div>
        <button class="btn soft full" data-open="morning">Modifica</button>`
     : `<div class="status"><div class="ic">☾</div><div><b>Com'è andata la notte?</b><div class="sub">30 secondi: sonno, HRV, FC a riposo, sensazioni.</div></div></div>
        <button class="btn soft full" data-open="morning">Compila il check-in</button>`;
@@ -597,7 +597,7 @@ function renderDiary(D, box, own){
       </div>
       ${w.blocks?.length?`<div class="phases">${w.blocks.map(b => `<span><b>${PHASE_LBL[b.phase]||b.phase}</b> ${b.label?esc(b.label)+" · ":""}${b.distance_km?b.distance_km+" km":""}${b.duration_s?" "+dur(b.duration_s):""}${b.avg_hr?" · FC "+b.avg_hr:""}</span>`).join("")}</div>`:""}
       ${w.notes && (own||!w.notes_private)?`<div class="note">${esc(w.notes)}</div>`:""}`).join("")}
-      ${c ? `<div class="morning" ${own?`data-open="morning" data-day="${c.day}" style="cursor:pointer"`:""}>Mattino: HRV <b class="${hrvLow?"flag":""}">${c.hrv_ms??"–"}</b> · FC <b class="${rhrHigh?"flag":""}">${c.rhr_bpm??"–"}</b> · sonno <b>${sleep(c.sleep_min)}</b>${c.legs_feel?` · gambe <b>${c.legs_feel}/5</b>`:""}</div>
+      ${c ? `<div class="morning" ${own?`data-open="morning" data-day="${c.day}" style="cursor:pointer"`:""}>Mattino: HRV <b class="${hrvLow?"flag":""}">${c.hrv_ms??"–"}</b> · FC <b class="${rhrHigh?"flag":""}">${c.rhr_bpm??"–"}</b> · sonno <b>${sleep(c.sleep_min)}</b>${c.legs_feel?` · gambe <b>${c.legs_feel}/5</b>`:""}${c.weight_kg?` · peso <b>${c.weight_kg} kg</b>`:""}</div>
         ${c.notes && (own||!c.notes_private)?`<div class="note">${esc(c.notes)}</div>`:""}` : ""}
     </div>`;
   }).join("");
@@ -781,6 +781,7 @@ function sheetMorning(ds){
       <div class="field"><label for="m-sm">Sonno: minuti</label><input id="m-sm" type="number" inputmode="numeric" value="${c.sleep_min!=null?c.sleep_min%60:""}"></div>
       <div class="field"><label for="m-sc">Punteggio sonno</label><input id="m-sc" type="number" inputmode="numeric" value="${c.sleep_score??""}"></div>
       <div class="field"><label for="m-bb">Body Battery</label><input id="m-bb" type="number" inputmode="numeric" value="${c.body_battery??""}"></div>
+      <div class="field"><label for="m-peso">Peso (kg)</label><input id="m-peso" type="number" step="0.1" inputmode="decimal" value="${c.weight_kg??""}"></div>
     </div>
     <div class="field"><label>Gambe</label>${scale("m-legs",5,c.legs_feel)}<div class="hint">1 = pesantissime, 5 = fresche</div></div>
     <div class="field"><label>Umore ed energia</label>${scale("m-mood",5,c.mood)}<div class="hint">1 = a terra, 5 = al top</div></div>
@@ -795,7 +796,7 @@ function sheetMorning(ds){
       save($("m-save"), sb.from("daily_checkins").upsert({
         athlete_id: me.id, day, hrv_ms: nv("m-hrv"), rhr_bpm: nv("m-rhr"),
         sleep_min: h==null&&m==null ? null : (h||0)*60+(m||0),
-        sleep_score: nv("m-sc"), body_battery: nv("m-bb"),
+        sleep_score: nv("m-sc"), body_battery: nv("m-bb"), weight_kg: nv("m-peso"),
         legs_feel: sv("m-legs"), mood: sv("m-mood"),
         notes: $("m-notes").value.trim()||null, notes_private: $("m-priv").checked, source:"manuale"
       }, { onConflict:"athlete_id,day" }));
@@ -2044,6 +2045,7 @@ function renderStats(){
   const sLenti = serie(lenti, "day", w => w.avg_hr);
   const sPasso = serie(lenti.filter(w => w.avg_pace_s), "day", w => w.avg_pace_s);
   const sRpe = serie(W.filter(w => w.rpe), "day", w => w.rpe);
+  const sPeso = serie(S.checkins.filter(c => c.weight_kg), "day", c => +c.weight_kg, true);
   const ultimo = s => { const v = s.filter(x => x.v != null); return v.length ? v[v.length-1].v : null; };
   const chart = (titolo, s, fmt, nota) => `<div class="card chartbox">
       <div class="hd"><b>${titolo}</b><span>${ultimo(s) != null ? "ultimo: " + fmt(ultimo(s)) : ""}</span></div>
@@ -2085,6 +2087,7 @@ function renderStats(){
     ${chart("FC a riposo", sRhr, n0, "In calo nel tempo è un buon segnale di adattamento.")}
     ${chart("HRV notturna", sHrv, n0, "Valori più alti indicano un recupero migliore. Conta la tendenza, non il singolo giorno.")}
     ${chart("Sonno", sSonno, hhmm)}
+    ${chart("Peso corporeo", sPeso, v => v + " kg", "Conta la tendenza su settimane, non il singolo giorno: acqua e glicogeno fanno oscillare il peso di 1-2 kg.")}
     ${chart("FC media nei lenti", sLenti, n0, "Se scende a parità di ritmo, stai migliorando.")}
     ${chart("Passo medio nei lenti", sPasso, v => pace(v) + "/km")}
     ${chart("Fatica percepita (RPE)", sRpe, n0)}
@@ -2150,12 +2153,35 @@ const FOOD = {
   barretta:     ["Barretta energetica", 30, 4, 5],
   sport_drink:  ["Bevanda sportiva, 500 ml", 30, 0, 0],
   recupero:     ["Bevanda di recupero o frullato", 40, 20, 3],
+  torta_fit:    ["Torta fit o plumcake proteico, 1 fetta", 30, 12, 8],
+  pancake:      ["Pancake proteici, 2", 35, 20, 7],
+  porridge:     ["Porridge d'avena con latte, 1 ciotola", 45, 14, 7],
+  proteine_pol: ["Proteine in polvere, 1 misurino", 2, 24, 1],
+  crema_arachidi:["Crema di arachidi, 1 cucchiaio", 2, 4, 9],
+  cioccolato:   ["Cioccolato fondente, 25 g", 8, 2, 10],
+  gallette:     ["Gallette di riso o mais, 4", 25, 2, 1],
+  cracker:      ["Crackers o taralli, 40 g", 26, 4, 8],
+  bresaola:     ["Bresaola, 80 g", 0, 26, 2],
+  mozzarella:   ["Mozzarella, 125 g", 2, 22, 20],
+  tofu:         ["Tofu o tempeh, 150 g", 3, 18, 10],
+  cous:         ["Cous cous o farro, 80 g a crudo", 58, 10, 1],
+  pane_integrale:["Pane integrale, 50 g", 22, 5, 1],
+  bowl:         ["Poke o insalatona completa", 55, 25, 12],
+  panino:       ["Panino con affettato, 1", 45, 20, 10],
+  smoothie:     ["Frullato di frutta, 300 ml", 35, 2, 0],
+  succo:        ["Succo di frutta, 200 ml", 22, 0, 0],
+  birra:        ["Birra, 330 ml", 11, 1, 0],
+  vino:         ["Vino, 1 bicchiere", 1, 0, 0],
+  gelato:       ["Gelato, 2 palline", 30, 4, 10],
+  maltodestrine:["Maltodestrine o polvere energetica, 50 g", 48, 0, 0],
+  sali:         ["Integratore salino, 500 ml", 12, 0, 0],
 };
 const MEALS = [["colazione","Colazione"],["spuntino","Spuntino"],["pranzo","Pranzo"],["durante","Durante l'allenamento"],["merenda","Merenda"],["cena","Cena"]];
 
 // fabbisogno indicativo in base al peso e alla seduta del giorno
 function fabbisogno(tipo){
-  const kg = +me.weight_kg || null;
+  const ultimo = (S.checkins||[]).filter(c => c.weight_kg).sort((a,b) => b.day.localeCompare(a.day))[0];
+  const kg = +(ultimo?.weight_kg) || +me.weight_kg || null;
   if (!kg) return null;
   const q = { riposo:[3,4], recupero:[4,5], lento:[5,6], medio:[6,7], soglia:[6,7], vo2max:[6,7], ritmo_gara:[6,7],
               test:[6,7], lungo:[7,8], lungo_progressivo:[7,8], gara:[7,8] }[tipo] || [5,6];
@@ -2163,6 +2189,7 @@ function fabbisogno(tipo){
   return { kg, cho, pro: [Math.round(kg*1.7), Math.round(kg*2.0)], fat: Math.round(kg*1.0),
            pasti: Math.round(kg*0.35), durante: ["lungo","lungo_progressivo","gara"].includes(tipo) };
 }
+const qFmt = q => (q % 1 ? String(q).replace(".", ",") : String(q));
 const foodOf = it => FOOD[it.k] || (it.n ? [it.n, +it.c||0, +it.p||0, +it.f||0] : null);
 const sommaPasti = rows => rows.reduce((t,m) => {
   (m.items||[]).forEach(it => { const f = foodOf(it); if (!f) return;
@@ -2234,8 +2261,9 @@ function sheetCibo(ds){
       const sel = stato[k].items;
       return `<div class="mealbox" data-meal="${k}"><h4>${l}</h4>
         ${sel.length ? sel.map((it,i) => { const f = foodOf(it);
-          return `<div class="foodline"><span>${esc(f?.[0] || "alimento")}${f?`<br><span class="hint">${f[1]*it.q} g carbo · ${f[2]*it.q} g prot · ${f[3]*it.q} g grassi</span>`:""}</span>
-            <span class="q"><button type="button" data-m="${k}" data-i="${i}" data-d="-1">−</button><b>${it.q}</b><button type="button" data-m="${k}" data-i="${i}" data-d="1">+</button></span></div>`; }).join("")
+          const r1 = x => Math.round(x*10)/10;
+          return `<div class="foodline"><span>${esc(f?.[0] || "alimento")}${f?`<br><span class="hint">${r1(f[1]*it.q)} g carbo · ${r1(f[2]*it.q)} g prot · ${r1(f[3]*it.q)} g grassi</span>`:""}</span>
+            <span class="q"><button type="button" data-m="${k}" data-i="${i}" data-d="-0.5">−</button><b>${qFmt(it.q)}</b><button type="button" data-m="${k}" data-i="${i}" data-d="0.5">+</button></span></div>`; }).join("")
           : `<div class="hint">Niente registrato.</div>`}
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
           <button class="btn soft" data-apri="${k}" data-modo="elenco" style="padding:9px 14px;font-size:16px">+ Dall'elenco</button>
@@ -2249,7 +2277,8 @@ function sheetCibo(ds){
     const box = $("c-meals");
     box.querySelectorAll("[data-d]").forEach(b => b.onclick = () => {
       const it = stato[b.dataset.m].items[+b.dataset.i];
-      it.q += +b.dataset.d; if (it.q <= 0) stato[b.dataset.m].items.splice(+b.dataset.i, 1); paint(); });
+      it.q = Math.round((it.q + +b.dataset.d) * 2) / 2;
+      if (it.q <= 0) stato[b.dataset.m].items.splice(+b.dataset.i, 1); paint(); });
     box.querySelectorAll("[data-apri]").forEach(b => b.onclick = () => {
       const stessa = aperto === b.dataset.apri && modo === b.dataset.modo;
       aperto = stessa ? null : b.dataset.apri; modo = stessa ? null : b.dataset.modo; cerca = "";
@@ -2258,7 +2287,7 @@ function sheetCibo(ds){
     box.querySelectorAll(".chiudi").forEach(b => b.onclick = () => { aperto = null; modo = null; paint(); });
     box.querySelectorAll(".pick").forEach(b => b.onclick = () => {
       const arr = stato[aperto].items, ex = arr.find(x => x.k === b.dataset.food);
-      if (ex) ex.q++; else arr.push({ k: b.dataset.food, q: 1 });
+      if (ex) ex.q = Math.round((ex.q + 0.5) * 2) / 2; else arr.push({ k: b.dataset.food, q: 1 });
       paint(); });
     const cer = box.querySelector(".nf-cerca");
     if (cer) cer.oninput = e => { cerca = e.target.value; const pos = e.target.selectionStart; paint();
