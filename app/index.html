@@ -240,6 +240,18 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid #
 .evrow .n{font-weight:600;line-height:1.2}
 .evrow .w{font-size:13px;color:var(--muted)}
 .preview{max-height:260px;overflow:auto;font-size:14px;border:1px solid var(--line);border-radius:10px;padding:8px;margin-top:10px}
+.chips.sm .chip{padding:8px 12px;font-size:14px}
+.exrow{display:grid;grid-template-columns:1fr 1fr 1fr 44px;gap:6px}
+.exrow input{padding:10px 8px;font-size:16px}
+.exrow button{min-height:44px;border-radius:10px;background:#FBEEE9;color:var(--warn);font-weight:700}
+.exlist{font-size:14px;color:var(--muted);margin-top:6px}
+.sbars{display:flex;align-items:flex-end;gap:4px;height:120px;margin-top:14px}
+.sbars .col{flex:1;height:100%;display:flex;flex-direction:column-reverse;position:relative}
+.sbars .col i{display:block;width:100%}
+.sbars .col i:last-of-type{border-radius:4px 4px 0 0}
+.sbars .col span{position:absolute;bottom:-18px;left:0;right:0;text-align:center;font-size:10px;color:var(--muted)}
+.legend{display:flex;flex-wrap:wrap;gap:12px;margin-top:28px;font-size:13px;color:var(--muted)}
+.legend b{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px}
 </style>
 </head>
 <body>
@@ -386,7 +398,7 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid #
 <div id="sheet-root"></div>
 
 <script>
-const APP_VERSION = "2026-09-30 · 25";
+const APP_VERSION = "2026-09-30 · 26";
 const sb = supabase.createClient("https://pnoxjvssvtusjvbwpkkh.supabase.co","sb_publishable_ol7Ds9jbamCSwpNpGEPT9Q_ZZvxNHy3");
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -502,7 +514,7 @@ function renderHome(){
   const noteHtml = S.plan?.coach_note ? `<div class="coachnote"><b>Dal tuo coach</b><p>${esc(S.plan.coach_note)}</p></div>` : "";
   // seduta di oggi
   const ses = S.sessions.find(s => s.session_date===TODAY);
-  const done = S.workouts.find(x => x.day===TODAY);
+  const done = S.workouts.find(x => x.day===TODAY && (x.sport||"corsa")==="corsa");
   let html;
   if (!ses){
     html = `<div class="card session"><div class="sub">Oggi</div><h3>Nessuna seduta programmata</h3>
@@ -562,7 +574,7 @@ function renderPlan(){
     const km = info?.km ?? groups[m].reduce((t,x) => t + (+x.target_km||0), 0);
     return `<div class="wk-head"><b>${info?`Settimana ${info.n} · ${PHASES[info.phase]}`:`Settimana dal ${p.n} ${p.m}`}</b><span>${km ? `${Math.round(km)} km${info?.recovery?" · scarico":""}` : `${p.n} ${p.m} – ${e.n} ${e.m}`}</span></div>
       <div class="card" style="margin-top:0">${groups[m].map(s => {
-        const d = dayParts(s.session_date), done = S.workouts.some(w => w.day===s.session_date);
+        const d = dayParts(s.session_date), done = S.workouts.some(w => w.day===s.session_date && (w.sport||"corsa")==="corsa");
         const [purpose, ...rest] = (s.description||"").split("\n");
         return `<div class="pday ${s.session_date<TODAY?"past":""} ${s.session_date===TODAY?"is-today":""}">
           <div class="d">${d.n}<span>${d.w}</span></div>
@@ -579,29 +591,65 @@ const mondayOf = s => addDays(s, -((dt(s).getDay()+6)%7));
 /* ---------- DIARIO ---------- */
 function renderDiary(D, box, own){
   const days = [...new Set([...D.workouts.map(w=>w.day), ...D.checkins.map(c=>c.day)])].sort().reverse();
-  const nW = D.workouts.filter(w => w.day >= addDays(TODAY,-6)).length;
-  const km7 = D.workouts.filter(w => w.day >= addDays(TODAY,-6)).reduce((a,w)=>a+(+w.distance_km||0),0);
-  if (own) $("diary-lead").textContent = `Ultimi 7 giorni: ${km7.toFixed(1)} km in ${nW} ${nW===1?"uscita":"uscite"}`;
+  const w7 = D.workouts.filter(w => w.day >= addDays(TODAY,-6));
+  const run7 = w7.filter(w => (w.sport||"corsa") === "corsa"), oth7 = w7.filter(w => (w.sport||"corsa") !== "corsa");
+  const km7 = run7.reduce((a,w)=>a+(+w.distance_km||0),0), sOth = oth7.reduce((a,w)=>a+(w.duration_s||0),0);
+  if (own) $("diary-lead").textContent = `Ultimi 7 giorni: ${km7.toFixed(1)} km di corsa in ${run7.length} ${run7.length===1?"uscita":"uscite"}${oth7.length && sOth ? ` · altri sport ${dur(sOth)}` : ""}`;
   if (!days.length){ box.innerHTML = `<div class="empty">${own?"Il diario è vuoto. Registra il primo allenamento o il check-in di stamattina.":"Nessun dato inserito."}</div>`; return; }
   box.innerHTML = days.map(day => {
     const p = dayParts(day), ws = D.workouts.filter(w=>w.day===day), c = D.checkins.find(x=>x.day===day);
     const hrvLow = c?.hrv_ms && c?.hrv_avg7 && c.hrv_ms < c.hrv_avg7*0.85;
     const rhrHigh = c?.rhr_bpm && c?.rhr_avg7 && c.rhr_bpm >= c.rhr_avg7+5;
     return `<div class="dentry">
-      <div class="dh"><b>${p.W} ${p.n} ${p.m}</b><span>${ws.map(w=>SPORT_LBL[w.sport]||TYPES[w.type]||"Corsa").join(" + ")}</span></div>
+      <div class="dh"><b>${p.W} ${p.n} ${p.m}</b><span>${ws.map(w => w.sport && w.sport !== "corsa" ? SPORT_LBL[w.sport] : (TYPES[w.type]||"Corsa")).join(" + ")}</span></div>
       ${own?`<div class="hint">Tocca una riga per correggerla</div>`:""}
-      ${ws.map(w => `<div class="metrics" ${own?`data-open="workout" data-edit="${w.id}" style="cursor:pointer"`:""}>
-        <div class="metric"><div class="v">${w.distance_km??"–"}</div><div class="k">km</div></div>
-        <div class="metric"><div class="v">${dur(w.duration_s)}</div><div class="k">tempo</div></div>
-        <div class="metric"><div class="v">${w.distance_km&&w.duration_s?pace(w.duration_s/w.distance_km):"–"}</div><div class="k">/km</div></div>
-        <div class="metric"><div class="v">${w.avg_hr??"–"}</div><div class="k">FC · RPE ${w.rpe}</div></div>
-      </div>
-      ${w.blocks?.length?`<div class="phases">${w.blocks.map(b => `<span><b>${PHASE_LBL[b.phase]||b.phase}</b> ${b.label?esc(b.label)+" · ":""}${b.distance_km?b.distance_km+" km":""}${b.duration_s?" "+dur(b.duration_s):""}${b.avg_hr?" · FC "+b.avg_hr:""}</span>`).join("")}</div>`:""}
-      ${w.notes && (own||!w.notes_private)?`<div class="note">${esc(w.notes)}</div>`:""}`).join("")}
+      ${ws.map(w => wMetrics(w, own) + (w.notes && (own||!w.notes_private)?`<div class="note">${esc(w.notes)}</div>`:"")).join("")}
       ${c ? `<div class="morning" ${own?`data-open="morning" data-day="${c.day}" style="cursor:pointer"`:""}>Mattino: HRV <b class="${hrvLow?"flag":""}">${c.hrv_ms??"–"}</b> · FC <b class="${rhrHigh?"flag":""}">${c.rhr_bpm??"–"}</b> · sonno <b>${sleep(c.sleep_min)}</b>${c.legs_feel?` · gambe <b>${c.legs_feel}/5</b>`:""}${c.weight_kg?` · peso <b>${c.weight_kg} kg</b>`:""}</div>
         ${c.notes && (own||!c.notes_private)?`<div class="note">${esc(c.notes)}</div>`:""}` : ""}
     </div>`;
   }).join("");
+}
+
+// riga del diario con le metriche adatte allo sport
+function wMetrics(w, own){
+  const sp = w.sport || "corsa", d = w.details || {};
+  const cell = (v,k) => `<div class="metric"><div class="v">${v}</div><div class="k">${k}</div></div>`;
+  const lbl = (arr, v) => arr.find(x => x[0] === v)?.[1] || "";
+  let cells, info = [];
+  if (sp === "nuoto"){
+    cells = [cell(w.distance_km ? Math.round(w.distance_km*1000) : "–","metri"), cell(dur(w.duration_s),"tempo"),
+      cell(w.distance_km ? p100(w.distance_km*1000, w.duration_s) : "–","/100 m"), cell(w.avg_hr??"–",`FC · RPE ${w.rpe}`)];
+    info = [lbl(VASCHE, d.pool), (d.strokes||[]).map(s => lbl(STILI, s)).join(", "),
+      (d.gear||[]).length ? "con " + d.gear.map(g => lbl(ATTREZZI, g).toLowerCase()).join(", ") : ""];
+  } else if (sp === "bici"){
+    cells = [cell(w.distance_km??"–","km"), cell(dur(w.duration_s),"tempo"), cell(kmh(w.distance_km, w.duration_s),"km/h"),
+      d.avg_power_w ? cell(d.avg_power_w, `W · RPE ${w.rpe}`) : cell(w.avg_hr??"–", `FC · RPE ${w.rpe}`)];
+    info = [lbl(BICI, d.bike), w.elevation_gain_m ? `+${w.elevation_gain_m} m` : "", d.np_w ? `NP ${d.np_w} W` : "",
+      d.avg_power_w && w.avg_hr ? `FC ${w.avg_hr}` : "", d.brick ? "seguita da corsa" : ""];
+  } else if (sp === "palestra"){
+    const circ = d.mode === "circuito", v = d.volume_kg;
+    cells = [cell(dur(w.duration_s),"tempo"),
+      circ ? cell(lbl(FORMATI, d.format) || "WOD","formato") : cell((d.exercises||[]).length || "–","esercizi"),
+      cell(v ? (v >= 1000 ? (v/1000).toFixed(1).replace(".",",") + " t" : v + " kg") : "–","volume"), cell(w.rpe,"RPE")];
+    info = [lbl(LUOGHI, d.place), (d.focus||[]).map(f => lbl(DISTRETTI, f)).join(", ")];
+  } else if (sp === "altro"){
+    cells = [cell(dur(w.duration_s),"tempo"), cell(w.distance_km??"–","km"), cell(w.avg_hr??"–","FC"), cell(w.rpe,"RPE")];
+    info = [esc(d.what)];
+  } else {
+    cells = [cell(w.distance_km??"–","km"), cell(dur(w.duration_s),"tempo"),
+      cell(w.distance_km&&w.duration_s ? pace(w.duration_s/w.distance_km) : "–","/km"), cell(w.avg_hr??"–",`FC · RPE ${w.rpe}`)];
+  }
+  const load = carico(w);
+  if (load) info.push(`carico ${load}`);
+  const unit = b => sp === "nuoto" ? (b.distance_km ? Math.round(b.distance_km*1000) + " m" : "") : (b.distance_km ? b.distance_km + " km" : "");
+  const fasi = w.blocks?.length ? `<div class="phases">${w.blocks.map(b => `<span><b>${PHASE_LBL[b.phase]||b.phase}</b> ${b.label?esc(b.label)+" · ":""}${unit(b)}${b.duration_s?" "+dur(b.duration_s):""}${b.details?.power_w?" · "+b.details.power_w+" W":""}${b.avg_hr?" · FC "+b.avg_hr:""}</span>`).join("")}</div>` : "";
+  let body = "";
+  if (sp === "palestra") body = d.mode === "circuito"
+    ? [d.wod ? esc(d.wod) : "", d.result ? "Risultato: " + esc(d.result) : ""].filter(Boolean).join("\n")
+    : (d.exercises||[]).map(e => `${esc(e.name)}${e.sets&&e.reps?` ${e.sets}×${e.reps}`:""}${e.kg?` · ${String(e.kg).replace(".",",")} kg`:""}`).join("\n");
+  const infoTxt = info.filter(Boolean).join(" · ");
+  return `<div class="metrics" ${own?`data-open="workout" data-edit="${w.id}" style="cursor:pointer"`:""}>${cells.join("")}</div>
+    ${fasi}${infoTxt?`<div class="exlist">${infoTxt}</div>`:""}${body?`<div class="exlist" style="white-space:pre-line;color:var(--ink)">${body}</div>`:""}`;
 }
 
 /* ---------- PROFILO / GARE ---------- */
@@ -645,56 +693,173 @@ async function save(btn, promise, okText){
   closeSheet(); await loadAthlete(); return true;
 }
 
-const SPORTS = [["corsa","Corsa"],["palestra","Palestra"],["bici","Bici"],["nuoto","Nuoto"],["altro","Altro"]];
+const SPORTS = [["corsa","Corsa"],["palestra","Forza"],["bici","Bici"],["nuoto","Nuoto"],["altro","Altro"]];
 const SPORT_LBL = Object.fromEntries(SPORTS);
 const PHASES_W = [["riscaldamento","Riscaldamento"],["lavoro","Lavoro"],["defaticamento","Defaticamento"],["altro","Altro"]];
 const PHASE_LBL = Object.fromEntries(PHASES_W);
 const PHASE_CLS = { riscaldamento:"phase-ris", lavoro:"phase-lav", defaticamento:"phase-def", altro:"phase-alt" };
+const SPORT_COL = { corsa:"var(--sea)", bici:"var(--sun)", nuoto:"#6FB7C9", palestra:"var(--ok)", altro:"#9AA8AE" };
+const ESERCIZI = ["Squat","Squat bulgaro","Affondi","Affondi in camminata","Stacco rumeno","Stacco da terra","Step-up","Hip thrust","Ponte glutei","Calf raise","Nordic curl","Leg press","Leg curl","Monster walk con elastico","Clamshell","Plank","Plank laterale","Dead bug","Bird dog","Pallof press","Russian twist","Trazioni","Rematore","Piegamenti","Panca piana","Military press","Box jump","Salti con la corda","Skip","Balzi","Kettlebell swing","Burpees","Wall ball","Thruster"];
+const FORMATI = [["amrap","AMRAP"],["emom","EMOM"],["fortime","For time"],["circuito","Circuito"],["altro","Altro"]];
+const DISTRETTI = [["gambe","Gambe"],["core","Core"],["alta","Parte alta"],["total","Total body"]];
+const LUOGHI = [["palestra","Palestra"],["casa","Casa"]];
+const STILI = [["libero","Stile libero"],["dorso","Dorso"],["rana","Rana"],["delfino","Delfino"],["misti","Misti"]];
+const ATTREZZI = [["pull","Pull buoy"],["pinne","Pinne"],["palette","Palette"],["tavoletta","Tavoletta"]];
+const VASCHE = [["25","Vasca 25 m"],["50","Vasca 50 m"],["libere","Acque libere"]];
+const BICI = [["strada","Strada"],["mtb","MTB o gravel"],["rulli","Rulli"]];
+const carico = w => w.rpe && w.duration_s ? Math.round(w.rpe * w.duration_s / 60) : null;
+const kmh = (km, s) => km && s ? (km/(s/3600)).toFixed(1).replace(".",",") : "–";
+const p100 = (m, s) => m && s ? pace(s/(m/100)) : "–";
+const volumeForza = ex => (ex||[]).reduce((t,e) => t + (+e.sets||0)*(+e.reps||0)*(+e.kg||0), 0);
 
 function sheetWorkout(ds){
   const ex = ds.edit ? S.workouts.find(w => w.id == ds.edit) : null;
   const ses = ds.session ? S.sessions.find(x=>x.id==ds.session) : S.sessions.find(x=>x.session_date===TODAY);
+  const CON_FASI = ["corsa","nuoto","bici"];
   let sport = ex?.sport || "corsa";
-  let blocks = ex?.blocks?.length ? ex.blocks.map(b => ({...b}))
-    : (ex ? [{ phase:"lavoro", label:null, distance_km: ex.distance_km, duration_s: ex.duration_s, avg_hr: ex.avg_hr, rpe: ex.rpe }]
-          : [{ phase:"riscaldamento" }, { phase:"lavoro" }, { phase:"defaticamento" }]);
-  const [dh,dm] = [0,0];
+  const det = ex?.details ? JSON.parse(JSON.stringify(ex.details)) : {};
+  const fasiBase = () => [{ phase:"riscaldamento" }, { phase:"lavoro" }, { phase:"defaticamento" }];
+  let blocks = !ex ? fasiBase()
+    : !CON_FASI.includes(sport) ? []
+    : ex.blocks?.length ? ex.blocks.map(b => ({ ...b, power_w: b.details?.power_w ?? null }))
+    : [{ phase:"lavoro", label:null, distance_km: ex.distance_km, duration_s: ex.duration_s, avg_hr: ex.avg_hr, power_w: det.avg_power_w ?? null }];
+  const noFasi = !!ex && !CON_FASI.includes(sport);
+  const D = {
+    type: ex ? ex.type : (ses?.type && ses.type !== "riposo" ? ses.type : "lento"),
+    pool: det.pool || "25", strokes: det.strokes || ["libero"], gear: det.gear || [],
+    bike: det.bike || "strada", brick: !!det.brick, np_w: det.np_w ?? null, elev: ex?.elevation_gain_m ?? null,
+    place: det.place || "palestra", mode: det.mode || "esercizi", focus: det.focus || [],
+    exercises: det.exercises?.length ? det.exercises.map(e => ({ name: e.name||"", sets: e.sets??"", reps: e.reps??"", kg: e.kg??"" }))
+                                     : [{ name:"", sets:"", reps:"", kg:"" }],
+    format: det.format || "amrap", wod: det.wod || "", result: det.result || "",
+    what: det.what || "", dur_s: noFasi ? ex.duration_s : null,
+    dist_km: noFasi && sport === "altro" ? ex.distance_km : null, hr: noFasi ? ex.avg_hr : null
+  };
+  const nOggi = S.workouts.filter(w => w.day === TODAY).length;
+  const sNo = ex ? (ex.session_no === 2 ? 2 : 1) : (nOggi ? 2 : 1);
+  const conFasi = () => CON_FASI.includes(sport);
+  const val = id => $(id) ? $(id).value : "";
+  const err = m => { $("f-msg").className = "msg err"; $("f-msg").textContent = m; };
 
+  /* ---- fasi (corsa, nuoto, bici) ---- */
+  const blkInfo = b => !(b.distance_km && b.duration_s) ? ""
+    : sport === "nuoto" ? `Passo: <b>${p100(b.distance_km*1000, b.duration_s)}/100 m</b>`
+    : sport === "bici" ? `Velocità: <b>${kmh(b.distance_km, b.duration_s)} km/h</b>`
+    : `Passo: <b>${pace(b.duration_s / b.distance_km)}/km</b>`;
   const blockHtml = (b,i) => {
     const [h,m,x] = hms(b.duration_s);
+    const ph = { corsa:"es. 5 × 1000 m a 3'20&quot;", nuoto:"es. 10 × 100 m rec. 20&quot;", bici:"es. 3 × 10' in salita" }[sport];
+    const dist = sport === "nuoto"
+      ? `<div class="field"><label>Distanza (m)</label><input data-f="dist_m" type="number" step="25" inputmode="numeric" value="${b.distance_km!=null?Math.round(b.distance_km*1000):""}"></div>`
+      : `<div class="field"><label>Distanza (km)</label><input data-f="distance_km" type="number" step="0.01" inputmode="decimal" value="${b.distance_km??""}"></div>`;
     return `<div class="blk ${PHASE_CLS[b.phase]||""}" data-i="${i}">
       <div class="bh"><b>${PHASE_LBL[b.phase]||b.phase}</b><button type="button" class="del-blk" data-del="${i}" aria-label="Togli ${PHASE_LBL[b.phase]||b.phase}">Togli</button></div>
-      ${b.phase === "lavoro" || b.phase === "altro" ? `<div class="field"><input data-f="label" placeholder="Cosa hai fatto: es. 5 × 1000 m a 3'20&quot;" value="${esc(b.label)}"></div>` : ""}
-      <div class="g2">
-        <div class="field"><label>Distanza (km)</label><input data-f="distance_km" type="number" step="0.01" inputmode="decimal" value="${b.distance_km??""}"></div>
+      ${b.phase === "lavoro" || b.phase === "altro" ? `<div class="field"><input data-f="label" placeholder="Cosa hai fatto: ${ph}" value="${esc(b.label)}"></div>` : ""}
+      <div class="g2">${dist}
         <div class="field"><label>FC media</label><input data-f="avg_hr" type="number" inputmode="numeric" value="${b.avg_hr??""}"></div>
+        ${sport === "bici" ? `<div class="field"><label>Potenza media (W)</label><input data-f="power_w" type="number" inputmode="numeric" value="${b.power_w??""}"></div>` : ""}
       </div>
       <label>Durata</label><div class="g3"><input data-f="h" type="number" placeholder="ore" inputmode="numeric" value="${h||""}"><input data-f="m" type="number" placeholder="min" inputmode="numeric" value="${b.duration_s?m:""}"><input data-f="s" type="number" placeholder="sec" inputmode="numeric" value="${b.duration_s?x:""}"></div>
-      <div class="hint blkpace" style="margin-top:6px">${b.distance_km && b.duration_s ? `Passo: <b>${pace(b.duration_s / b.distance_km)}/km</b>` : ""}</div>
+      <div class="hint blkpace" style="margin-top:6px">${blkInfo(b)}</div>
     </div>`;
   };
   const read = () => {
     document.querySelectorAll("#w-blocks .blk").forEach(el => {
       const i = +el.dataset.i, g = f => { const n = el.querySelector(`[data-f="${f}"]`); return n ? n.value : ""; };
       const secs = (+g("h")||0)*3600 + (+g("m")||0)*60 + (+g("s")||0);
+      const dm = g("dist_m"), dk = g("distance_km");
       blocks[i] = { ...blocks[i], label: g("label").trim() || null,
-        distance_km: g("distance_km") === "" ? null : +g("distance_km"),
-        avg_hr: g("avg_hr") === "" ? null : +g("avg_hr"), duration_s: secs || null };
+        distance_km: sport === "nuoto" ? (dm === "" ? null : +dm/1000) : (dk === "" ? null : +dk),
+        avg_hr: g("avg_hr") === "" ? null : +g("avg_hr"),
+        power_w: g("power_w") === "" ? null : +g("power_w"), duration_s: secs || null };
     });
   };
+
+  /* ---- dettagli per sport ---- */
+  const readDet = () => {
+    if (sport === "corsa" && $("w-type")) D.type = val("w-type");
+    if (sport === "bici"){ D.elev = val("w-elev") === "" ? null : +val("w-elev"); D.np_w = val("w-np") === "" ? null : +val("w-np"); D.brick = !!$("w-brick")?.checked; }
+    if (sport === "palestra" || sport === "altro"){ const s = (+val("w-dh")||0)*3600 + (+val("w-dm")||0)*60; D.dur_s = s || null; }
+    if (sport === "palestra"){
+      document.querySelectorAll("[data-ex]").forEach(inp => { const e = D.exercises[+inp.dataset.ex]; if (e) e[inp.dataset.k] = inp.value; });
+      if ($("w-fmt")){ D.format = val("w-fmt"); D.wod = val("w-wod"); D.result = val("w-res"); }
+    }
+    if (sport === "altro"){ D.what = val("w-what"); D.dist_km = val("w-dist") === "" ? null : +val("w-dist"); D.hr = val("w-hr") === "" ? null : +val("w-hr"); }
+  };
+  const chipRow = (id, opts, sel, multi) => `<div class="chips sm" id="${id}">${opts.map(([v,l]) =>
+    `<button type="button" class="chip" data-v="${v}" aria-pressed="${multi ? sel.includes(v) : sel === v}">${l}</button>`).join("")}</div>`;
+  const bindChips = (id, key, multi) => { const box = $(id); if (!box) return;
+    box.querySelectorAll(".chip").forEach(c => c.onclick = () => {
+      const v = c.dataset.v;
+      if (multi) D[key] = D[key].includes(v) ? D[key].filter(x => x !== v) : [...D[key], v]; else D[key] = v;
+      box.querySelectorAll(".chip").forEach(x => x.setAttribute("aria-pressed", String(multi ? D[key].includes(x.dataset.v) : D[key] === x.dataset.v)));
+      if (key === "mode"){ readDet(); paintBody(); }
+    }); };
+  const durInputs = s => { const [h,m] = hms(s);
+    return `<label>Durata</label><div class="g2"><input id="w-dh" type="number" placeholder="ore" inputmode="numeric" value="${s&&h?h:""}"><input id="w-dm" type="number" placeholder="min" inputmode="numeric" value="${s?m:""}"></div>`; };
+  const exHtml = () => `<datalist id="w-exlist">${ESERCIZI.map(e => `<option value="${e}">`).join("")}</datalist>
+    ${D.exercises.map((e,i) => `<div class="blk" style="padding:10px">
+      <div class="field" style="margin-bottom:8px"><input data-ex="${i}" data-k="name" list="w-exlist" placeholder="Esercizio" value="${esc(e.name)}"></div>
+      <div class="exrow"><input data-ex="${i}" data-k="sets" type="number" inputmode="numeric" placeholder="serie" value="${esc(e.sets)}"><input data-ex="${i}" data-k="reps" type="number" inputmode="numeric" placeholder="ripetiz." value="${esc(e.reps)}"><input data-ex="${i}" data-k="kg" type="number" step="0.5" inputmode="decimal" placeholder="kg" value="${esc(e.kg)}"><button type="button" data-exdel="${i}" aria-label="Togli esercizio">✕</button></div>
+    </div>`).join("")}
+    <button type="button" class="btn soft full" id="w-exadd" style="margin:0 0 6px">+ Aggiungi esercizio</button>
+    <p class="hint" style="margin-bottom:12px">Lascia vuoti i kg per corpo libero o elastico. Per gli esercizi a tempo, come il plank, scrivi i secondi nelle ripetizioni.</p>`;
+  const wodHtml = () => `<div class="field"><label for="w-fmt">Formato</label><select id="w-fmt">${FORMATI.map(([v,l]) => `<option value="${v}" ${D.format===v?"selected":""}>${l}</option>`).join("")}</select></div>
+    <div class="field"><label for="w-wod">Svolgimento</label><textarea id="w-wod" rows="4" placeholder="es. 20' AMRAP: 10 wall ball, 10 box jump, 200 m di corsa">${esc(D.wod)}</textarea></div>
+    <div class="field"><label for="w-res">Risultato</label><input id="w-res" value="${esc(D.result)}" placeholder="es. 6 round + 12 ripetizioni, oppure 14'30&quot;"></div>`;
+  const paintBody = () => {
+    let html = "";
+    if (sport === "corsa") html = `<div class="field"><label for="w-type">Tipo di seduta (che cosa allenavi)</label><select id="w-type">${Object.entries(TYPES).filter(([k])=>k!=="riposo").map(([k,v])=>`<option value="${k}" ${D.type===k?"selected":""}>${v}</option>`).join("")}</select></div>`;
+    if (sport === "nuoto") html = `<div class="field"><label>Dove</label>${chipRow("w-pool", VASCHE, D.pool)}</div>
+      <div class="field"><label>Stile prevalente</label>${chipRow("w-stroke", STILI, D.strokes, true)}</div>
+      <div class="field"><label>Attrezzi</label>${chipRow("w-gear", ATTREZZI, D.gear, true)}</div>`;
+    if (sport === "bici") html = `<div class="field"><label>Tipo</label>${chipRow("w-bike", BICI, D.bike)}</div>`;
+    if (sport === "palestra") html = `<div class="field"><label>Dove</label>${chipRow("w-place", LUOGHI, D.place)}</div>
+      <div class="field"><label>Cosa hai allenato</label>${chipRow("w-focus", DISTRETTI, D.focus, true)}</div>
+      <div class="field"><label>Tipo di lavoro</label>${chipRow("w-mode", [["esercizi","Esercizi a serie"],["circuito","Circuito o WOD"]], D.mode)}</div>
+      ${D.mode === "esercizi" ? exHtml() : wodHtml()}
+      <div class="field">${durInputs(D.dur_s)}</div>`;
+    if (sport === "altro") html = `<div class="field"><label for="w-what">Attività</label><input id="w-what" value="${esc(D.what)}" placeholder="es. Yoga, calcetto, trekking"></div>
+      <div class="field">${durInputs(D.dur_s)}</div>
+      <div class="g2"><div class="field"><label for="w-dist">Distanza (km)</label><input id="w-dist" type="number" step="0.1" inputmode="decimal" value="${D.dist_km??""}"></div>
+      <div class="field"><label for="w-hr">FC media</label><input id="w-hr" type="number" inputmode="numeric" value="${D.hr??""}"></div></div>`;
+    $("w-body").innerHTML = html;
+    $("w-blockwrap").classList.toggle("hidden", !conFasi());
+    $("w-bikex").classList.toggle("hidden", sport !== "bici");
+    bindChips("w-pool","pool"); bindChips("w-stroke","strokes",true); bindChips("w-gear","gear",true);
+    bindChips("w-bike","bike"); bindChips("w-place","place"); bindChips("w-focus","focus",true); bindChips("w-mode","mode");
+    $("w-body").querySelectorAll("[data-exdel]").forEach(b => b.onclick = () => { readDet(); D.exercises.splice(+b.dataset.exdel, 1);
+      if (!D.exercises.length) D.exercises.push({ name:"", sets:"", reps:"", kg:"" }); paintBody(); });
+    if ($("w-exadd")) $("w-exadd").onclick = () => { readDet(); D.exercises.push({ name:"", sets:"", reps:"", kg:"" }); paintBody(); };
+    $("w-body").querySelectorAll("input,textarea,select").forEach(inp => inp.addEventListener("input", () => { readDet(); paintTot(); }));
+    paintTot();
+  };
+
+  /* ---- totali ---- */
   const totals = () => {
+    if (!conFasi()) return { km: sport === "altro" ? (D.dist_km||0) : 0, sec: D.dur_s||0, pace:null, work:null, power:null };
     const km = blocks.reduce((t,b) => t + (+b.distance_km||0), 0);
     const sec = blocks.reduce((t,b) => t + (+b.duration_s||0), 0);
     const lav = blocks.filter(b => b.phase === "lavoro" && b.distance_km && b.duration_s);
     const lkm = lav.reduce((t,b) => t + +b.distance_km, 0), lsec = lav.reduce((t,b) => t + +b.duration_s, 0);
-    return { km, sec, pace: km && sec ? sec/km : null, work: lkm && lsec ? lsec/lkm : null };
+    const pw = blocks.filter(b => b.power_w && b.duration_s);
+    const power = pw.length ? Math.round(pw.reduce((t,b) => t + b.power_w*b.duration_s, 0) / pw.reduce((t,b) => t + b.duration_s, 0)) : null;
+    return { km, sec, pace: km && sec ? sec/km : null, work: lkm && lsec ? lsec/lkm : null, power };
   };
   const paintTot = () => {
-    const t = totals();
-    $("w-tot").innerHTML = `Totale: <b>${t.km ? t.km.toFixed(1) : "–"} km</b> · <b>${t.sec ? dur(t.sec) : "–"}</b>${t.pace?` · <b>${pace(t.pace)}/km</b>`:""}${t.work?` · lavoro <b>${pace(t.work)}/km</b>`:""}`;
+    const t = totals(), rpe = sv("w-rpe"), load = rpe && t.sec ? Math.round(rpe*t.sec/60) : null;
+    const tm = t.sec ? dur(t.sec) : "–";
+    let s;
+    if (sport === "nuoto") s = `Totale: <b>${t.km ? Math.round(t.km*1000) : "–"} m</b> · <b>${tm}</b>${t.km&&t.sec?` · <b>${p100(t.km*1000, t.sec)}/100 m</b>`:""}`;
+    else if (sport === "bici") s = `Totale: <b>${t.km ? t.km.toFixed(1) : "–"} km</b> · <b>${tm}</b>${t.km&&t.sec?` · <b>${kmh(t.km, t.sec)} km/h</b>`:""}${t.power?` · <b>${t.power} W</b>`:""}`;
+    else if (sport === "palestra"){ const v = volumeForza(D.exercises);
+      s = `Durata: <b>${tm}</b>${D.mode === "esercizi" && v ? ` · volume <b>${Math.round(v).toLocaleString("it-IT")} kg</b>` : ""}`; }
+    else if (sport === "altro") s = `Durata: <b>${tm}</b>${t.km?` · <b>${t.km} km</b>`:""}`;
+    else s = `Totale: <b>${t.km ? t.km.toFixed(1) : "–"} km</b> · <b>${tm}</b>${t.pace?` · <b>${pace(t.pace)}/km</b>`:""}${t.work?` · lavoro <b>${pace(t.work)}/km</b>`:""}`;
+    $("w-tot").innerHTML = s + (load ? `<br><span class="hint">Carico della seduta: <b>${load}</b> (RPE × minuti)</span>` : "");
     document.querySelectorAll("#w-blocks .blk").forEach(el => {
       const b = blocks[+el.dataset.i], p = el.querySelector(".blkpace");
-      if (p) p.innerHTML = b && b.distance_km && b.duration_s ? `Passo: <b>${pace(b.duration_s / b.distance_km)}/km</b>` : "";
+      if (p) p.innerHTML = b ? blkInfo(b) : "";
     });
   };
   let delBound = false;
@@ -713,13 +878,21 @@ function sheetWorkout(ds){
   openSheet(`<h3>${ex?"Modifica allenamento":"Allenamento"}</h3>
     <div class="sportrow" id="w-sport">${SPORTS.map(([v,l])=>`<button type="button" data-v="${v}" aria-pressed="${sport===v}">${l}</button>`).join("")}</div>
     <div class="g2"><div class="field"><label for="w-day">Giorno</label><input id="w-day" type="date" value="${ex?ex.day:TODAY}" max="${TODAY}"></div>
-    <div class="field"><label for="w-no">Allenamento del giorno</label><select id="w-no"><option value="1" ${ex?.session_no!==2?"selected":""}>Primo</option><option value="2" ${ex?.session_no===2?"selected":""}>Secondo</option></select></div></div>
-    <div class="field" id="w-type-f"><label for="w-type">Tipo di seduta (che cosa allenavi)</label><select id="w-type">${Object.entries(TYPES).filter(([k])=>k!=="riposo").map(([k,v])=>`<option value="${k}" ${(ex?ex.type:ses?.type)===k?"selected":""}>${v}</option>`).join("")}</select></div>
-    <div id="w-blocks"></div>
-    <div class="field"><label for="w-addphase">Aggiungi un'altra fase</label>
-      <div style="display:flex;gap:8px"><select id="w-addphase" style="flex:1">${PHASES_W.map(([v,l])=>`<option value="${v}">${l}</option>`).join("")}</select>
-      <button class="btn soft" id="w-add" style="padding:10px 16px;white-space:nowrap">Aggiungi</button></div>
-      <div class="hint">Per esempio un secondo blocco di lavoro, o un tratto di corsa lenta in mezzo.</div></div>
+    <div class="field"><label for="w-no">Allenamento del giorno</label><select id="w-no"><option value="1" ${sNo===1?"selected":""}>Primo</option><option value="2" ${sNo===2?"selected":""}>Secondo</option></select></div></div>
+    <div id="w-body"></div>
+    <div id="w-blockwrap">
+      <div id="w-blocks"></div>
+      <div class="field"><label for="w-addphase">Aggiungi un'altra fase</label>
+        <div style="display:flex;gap:8px"><select id="w-addphase" style="flex:1">${PHASES_W.map(([v,l])=>`<option value="${v}">${l}</option>`).join("")}</select>
+        <button class="btn soft" id="w-add" style="padding:10px 16px;white-space:nowrap">Aggiungi</button></div>
+        <div class="hint">Per esempio un secondo blocco di lavoro, o un tratto lento in mezzo.</div></div>
+    </div>
+    <div id="w-bikex" class="hidden">
+      <div class="g2"><div class="field"><label for="w-elev">Dislivello (m)</label><input id="w-elev" type="number" inputmode="numeric" value="${D.elev??""}"></div>
+      <div class="field"><label for="w-np">Potenza normalizzata (W)</label><input id="w-np" type="number" inputmode="numeric" value="${D.np_w??""}"></div></div>
+      <div class="hint" style="margin:-6px 0 12px">I dati di potenza servono solo se hai un misuratore: altrimenti lascia vuoto.</div>
+      <label class="check field"><input id="w-brick" type="checkbox" ${D.brick?"checked":""}> Seguita subito da una corsa (brick)</label>
+    </div>
     <div class="tot" id="w-tot"></div>
     <div class="field"><label>Fatica percepita (RPE) di tutta la seduta</label>${scale("w-rpe",10,ex?.rpe)}<div class="hint">1 = passeggiata, 10 = massimo sforzo</div></div>
     <div class="field"><label for="w-notes">Com'è andata?</label><textarea id="w-notes" rows="3" placeholder="Sensazioni, fastidi, condizioni">${esc(ex?.notes)}</textarea></div>
@@ -727,41 +900,65 @@ function sheetWorkout(ds){
     <button class="btn primary full" id="w-save">${ex?"Salva le modifiche":"Salva allenamento"}</button>
     ${ex?`<button class="btn full" id="w-del" style="color:var(--warn)">Elimina questo allenamento</button>`:""}
     <div id="f-msg" class="msg"></div>`, () => {
-    bindScale("w-rpe"); paint();
-    const syncSport = () => $("w-type-f").classList.toggle("hidden", sport !== "corsa");
-    syncSport();
+    bindScale("w-rpe");
+    $("w-rpe").addEventListener("click", () => paintTot());
+    ["w-elev","w-np"].forEach(id => $(id).addEventListener("input", () => { readDet(); paintTot(); }));
+    $("w-brick").addEventListener("change", () => readDet());
+    paintBody(); if (conFasi()) paint();
     document.querySelectorAll("#w-sport button").forEach(b => b.onclick = () => {
+      readDet(); if (conFasi()) read();
       sport = b.dataset.v;
       document.querySelectorAll("#w-sport button").forEach(x => x.setAttribute("aria-pressed", String(x===b)));
-      syncSport();
+      if (conFasi() && !blocks.length) blocks = fasiBase();
+      paintBody(); if (conFasi()) paint();
     });
     $("w-add").onclick = () => { read(); blocks.push({ phase: $("w-addphase").value }); paint(); };
     $("w-save").onclick = async () => {
-      read();
+      readDet(); if (conFasi()) read();
       const rpe = sv("w-rpe");
-      if (!rpe){ $("f-msg").className="msg err"; $("f-msg").textContent="Indica la fatica percepita (RPE)."; return; }
+      if (!rpe) return err("Indica la fatica percepita (RPE).");
       const t = totals(), day = $("w-day").value;
-      if (!t.km && !t.sec){ $("f-msg").className="msg err"; $("f-msg").textContent="Inserisci almeno distanza o durata in una fase."; return; }
+      if (sport === "altro" && !(D.what||"").trim()) return err("Scrivi che attività hai fatto.");
+      if (!conFasi() && !t.sec) return err("Inserisci la durata.");
+      if (conFasi() && !t.km && !t.sec) return err("Inserisci almeno distanza o durata in una fase.");
+      let details = null;
+      if (sport === "nuoto") details = { pool: D.pool, strokes: D.strokes, gear: D.gear,
+        pace100_s: t.km && t.sec ? Math.round(t.sec/(t.km*10)) : null };
+      if (sport === "bici") details = { bike: D.bike, brick: D.brick, avg_power_w: t.power || null, np_w: D.np_w || null,
+        speed_kmh: t.km && t.sec ? +(t.km/(t.sec/3600)).toFixed(1) : null };
+      if (sport === "palestra"){
+        const exs = D.exercises.filter(e => String(e.name||"").trim()).map(e => ({ name: String(e.name).trim(),
+          sets: e.sets === "" ? null : +e.sets, reps: e.reps === "" ? null : +e.reps, kg: e.kg === "" ? null : +e.kg }));
+        details = { place: D.place, focus: D.focus, mode: D.mode, ...(D.mode === "esercizi"
+          ? { exercises: exs, volume_kg: Math.round(volumeForza(exs)) }
+          : { format: D.format, wod: (D.wod||"").trim() || null, result: (D.result||"").trim() || null }) };
+      }
+      if (sport === "altro") details = { what: D.what.trim() };
       const ps = S.sessions.find(x => x.session_date === day);
+      const hrB = blocks.filter(b => b.avg_hr && b.duration_s);
       const row = { athlete_id: me.id, day, sport, session_no: +$("w-no").value,
-        type: sport === "corsa" ? $("w-type").value : "altro",
+        type: sport === "corsa" ? D.type : "altro",
         planned_session_id: sport === "corsa" ? (ps?.id ?? null) : null,
         distance_km: t.km || null, duration_s: t.sec || null,
-        avg_pace_s: t.pace ? Math.round(t.pace) : null,
-        work_pace_s: t.work ? Math.round(t.work) : null,
-        avg_hr: (() => { const h = blocks.filter(b => b.avg_hr && b.duration_s);
-          return h.length ? Math.round(h.reduce((s,b) => s + b.avg_hr*b.duration_s, 0) / h.reduce((s,b) => s + b.duration_s, 0)) : null; })(),
-        rpe, notes: $("w-notes").value.trim()||null, notes_private: $("w-priv").checked, source:"manuale" };
+        avg_pace_s: sport === "corsa" && t.pace ? Math.round(t.pace) : null,
+        work_pace_s: sport === "corsa" && t.work ? Math.round(t.work) : null,
+        avg_hr: conFasi() ? (hrB.length ? Math.round(hrB.reduce((s,b) => s + b.avg_hr*b.duration_s, 0) / hrB.reduce((s,b) => s + b.duration_s, 0)) : null)
+                          : (sport === "altro" ? D.hr : null),
+        elevation_gain_m: sport === "bici" ? D.elev : (ex?.elevation_gain_m ?? null),
+        details, rpe, notes: $("w-notes").value.trim()||null, notes_private: $("w-priv").checked, source:"manuale" };
       $("w-save").disabled = true;
       const r = ex ? await sb.from("workouts").update(row).eq("id", ex.id).select().single()
                    : await sb.from("workouts").insert(row).select().single();
-      if (r.error){ $("w-save").disabled = false; $("f-msg").className="msg err"; $("f-msg").textContent="Non salvato: "+r.error.message; return; }
+      if (r.error){ $("w-save").disabled = false; return err("Non salvato: " + r.error.message); }
       const wid = r.data.id;
       await sb.from("workout_blocks").delete().eq("workout_id", wid);
-      const rows = blocks.filter(b => b.distance_km || b.duration_s || b.label).map((b,i) => ({
-        workout_id: wid, athlete_id: me.id, ord: i+1, phase: b.phase, label: b.label || null,
-        distance_km: b.distance_km ?? null, duration_s: b.duration_s ?? null, avg_hr: b.avg_hr ?? null }));
-      if (rows.length) await sb.from("workout_blocks").insert(rows);
+      if (conFasi()){
+        const rows = blocks.filter(b => b.distance_km || b.duration_s || b.label).map((b,i) => ({
+          workout_id: wid, athlete_id: me.id, ord: i+1, phase: b.phase, label: b.label || null,
+          distance_km: b.distance_km ?? null, duration_s: b.duration_s ?? null, avg_hr: b.avg_hr ?? null,
+          details: sport === "bici" && b.power_w ? { power_w: b.power_w } : null }));
+        if (rows.length) await sb.from("workout_blocks").insert(rows);
+      }
       closeSheet(); await loadAthlete();
     };
     if ($("w-del")) $("w-del").onclick = async () => {
@@ -1976,7 +2173,7 @@ function renderStats(){
   const box = $("st-body"), W = S.workouts.filter(w => w.sport === "corsa" || !w.sport);
   document.querySelectorAll("#st-period .chip").forEach(c => { c.setAttribute("aria-pressed", String(c.dataset.p === ST_P));
     c.onclick = () => { ST_P = c.dataset.p; renderStats(); }; });
-  if (!W.length && !S.checkins.length){ $("st-lead").textContent = ""; box.innerHTML = `<div class="card"><div class="empty">Registra i primi allenamenti: qui vedrai volumi, stime e andamento nel tempo.</div></div>`; return; }
+  if (!S.workouts.length && !S.checkins.length){ $("st-lead").textContent = ""; box.innerHTML = `<div class="card"><div class="empty">Registra i primi allenamenti: qui vedrai volumi, stime e andamento nel tempo.</div></div>`; return; }
 
   // periodi
   const P = { w:{n:12, lbl:"settimane"}, m:{n:12, lbl:"mesi"}, y:{n:5, lbl:"anni"} }[ST_P];
@@ -2058,6 +2255,23 @@ function renderStats(){
     const d = Math.round(now - old); if (!d) return `<i>stabile</i>`;
     return `<i class="${(buonoSeSale ? d>0 : d<0) ? "up-good":"down-bad"}">${d>0?"+":""}${d}</i>`; };
 
+  // carico di tutti gli sport (RPE × minuti)
+  const ORD = ["corsa","bici","nuoto","palestra","altro"];
+  const loadB = buckets.map(b => { const o = {};
+    S.workouts.filter(w => w.day >= b.from && w.day < b.to).forEach(w => { const sp = w.sport || "corsa", c = carico(w); if (c) o[sp] = (o[sp]||0) + c; });
+    return o; });
+  const totL = o => Object.values(o).reduce((a,c) => a+c, 0);
+  const maxL = Math.max(...loadB.map(totL), 1);
+  const curL = loadB[loadB.length-1], prevL = loadB[loadB.length-2] || {};
+  const presenti = ORD.filter(sp => loadB.some(o => o[sp]));
+  const precL = { w:"della settimana precedente", m:"del mese precedente", y:"dell'anno precedente" }[ST_P];
+  const caricoHtml = presenti.length ? `<h2>Carico di allenamento</h2>
+    <div class="card bars-wrap"><div class="sub">Tutti gli sport insieme: per ogni seduta, fatica percepita (RPE) × minuti</div>
+      <div class="sbars">${loadB.map((o,i) => `<div class="col" title="${Math.round(totL(o))}">${ORD.filter(sp => o[sp]).map(sp => `<i style="height:${o[sp]/maxL*100}%;background:${SPORT_COL[sp]}"></i>`).join("")}<span>${vol[i].lbl}</span></div>`).join("")}</div>
+      <div class="legend">${presenti.map(sp => `<span><b style="background:${SPORT_COL[sp]}"></b>${SPORT_LBL[sp]} ${Math.round(curL[sp]||0)}</span>`).join("")}</div>
+      <div class="hint">${etichetta[0].toUpperCase() + etichetta.slice(1)}: carico ${Math.round(totL(curL))}, contro ${Math.round(totL(prevL))} ${precL}. Da tenere d'occhio gli aumenti bruschi da un periodo all'altro.</div>
+    </div>` : "";
+
   box.innerHTML = `
     <h2>Volumi</h2>
     <div class="kpi">
@@ -2066,6 +2280,8 @@ function renderStats(){
     </div>
     <div class="card bars-wrap" style="margin-top:14px"><div class="sub">Ultim${ST_P==="y"?"i":"e"} ${P.n} ${P.lbl}${ST_P==="y"?" solari (1 gennaio - 31 dicembre)":""}</div>
       <div class="bars">${vol.map((v,i) => `<div class="${i===vol.length-1?"now":""}" style="height:${Math.max(3, v.km/maxKm*100)}%" title="${v.km.toFixed(1)} km"><span>${v.lbl}</span></div>`).join("")}</div></div>
+
+    ${caricoHtml}
 
     ${V ? `<h2>La tua forma</h2>
     <div class="card"><div class="sub">Stimata ${fonte}</div>
@@ -2191,9 +2407,12 @@ function fabbisogno(tipo, day = TODAY){
               test:[6,7], lungo:[7,8], lungo_progressivo:[7,8], gara:[7,8] }[tipo] || [5,6];
   let cho0 = kg*q[0], cho1 = kg*q[1];
   const extra = [];
-  // lavoro di forza: previsto nella seduta o registrato come palestra, contato una sola volta
-  if (ses?.strength_note || ws.some(w => w.sport === "palestra")){
-    const g = Math.round(kg*0.5); cho0 += g; cho1 += g;
+  // lavoro di forza: previsto nella seduta o registrato nel diario, contato una sola volta
+  const forza = ws.filter(w => w.sport === "palestra");
+  if (ses?.strength_note || forza.length){
+    // 0,5 g/kg fino a un'ora di forza, poi in proporzione fino a 1 g/kg per due ore
+    const oreF = forza.reduce((t,w) => t + (w.duration_s||0)/3600, 0);
+    const g = Math.round(kg*0.5*Math.min(Math.max(oreF, 1), 2)); cho0 += g; cho1 += g;
     extra.push(`+${g} g per il lavoro di forza`);
   }
   // secondi allenamenti e sport diversi dalla corsa: circa 1 g/kg per ora, al massimo 2 ore
