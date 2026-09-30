@@ -386,7 +386,7 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid #
 <div id="sheet-root"></div>
 
 <script>
-const APP_VERSION = "2026-09-29 · 24";
+const APP_VERSION = "2026-09-30 · 25";
 const sb = supabase.createClient("https://pnoxjvssvtusjvbwpkkh.supabase.co","sb_publishable_ol7Ds9jbamCSwpNpGEPT9Q_ZZvxNHy3");
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -2179,16 +2179,38 @@ const FOOD = {
 };
 const MEALS = [["colazione","Colazione"],["spuntino","Spuntino"],["pranzo","Pranzo"],["durante","Durante l'allenamento"],["merenda","Merenda"],["cena","Cena"]];
 
-// fabbisogno indicativo in base al peso e alla seduta del giorno
-function fabbisogno(tipo){
+// fabbisogno indicativo in base al peso, alla seduta del giorno e agli allenamenti extra registrati
+function fabbisogno(tipo, day = TODAY){
   const ultimo = (S.checkins||[]).filter(c => c.weight_kg).sort((a,b) => b.day.localeCompare(a.day))[0];
   const kg = +(ultimo?.weight_kg) || +me.weight_kg || null;
   if (!kg) return null;
+  const ses = (S.sessions||[]).find(x => x.session_date === day);
+  const ws = (S.workouts||[]).filter(w => w.day === day);
+  if (!tipo){ const run = ws.find(w => (w.sport||"corsa") === "corsa" && w.session_no !== 2); tipo = run?.type; }
   const q = { riposo:[3,4], recupero:[4,5], lento:[5,6], medio:[6,7], soglia:[6,7], vo2max:[6,7], ritmo_gara:[6,7],
               test:[6,7], lungo:[7,8], lungo_progressivo:[7,8], gara:[7,8] }[tipo] || [5,6];
-  const cho = [Math.round(kg*q[0]), Math.round(kg*q[1])];
-  return { kg, cho, pro: [Math.round(kg*1.7), Math.round(kg*2.0)], fat: Math.round(kg*1.0),
-           pasti: Math.round(kg*0.35), durante: ["lungo","lungo_progressivo","gara"].includes(tipo) };
+  let cho0 = kg*q[0], cho1 = kg*q[1];
+  const extra = [];
+  // lavoro di forza: previsto nella seduta o registrato come palestra, contato una sola volta
+  if (ses?.strength_note || ws.some(w => w.sport === "palestra")){
+    const g = Math.round(kg*0.5); cho0 += g; cho1 += g;
+    extra.push(`+${g} g per il lavoro di forza`);
+  }
+  // secondi allenamenti e sport diversi dalla corsa: circa 1 g/kg per ora, al massimo 2 ore
+  let ore = 0; const voci = [];
+  ws.forEach(w => {
+    const sp = w.sport || "corsa";
+    if (sp === "palestra" || !w.duration_s) return;
+    if (sp === "corsa" && w.session_no !== 2) return;
+    ore += w.duration_s/3600;
+    voci.push(`${sp === "corsa" ? "seconda corsa" : SPORT_LBL[sp].toLowerCase()} ${dur(w.duration_s)}`);
+  });
+  if (ore){
+    const g = Math.round(kg*Math.min(ore, 2)); cho0 += g; cho1 += g;
+    extra.push(`+${g} g per ${voci.join(", ")}`);
+  }
+  return { kg, cho: [Math.round(cho0), Math.round(cho1)], pro: [Math.round(kg*1.7), Math.round(kg*2.0)], fat: Math.round(kg*1.0),
+           pasti: Math.round(kg*0.35), durante: ["lungo","lungo_progressivo","gara"].includes(tipo), extra };
 }
 const qFmt = q => (q % 1 ? String(q).replace(".", ",") : String(q));
 const foodOf = it => FOOD[it.k] || (it.n ? [it.n, +it.c||0, +it.p||0, +it.f||0] : null);
@@ -2213,6 +2235,7 @@ async function renderNutri(){
       <div class="${cls(t.pro, f.pro[0])}"><b>${Math.round(t.pro)}</b><span>proteine<br>obiettivo ${f.pro[0]}-${f.pro[1]} g</span></div>
       <div class="${cls(t.fat, f.fat)}"><b>${Math.round(t.fat)}</b><span>grassi<br>almeno ${f.fat} g</span></div>
     </div>
+    ${f.extra.length ? `<p class="hint" style="margin-top:10px">Carboidrati aggiornati per oggi: ${f.extra.join("; ")}.</p>` : ""}
     <p class="hint" style="margin-top:10px">${f.durante
       ? `Oggi è una seduta lunga: durante la corsa servono 30-60 g di carboidrati all'ora oltre i 75 minuti, e 400-800 ml di liquidi all'ora.`
       : `Distribuisci le proteine in 4 assunzioni da circa ${f.pasti} g ciascuna: conta più la ripartizione della quantità totale.`}</p>
