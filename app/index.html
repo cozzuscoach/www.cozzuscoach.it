@@ -259,6 +259,9 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid #
 .repinfo{font-size:13px;color:var(--muted);margin:3px 0 6px 28px;min-height:6px}
 .recrow{display:grid;grid-template-columns:32px 1fr 1fr 1.1fr;gap:6px;align-items:center;margin:0 0 8px 14px;padding:6px;border-radius:10px;background:var(--bg);font-size:13px;color:var(--muted)}
 .repsum:empty{display:none}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:4px;background:var(--bg);border-radius:12px;padding:4px;margin-bottom:12px}
+.seg button{min-height:40px;border-radius:9px;font-weight:600;font-size:15px;color:var(--muted)}
+.seg button[aria-pressed=true]{background:var(--paper);color:var(--sea);box-shadow:0 1px 3px rgba(7,63,80,.15)}
 </style>
 </head>
 <body>
@@ -405,7 +408,7 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid #
 <div id="sheet-root"></div>
 
 <script>
-const APP_VERSION = "2026-10-01 · 27";
+const APP_VERSION = "2026-10-01 · 28";
 const sb = supabase.createClient("https://pnoxjvssvtusjvbwpkkh.supabase.co","sb_publishable_ol7Ds9jbamCSwpNpGEPT9Q_ZZvxNHy3");
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -845,9 +848,13 @@ function sheetWorkout(ds){
       if (ok.length >= 2){ const pp = r => r.time_s/(r.dist_m/1000), d = Math.round(pp(ok[ok.length-1]) - pp(ok[0]));
         out.push(Math.abs(d) <= 1 ? "ritmo costante" : `l'ultima ${d < 0 ? "più veloce" : "più lenta"} della prima di ${Math.abs(d)}" al km`); } }
     return out.join("<br>"); };
+  const segHtml = (i, cur) => `<div class="seg" role="group" aria-label="Tipo di lavoro">
+      <button type="button" data-seg="${i}" data-to="continuo" aria-pressed="${cur==="continuo"}">Lavoro continuo</button>
+      <button type="button" data-seg="${i}" data-to="ripetute" aria-pressed="${cur==="ripetute"}">Ripetute</button></div>`;
   const ripHtml = (b,i) => { const n = b.reps.length;
     return `<div class="blk phase-lav" data-i="${i}">
-      <div class="bh"><b>Ripetute</b><button type="button" class="del-blk" data-del="${i}" aria-label="Togli le ripetute">Togli</button></div>
+      <div class="bh"><b>Lavoro</b><button type="button" class="del-blk" data-del="${i}" aria-label="Togli il lavoro">Togli</button></div>
+      ${segHtml(i, "ripetute")}
       <div class="rephead"><span></span><span>Metri</span><span>Tempo</span><span>FC</span></div>
       ${b.reps.map((r,k) => `<div class="reprow" data-k="${k}"><span class="n">${k+1}</span>
           <input data-r="dist_m" type="number" inputmode="numeric" step="50" value="${r.dist_m??""}" aria-label="Metri ripetuta ${k+1}">
@@ -870,6 +877,7 @@ function sheetWorkout(ds){
       : `<div class="field"><label>Distanza (km)</label><input data-f="distance_km" type="number" step="0.01" inputmode="decimal" value="${b.distance_km??""}"></div>`;
     return `<div class="blk ${PHASE_CLS[b.phase]||""}" data-i="${i}">
       <div class="bh"><b>${PHASE_LBL[b.phase]||b.phase}</b><button type="button" class="del-blk" data-del="${i}" aria-label="Togli ${PHASE_LBL[b.phase]||b.phase}">Togli</button></div>
+      ${sport === "corsa" && b.phase === "lavoro" ? segHtml(i, "continuo") : ""}
       ${b.phase === "lavoro" || b.phase === "altro" ? `<div class="field"><input data-f="label" placeholder="Cosa hai fatto: ${ph}" value="${esc(b.label)}"></div>` : ""}
       <div class="g2">${dist}
         <div class="field"><label>FC media</label><input data-f="avg_hr" type="number" inputmode="numeric" value="${b.avg_hr??""}"></div>
@@ -948,7 +956,7 @@ function sheetWorkout(ds){
       <div class="field"><label for="w-hr">FC media</label><input id="w-hr" type="number" inputmode="numeric" value="${D.hr??""}"></div></div>`;
     $("w-body").innerHTML = html;
     const fasi = sport === "corsa"
-      ? [["riscaldamento","Riscaldamento"],["lavoro","Lavoro continuo"],["ripetute","Ripetute"],["defaticamento","Defaticamento"],["altro","Altro"]]
+      ? [["lavoro","Lavoro continuo"],["ripetute","Ripetute"],["riscaldamento","Riscaldamento"],["defaticamento","Defaticamento"],["altro","Altro"]]
       : PHASES_W;
     $("w-addphase").innerHTML = fasi.map(([v,l]) => `<option value="${v}">${l}</option>`).join("");
     $("w-blockwrap").classList.toggle("hidden", !conFasi());
@@ -994,13 +1002,29 @@ function sheetWorkout(ds){
       if (p) p.innerHTML = blkInfo(b);
     });
   };
+  const treRip = () => [0,1,2].map(k => nuovaRip(null, null, k < 2 ? { dist_m:null, time_s:null, how:"lenta" } : null));
+  const converti = (i, to) => { const b = blocks[i];
+    if (to === "ripetute" && b.phase !== "ripetute"){
+      const dal = daSeduta({ type: QUALITY.includes(D.type) ? D.type : "soglia", title: b.label || "", structure: [] });
+      const r = dal && dal.find(x => x.phase === "ripetute");
+      blocks[i] = { phase:"ripetute", zone: b.zone || null, reps: r ? r.reps : treRip() };
+    }
+    if (to === "continuo" && b.phase === "ripetute"){
+      const dm = b.reps.map(r => r.dist_m), same = dm.length && dm.every(d => d && d === dm[0]);
+      const F = b.reps.flatMap((r,k) => [r, ...(k < b.reps.length-1 && r.rec ? [r.rec] : [])]);
+      const km = F.reduce((t,x) => t + (+x.dist_m||0), 0)/1000, sec = F.reduce((t,x) => t + (+x.time_s||0), 0);
+      blocks[i] = { phase:"lavoro", zone: b.zone || null, label: same ? `${b.reps.length} × ${dm[0]} m` : null,
+        distance_km: km || null, duration_s: sec || null, avg_hr: null };
+    } };
+  let toccato = false;
   let delBound = false;
   const paint = () => {
     $("w-blocks").innerHTML = blocks.map((b,i) => b.phase === "ripetute" ? ripHtml(b,i) : blockHtml(b,i)).join("");
     if (!delBound){ delBound = true;
-      const azione = ev => { const b = ev.target.closest("[data-del],[data-repadd],[data-repdel]"); if (!b || b.disabled) return;
-        ev.preventDefault(); ev.stopPropagation(); read();
-        if (b.dataset.del != null) blocks.splice(+b.dataset.del, 1);
+      const azione = ev => { const b = ev.target.closest("[data-del],[data-repadd],[data-repdel],[data-seg]"); if (!b || b.disabled) return;
+        ev.preventDefault(); ev.stopPropagation(); read(); toccato = true;
+        if (b.dataset.seg != null) converti(+b.dataset.seg, b.dataset.to);
+        else if (b.dataset.del != null) blocks.splice(+b.dataset.del, 1);
         else if (b.dataset.repadd != null){ const B = blocks[+b.dataset.repadd], last = B.reps[B.reps.length-1], prev = B.reps[B.reps.length-2];
           last.rec = last.rec || (prev?.rec ? { ...prev.rec, time_s: prev.rec.time_s } : { dist_m:null, time_s:null, how:"lenta" });
           B.reps.push(nuovaRip(last.dist_m, null, null)); }
@@ -1012,7 +1036,7 @@ function sheetWorkout(ds){
         if (t.matches('[data-r="time"],[data-c="time"]') && t.value){ const v = parseT(t.value); t.value = v ? fmtIn(v) : t.value; } });
     }
     paintTot();
-    $("w-blocks").querySelectorAll("input,select").forEach(inp => inp.oninput = () => { read(); paintTot(); });
+    $("w-blocks").querySelectorAll("input,select").forEach(inp => inp.oninput = () => { toccato = true; read(); paintTot(); });
   };
 
   openSheet(`<h3>${ex?"Modifica allenamento":"Allenamento"}</h3>
@@ -1045,6 +1069,13 @@ function sheetWorkout(ds){
     ["w-elev","w-np"].forEach(id => $(id).addEventListener("input", () => { readDet(); paintTot(); }));
     $("w-brick").addEventListener("change", () => readDet());
     paintBody(); if (conFasi()) paint();
+    if (!ex) $("w-day").addEventListener("change", () => {
+      const giorno = $("w-day").value, s2 = S.sessions.find(x => x.session_date === giorno);
+      if (sport !== "corsa" || toccato) return;
+      D.type = s2?.type && s2.type !== "riposo" ? s2.type : "lento";
+      blocks = daSeduta(s2) || fasiBase();
+      paintBody(); paint();
+    });
     document.querySelectorAll("#w-sport button").forEach(b => b.onclick = () => {
       readDet(); if (conFasi()) read();
       sport = b.dataset.v;
@@ -1053,7 +1084,7 @@ function sheetWorkout(ds){
       paintBody(); if (conFasi()) paint();
     });
     $("w-add").onclick = () => { read(); const ph = $("w-addphase").value;
-      blocks.push(ph === "ripetute" ? { phase:"ripetute", zone:null, reps:[0,1,2].map(k => nuovaRip(null, null, k < 2 ? { dist_m:null, time_s:null, how:"lenta" } : null)) } : { phase: ph });
+      blocks.push(ph === "ripetute" ? { phase:"ripetute", zone:null, reps: treRip() } : { phase: ph });
       paint(); };
     $("w-save").onclick = async () => {
       readDet(); if (conFasi()) read();
