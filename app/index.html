@@ -252,6 +252,13 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid #
 .sbars .col span{position:absolute;bottom:-18px;left:0;right:0;text-align:center;font-size:10px;color:var(--muted)}
 .legend{display:flex;flex-wrap:wrap;gap:12px;margin-top:28px;font-size:13px;color:var(--muted)}
 .legend b{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px}
+.rephead,.reprow{display:grid;grid-template-columns:22px 1fr 1.2fr .8fr;gap:6px;align-items:center}
+.rephead{font-size:12px;color:var(--muted);font-weight:600;margin-bottom:4px}
+.reprow input,.recrow input,.recrow select{padding:9px 8px;font-size:16px}
+.reprow .n{font:700 19px var(--cond);color:var(--sea);text-align:center}
+.repinfo{font-size:13px;color:var(--muted);margin:3px 0 6px 28px;min-height:6px}
+.recrow{display:grid;grid-template-columns:32px 1fr 1fr 1.1fr;gap:6px;align-items:center;margin:0 0 8px 14px;padding:6px;border-radius:10px;background:var(--bg);font-size:13px;color:var(--muted)}
+.repsum:empty{display:none}
 </style>
 </head>
 <body>
@@ -398,7 +405,7 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid #
 <div id="sheet-root"></div>
 
 <script>
-const APP_VERSION = "2026-09-30 · 26";
+const APP_VERSION = "2026-10-01 · 27";
 const sb = supabase.createClient("https://pnoxjvssvtusjvbwpkkh.supabase.co","sb_publishable_ol7Ds9jbamCSwpNpGEPT9Q_ZZvxNHy3");
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -639,10 +646,16 @@ function wMetrics(w, own){
     cells = [cell(w.distance_km??"–","km"), cell(dur(w.duration_s),"tempo"),
       cell(w.distance_km&&w.duration_s ? pace(w.duration_s/w.distance_km) : "–","/km"), cell(w.avg_hr??"–",`FC · RPE ${w.rpe}`)];
   }
+  if (sp === "corsa" && w.work_pace_s && (w.blocks||[]).length > 1) info.push(`passo di lavoro ${pace(w.work_pace_s)}/km`);
   const load = carico(w);
   if (load) info.push(`carico ${load}`);
   const unit = b => sp === "nuoto" ? (b.distance_km ? Math.round(b.distance_km*1000) + " m" : "") : (b.distance_km ? b.distance_km + " km" : "");
-  const fasi = w.blocks?.length ? `<div class="phases">${w.blocks.map(b => `<span><b>${PHASE_LBL[b.phase]||b.phase}</b> ${b.label?esc(b.label)+" · ":""}${unit(b)}${b.duration_s?" "+dur(b.duration_s):""}${b.details?.power_w?" · "+b.details.power_w+" W":""}${b.avg_hr?" · FC "+b.avg_hr:""}</span>`).join("")}</div>` : "";
+  const fase = b => `<span><b>${PHASE_LBL[b.phase]||b.phase}</b> ${b.label?esc(b.label)+" · ":""}${unit(b)}${b.duration_s?" "+dur(b.duration_s):""}${b.details?.power_w?" · "+b.details.power_w+" W":""}${b.avg_hr?" · FC "+b.avg_hr:""}</span>`;
+  const parti = []; const R = w.blocks || [];
+  for (let i = 0; i < R.length; ){ const g = R[i].details?.group;
+    if (g){ const grp = []; while (i < R.length && R[i].details?.group === g) grp.push(R[i++]); parti.push(ripTxt(grp)); }
+    else parti.push(fase(R[i++])); }
+  const fasi = parti.length ? `<div class="phases">${parti.join("")}</div>` : "";
   let body = "";
   if (sp === "palestra") body = d.mode === "circuito"
     ? [d.wod ? esc(d.wod) : "", d.result ? "Risultato: " + esc(d.result) : ""].filter(Boolean).join("\n")
@@ -696,7 +709,76 @@ async function save(btn, promise, okText){
 const SPORTS = [["corsa","Corsa"],["palestra","Forza"],["bici","Bici"],["nuoto","Nuoto"],["altro","Altro"]];
 const SPORT_LBL = Object.fromEntries(SPORTS);
 const PHASES_W = [["riscaldamento","Riscaldamento"],["lavoro","Lavoro"],["defaticamento","Defaticamento"],["altro","Altro"]];
-const PHASE_LBL = Object.fromEntries(PHASES_W);
+const PHASE_LBL = { ...Object.fromEntries(PHASES_W), recupero:"Recupero", ripetute:"Ripetute" };
+/* ---------- RIPETUTE ---------- */
+const RECUPERI = [["lenta","Corsa"],["cammino","Cammino"],["fermo","Fermo"]];
+const ZONA_TIPO = { soglia:"T", vo2max:"I", ritmo_gara:"RG", medio:"M", test:"I" };
+// tempo scritto in un solo campo: 1045 → 10'45", 10:45, 10'45, 1:02:30
+const parseT = v => { v = String(v ?? "").trim(); if (!v) return null;
+  let p = v.split(/[:'’".,\s]+/).filter(Boolean).map(Number);
+  if (!p.length || p.some(isNaN)) return null;
+  if (p.length === 1){ const d = String(p[0]);
+    p = d.length <= 2 ? [0, +d] : d.length <= 4 ? [+d.slice(0,-2), +d.slice(-2)] : [+d.slice(0,-4), +d.slice(-4,-2), +d.slice(-2)]; }
+  const s = p.length >= 3 ? p[0]*3600 + p[1]*60 + p[2] : p[0]*60 + p[1];
+  return s > 0 ? Math.round(s) : null; };
+const fmtIn = s => { if (!s) return ""; const h = Math.floor(s/3600), m = Math.floor(s%3600/60), x = s%60;
+  return h ? `${h}:${String(m).padStart(2,"0")}:${String(x).padStart(2,"0")}` : `${m}:${String(x).padStart(2,"0")}`; };
+const nuovaRip = (dist_m, time_s, rec) => ({ dist_m: dist_m ?? null, time_s: time_s ?? null, hr: null, rec: rec || null });
+// ripetute ricavate dalla seduta in programma (struttura del motore o testo del titolo)
+function daSeduta(ses){
+  if (!ses || !QUALITY.includes(ses.type)) return null;
+  let items = (ses.structure||[]).filter(b => b.rep >= 1 && (b.dist_m || b.dur_min))
+    .map(b => ({ rep: b.rep, dist_m: b.dist_m || null, dur_s: b.dur_min ? b.dur_min*60 : null, rec_m: null, rec_s: b.rec_s || null, zone: b.zone || null }));
+  if (!items.length){
+    const txt = `${ses.title||""}\n${ses.description||""}`;
+    const m = txt.match(/(\d+)\s*[×x]\s*(\d+(?:[.,]\d+)?)\s*(km|metri|m\b|'|’|min)/i);
+    if (m){
+      const n = +m[1], v = +m[2].replace(",","."), u = m[3].toLowerCase();
+      const it = { rep: n, dist_m: null, dur_s: null, rec_m: null, rec_s: null, zone: ZONA_TIPO[ses.type] || null };
+      if (u === "km") it.dist_m = v*1000; else if (u === "m" || u === "metri") it.dist_m = v; else it.dur_s = v*60;
+      const r = txt.match(/rec(?:upero)?\.?\s*(?:di\s*)?(\d+(?:[.,]\d+)?)\s*(km|metri|m\b|'|’|"|min|sec|s\b)/i);
+      if (r){ const rv = +r[1].replace(",","."), ru = r[2].toLowerCase();
+        if (ru === "km") it.rec_m = rv*1000; else if (ru === "m" || ru === "metri") it.rec_m = rv;
+        else if (ru === "'" || ru === "’" || ru === "min") it.rec_s = rv*60; else it.rec_s = rv; }
+      items = [it];
+    }
+  }
+  if (!items.length) return null;
+  return [{ phase:"riscaldamento" }, ...items.map(it => it.rep > 1
+    ? { phase:"ripetute", zone: it.zone, reps: Array.from({ length: it.rep }, (_,k) =>
+        nuovaRip(it.dist_m, it.dur_s, k < it.rep-1 ? { dist_m: it.rec_m, time_s: it.rec_s, how:"lenta" } : null)) }
+    : { phase:"lavoro", zone: it.zone, distance_km: it.dist_m ? it.dist_m/1000 : null, duration_s: it.dur_s }), { phase:"defaticamento" }];
+}
+// righe salvate → fasi del modulo (ripetute raggruppate)
+function daRighe(rows){
+  const out = []; let cur = null;
+  rows.forEach(r => { const g = r.details?.group;
+    if (g){
+      if (!cur || cur.g !== g){ cur = { phase:"ripetute", g, zone: r.details.zone || null, reps: [] }; out.push(cur); }
+      if (r.phase === "recupero"){ const last = cur.reps[cur.reps.length-1];
+        if (last) last.rec = { dist_m: r.distance_km != null ? Math.round(r.distance_km*1000) : null, time_s: r.duration_s, how: r.details.how || "lenta" }; }
+      else cur.reps.push(nuovaRip(r.distance_km != null ? Math.round(r.distance_km*1000) : null, r.duration_s, null));
+      if (r.phase !== "recupero") cur.reps[cur.reps.length-1].hr = r.avg_hr;
+      if (r.details.zone) cur.zone = r.details.zone;
+    } else { cur = null; out.push({ ...r, power_w: r.details?.power_w ?? null, zone: r.details?.zone ?? null }); }
+  });
+  return out;
+}
+// diario: riga riassuntiva di un gruppo di ripetute
+function ripTxt(grp){
+  const reps = grp.filter(r => r.phase !== "recupero"), recs = grp.filter(r => r.phase === "recupero");
+  const dm = r => r.distance_km ? Math.round(r.distance_km*1000) : null;
+  const dists = reps.map(dm), same = dists.length && dists.every(d => d && d === dists[0]);
+  const head = same ? `${reps.length} × ${dists[0]} m` : `${reps.length} ripetute`;
+  const times = reps.map(r => `${same ? "" : (dm(r) ? dm(r) + " m " : "")}${r.duration_s ? fmtT(r.duration_s) : "–"}`).join(" · ");
+  const ok = reps.filter(r => r.distance_km && r.duration_s);
+  const avg = ok.length ? pace(ok.reduce((t,r) => t + r.duration_s, 0) / ok.reduce((t,r) => t + +r.distance_km, 0)) : null;
+  const rt = recs.map(r => r.distance_km ? dm(r) + " m" : r.duration_s ? fmtT(r.duration_s) : "").filter(Boolean);
+  const rec = rt.length ? `rec. ${rt.every(x => x === rt[0]) ? rt[0] : rt.join(", ")}` : "";
+  return `<span style="display:block;margin-top:2px"><b>Ripetute</b> ${head}: ${times}${avg ? ` · media <b>${avg}/km</b>` : ""}${rec ? ` · ${rec}` : ""}</span>`;
+}
+
+
 const PHASE_CLS = { riscaldamento:"phase-ris", lavoro:"phase-lav", defaticamento:"phase-def", altro:"phase-alt" };
 const SPORT_COL = { corsa:"var(--sea)", bici:"var(--sun)", nuoto:"#6FB7C9", palestra:"var(--ok)", altro:"#9AA8AE" };
 const ESERCIZI = ["Squat","Squat bulgaro","Affondi","Affondi in camminata","Stacco rumeno","Stacco da terra","Step-up","Hip thrust","Ponte glutei","Calf raise","Nordic curl","Leg press","Leg curl","Monster walk con elastico","Clamshell","Plank","Plank laterale","Dead bug","Bird dog","Pallof press","Russian twist","Trazioni","Rematore","Piegamenti","Panca piana","Military press","Box jump","Salti con la corda","Skip","Balzi","Kettlebell swing","Burpees","Wall ball","Thruster"];
@@ -719,9 +801,9 @@ function sheetWorkout(ds){
   let sport = ex?.sport || "corsa";
   const det = ex?.details ? JSON.parse(JSON.stringify(ex.details)) : {};
   const fasiBase = () => [{ phase:"riscaldamento" }, { phase:"lavoro" }, { phase:"defaticamento" }];
-  let blocks = !ex ? fasiBase()
+  let blocks = !ex ? ((sport === "corsa" && daSeduta(ses)) || fasiBase())
     : !CON_FASI.includes(sport) ? []
-    : ex.blocks?.length ? ex.blocks.map(b => ({ ...b, power_w: b.details?.power_w ?? null }))
+    : ex.blocks?.length ? daRighe(ex.blocks)
     : [{ phase:"lavoro", label:null, distance_km: ex.distance_km, duration_s: ex.duration_s, avg_hr: ex.avg_hr, power_w: det.avg_power_w ?? null }];
   const noFasi = !!ex && !CON_FASI.includes(sport);
   const D = {
@@ -746,6 +828,40 @@ function sheetWorkout(ds){
     : sport === "nuoto" ? `Passo: <b>${p100(b.distance_km*1000, b.duration_s)}/100 m</b>`
     : sport === "bici" ? `Velocità: <b>${kmh(b.distance_km, b.duration_s)} km/h</b>`
     : `Passo: <b>${pace(b.duration_s / b.distance_km)}/km</b>`;
+  // fasi "piatte": ogni ripetuta e ogni recupero diventano un segmento
+  const flat = () => blocks.flatMap(b => b.phase !== "ripetute" ? [b] : b.reps.flatMap((r,k) => [
+    { phase:"lavoro", distance_km: r.dist_m ? r.dist_m/1000 : null, duration_s: r.time_s, avg_hr: r.hr },
+    ...(k < b.reps.length-1 && r.rec ? [{ phase:"recupero", distance_km: r.rec.dist_m ? r.rec.dist_m/1000 : null, duration_s: r.rec.time_s, avg_hr: null }] : [])]));
+  const zonaDi = b => b.zone || ZONA_TIPO[D.type] || null;
+  const repInfo = (b, r) => { if (!(r.dist_m && r.time_s)) return "";
+    const p = r.time_s / (r.dist_m/1000), z = zonaDi(b) && S.zones?.[zonaDi(b)];
+    const v = !z ? "" : p < z.pace_min_s - 2 ? ' <span class="tag q">più veloce</span>'
+      : p > z.pace_max_s + 2 ? ' <span class="tag" style="background:#F7DAD0;color:#8E2F0E">più lenta</span>' : ' <span class="tag done">nel ritmo</span>';
+    return `${pace(p)}/km${v}`; };
+  const repSum = b => { const ok = b.reps.filter(r => r.dist_m && r.time_s), zc = zonaDi(b), z = zc && S.zones?.[zc], out = [];
+    if (z) out.push(`Ritmo previsto (${ZNAMES[zc]}): ${pace(z.pace_min_s)}–${pace(z.pace_max_s)}/km`);
+    if (ok.length){ const m = ok.reduce((t,r) => t + r.dist_m, 0), s = ok.reduce((t,r) => t + r.time_s, 0);
+      out.push(`Media ripetute: <b>${pace(s/(m/1000))}/km</b>`);
+      if (ok.length >= 2){ const pp = r => r.time_s/(r.dist_m/1000), d = Math.round(pp(ok[ok.length-1]) - pp(ok[0]));
+        out.push(Math.abs(d) <= 1 ? "ritmo costante" : `l'ultima ${d < 0 ? "più veloce" : "più lenta"} della prima di ${Math.abs(d)}" al km`); } }
+    return out.join("<br>"); };
+  const ripHtml = (b,i) => { const n = b.reps.length;
+    return `<div class="blk phase-lav" data-i="${i}">
+      <div class="bh"><b>Ripetute</b><button type="button" class="del-blk" data-del="${i}" aria-label="Togli le ripetute">Togli</button></div>
+      <div class="rephead"><span></span><span>Metri</span><span>Tempo</span><span>FC</span></div>
+      ${b.reps.map((r,k) => `<div class="reprow" data-k="${k}"><span class="n">${k+1}</span>
+          <input data-r="dist_m" type="number" inputmode="numeric" step="50" value="${r.dist_m??""}" aria-label="Metri ripetuta ${k+1}">
+          <input data-r="time" type="text" inputmode="numeric" placeholder="1045" value="${fmtIn(r.time_s)}" aria-label="Tempo ripetuta ${k+1}">
+          <input data-r="hr" type="number" inputmode="numeric" value="${r.hr??""}" aria-label="FC ripetuta ${k+1}"></div>
+        <div class="repinfo" data-k="${k}">${repInfo(b, r)}</div>
+        ${k < n-1 ? `<div class="recrow" data-k="${k}"><span>Rec.</span>
+          <input data-c="dist_m" type="number" inputmode="numeric" step="50" placeholder="metri" value="${r.rec?.dist_m??""}" aria-label="Metri recupero ${k+1}">
+          <input data-c="time" type="text" inputmode="numeric" placeholder="tempo" value="${fmtIn(r.rec?.time_s)}" aria-label="Tempo recupero ${k+1}">
+          <select data-c="how" aria-label="Tipo di recupero ${k+1}">${RECUPERI.map(([v,l]) => `<option value="${v}" ${(r.rec?.how||"lenta")===v?"selected":""}>${l}</option>`).join("")}</select></div>` : ""}`).join("")}
+      <div class="hint">Tempo in un solo campo: 1045 diventa 10:45. Il recupero conta nei km del giorno ma non nel passo di lavoro.</div>
+      <div style="display:flex;gap:8px;margin-top:10px"><button type="button" class="btn soft" data-repadd="${i}" style="flex:1;padding:10px">+ Ripetuta</button><button type="button" class="btn soft" data-repdel="${i}" style="flex:1;padding:10px" ${n<=1?"disabled":""}>− Ripetuta</button></div>
+      <div class="tot repsum" style="margin-bottom:0">${repSum(b)}</div>
+    </div>`; };
   const blockHtml = (b,i) => {
     const [h,m,x] = hms(b.duration_s);
     const ph = { corsa:"es. 5 × 1000 m a 3'20&quot;", nuoto:"es. 10 × 100 m rec. 20&quot;", bici:"es. 3 × 10' in salita" }[sport];
@@ -765,6 +881,12 @@ function sheetWorkout(ds){
   };
   const read = () => {
     document.querySelectorAll("#w-blocks .blk").forEach(el => {
+      if (blocks[+el.dataset.i]?.phase === "ripetute"){ const b = blocks[+el.dataset.i];
+        el.querySelectorAll(".reprow").forEach(row => { const r = b.reps[+row.dataset.k], v = f => row.querySelector(`[data-r="${f}"]`).value;
+          r.dist_m = v("dist_m") === "" ? null : +v("dist_m"); r.time_s = parseT(v("time")); r.hr = v("hr") === "" ? null : +v("hr"); });
+        el.querySelectorAll(".recrow").forEach(row => { const r = b.reps[+row.dataset.k], v = f => row.querySelector(`[data-c="${f}"]`).value;
+          r.rec = { dist_m: v("dist_m") === "" ? null : +v("dist_m"), time_s: parseT(v("time")), how: v("how") }; });
+        return; }
       const i = +el.dataset.i, g = f => { const n = el.querySelector(`[data-f="${f}"]`); return n ? n.value : ""; };
       const secs = (+g("h")||0)*3600 + (+g("m")||0)*60 + (+g("s")||0);
       const dm = g("dist_m"), dk = g("distance_km");
@@ -809,7 +931,8 @@ function sheetWorkout(ds){
     <div class="field"><label for="w-res">Risultato</label><input id="w-res" value="${esc(D.result)}" placeholder="es. 6 round + 12 ripetizioni, oppure 14'30&quot;"></div>`;
   const paintBody = () => {
     let html = "";
-    if (sport === "corsa") html = `<div class="field"><label for="w-type">Tipo di seduta (che cosa allenavi)</label><select id="w-type">${Object.entries(TYPES).filter(([k])=>k!=="riposo").map(([k,v])=>`<option value="${k}" ${D.type===k?"selected":""}>${v}</option>`).join("")}</select></div>`;
+    if (sport === "corsa") html = `<div class="field"><label for="w-type">Tipo di seduta (che cosa allenavi)</label><select id="w-type">${Object.entries(TYPES).filter(([k])=>k!=="riposo").map(([k,v])=>`<option value="${k}" ${D.type===k?"selected":""}>${v}</option>`).join("")}</select>
+      <div class="hint">Per gare e test metti la prova in "Lavoro continuo": la stima della tua forma userà solo quella parte.</div></div>`;
     if (sport === "nuoto") html = `<div class="field"><label>Dove</label>${chipRow("w-pool", VASCHE, D.pool)}</div>
       <div class="field"><label>Stile prevalente</label>${chipRow("w-stroke", STILI, D.strokes, true)}</div>
       <div class="field"><label>Attrezzi</label>${chipRow("w-gear", ATTREZZI, D.gear, true)}</div>`;
@@ -824,6 +947,10 @@ function sheetWorkout(ds){
       <div class="g2"><div class="field"><label for="w-dist">Distanza (km)</label><input id="w-dist" type="number" step="0.1" inputmode="decimal" value="${D.dist_km??""}"></div>
       <div class="field"><label for="w-hr">FC media</label><input id="w-hr" type="number" inputmode="numeric" value="${D.hr??""}"></div></div>`;
     $("w-body").innerHTML = html;
+    const fasi = sport === "corsa"
+      ? [["riscaldamento","Riscaldamento"],["lavoro","Lavoro continuo"],["ripetute","Ripetute"],["defaticamento","Defaticamento"],["altro","Altro"]]
+      : PHASES_W;
+    $("w-addphase").innerHTML = fasi.map(([v,l]) => `<option value="${v}">${l}</option>`).join("");
     $("w-blockwrap").classList.toggle("hidden", !conFasi());
     $("w-bikex").classList.toggle("hidden", sport !== "bici");
     bindChips("w-pool","pool"); bindChips("w-stroke","strokes",true); bindChips("w-gear","gear",true);
@@ -838,9 +965,10 @@ function sheetWorkout(ds){
   /* ---- totali ---- */
   const totals = () => {
     if (!conFasi()) return { km: sport === "altro" ? (D.dist_km||0) : 0, sec: D.dur_s||0, pace:null, work:null, power:null };
-    const km = blocks.reduce((t,b) => t + (+b.distance_km||0), 0);
-    const sec = blocks.reduce((t,b) => t + (+b.duration_s||0), 0);
-    const lav = blocks.filter(b => b.phase === "lavoro" && b.distance_km && b.duration_s);
+    const F = flat();
+    const km = F.reduce((t,b) => t + (+b.distance_km||0), 0);
+    const sec = F.reduce((t,b) => t + (+b.duration_s||0), 0);
+    const lav = F.filter(b => b.phase === "lavoro" && b.distance_km && b.duration_s);
     const lkm = lav.reduce((t,b) => t + +b.distance_km, 0), lsec = lav.reduce((t,b) => t + +b.duration_s, 0);
     const pw = blocks.filter(b => b.power_w && b.duration_s);
     const power = pw.length ? Math.round(pw.reduce((t,b) => t + b.power_w*b.duration_s, 0) / pw.reduce((t,b) => t + b.duration_s, 0)) : null;
@@ -858,21 +986,33 @@ function sheetWorkout(ds){
     else s = `Totale: <b>${t.km ? t.km.toFixed(1) : "–"} km</b> · <b>${tm}</b>${t.pace?` · <b>${pace(t.pace)}/km</b>`:""}${t.work?` · lavoro <b>${pace(t.work)}/km</b>`:""}`;
     $("w-tot").innerHTML = s + (load ? `<br><span class="hint">Carico della seduta: <b>${load}</b> (RPE × minuti)</span>` : "");
     document.querySelectorAll("#w-blocks .blk").forEach(el => {
-      const b = blocks[+el.dataset.i], p = el.querySelector(".blkpace");
-      if (p) p.innerHTML = b ? blkInfo(b) : "";
+      const b = blocks[+el.dataset.i]; if (!b) return;
+      if (b.phase === "ripetute"){
+        el.querySelectorAll(".repinfo").forEach(x => { const r = b.reps[+x.dataset.k]; if (r) x.innerHTML = repInfo(b, r); });
+        const rs = el.querySelector(".repsum"); if (rs) rs.innerHTML = repSum(b); return; }
+      const p = el.querySelector(".blkpace");
+      if (p) p.innerHTML = blkInfo(b);
     });
   };
   let delBound = false;
   const paint = () => {
-    $("w-blocks").innerHTML = blocks.map(blockHtml).join("");
+    $("w-blocks").innerHTML = blocks.map((b,i) => b.phase === "ripetute" ? ripHtml(b,i) : blockHtml(b,i)).join("");
     if (!delBound){ delBound = true;
-      const rimuovi = ev => { const b = ev.target.closest("[data-del]"); if (!b) return;
-        ev.preventDefault(); ev.stopPropagation(); read(); blocks.splice(+b.dataset.del, 1); paint(); };
-      $("w-blocks").addEventListener("click", rimuovi);
-      $("w-blocks").addEventListener("touchend", rimuovi, { passive: false });
+      const azione = ev => { const b = ev.target.closest("[data-del],[data-repadd],[data-repdel]"); if (!b || b.disabled) return;
+        ev.preventDefault(); ev.stopPropagation(); read();
+        if (b.dataset.del != null) blocks.splice(+b.dataset.del, 1);
+        else if (b.dataset.repadd != null){ const B = blocks[+b.dataset.repadd], last = B.reps[B.reps.length-1], prev = B.reps[B.reps.length-2];
+          last.rec = last.rec || (prev?.rec ? { ...prev.rec, time_s: prev.rec.time_s } : { dist_m:null, time_s:null, how:"lenta" });
+          B.reps.push(nuovaRip(last.dist_m, null, null)); }
+        else { const B = blocks[+b.dataset.repdel]; if (B.reps.length > 1){ B.reps.pop(); } }
+        paint(); };
+      $("w-blocks").addEventListener("click", azione);
+      $("w-blocks").addEventListener("touchend", azione, { passive: false });
+      $("w-blocks").addEventListener("focusout", ev => { const t = ev.target;
+        if (t.matches('[data-r="time"],[data-c="time"]') && t.value){ const v = parseT(t.value); t.value = v ? fmtIn(v) : t.value; } });
     }
     paintTot();
-    $("w-blocks").querySelectorAll("input").forEach(inp => inp.oninput = () => { read(); paintTot(); });
+    $("w-blocks").querySelectorAll("input,select").forEach(inp => inp.oninput = () => { read(); paintTot(); });
   };
 
   openSheet(`<h3>${ex?"Modifica allenamento":"Allenamento"}</h3>
@@ -912,7 +1052,9 @@ function sheetWorkout(ds){
       if (conFasi() && !blocks.length) blocks = fasiBase();
       paintBody(); if (conFasi()) paint();
     });
-    $("w-add").onclick = () => { read(); blocks.push({ phase: $("w-addphase").value }); paint(); };
+    $("w-add").onclick = () => { read(); const ph = $("w-addphase").value;
+      blocks.push(ph === "ripetute" ? { phase:"ripetute", zone:null, reps:[0,1,2].map(k => nuovaRip(null, null, k < 2 ? { dist_m:null, time_s:null, how:"lenta" } : null)) } : { phase: ph });
+      paint(); };
     $("w-save").onclick = async () => {
       readDet(); if (conFasi()) read();
       const rpe = sv("w-rpe");
@@ -935,7 +1077,7 @@ function sheetWorkout(ds){
       }
       if (sport === "altro") details = { what: D.what.trim() };
       const ps = S.sessions.find(x => x.session_date === day);
-      const hrB = blocks.filter(b => b.avg_hr && b.duration_s);
+      const hrB = flat().filter(b => b.avg_hr && b.duration_s);
       const row = { athlete_id: me.id, day, sport, session_no: +$("w-no").value,
         type: sport === "corsa" ? D.type : "altro",
         planned_session_id: sport === "corsa" ? (ps?.id ?? null) : null,
@@ -953,10 +1095,21 @@ function sheetWorkout(ds){
       const wid = r.data.id;
       await sb.from("workout_blocks").delete().eq("workout_id", wid);
       if (conFasi()){
-        const rows = blocks.filter(b => b.distance_km || b.duration_s || b.label).map((b,i) => ({
-          workout_id: wid, athlete_id: me.id, ord: i+1, phase: b.phase, label: b.label || null,
-          distance_km: b.distance_km ?? null, duration_s: b.duration_s ?? null, avg_hr: b.avg_hr ?? null,
-          details: sport === "bici" && b.power_w ? { power_w: b.power_w } : null }));
+        const righe = []; let g = 0;
+        blocks.forEach(b => {
+          if (b.phase === "ripetute"){ g++; const n = b.reps.length, zone = zonaDi(b);
+            b.reps.forEach((r,k) => {
+              if (r.dist_m || r.time_s) righe.push({ phase:"lavoro", label:`Ripetuta ${k+1} di ${n}`, distance_km: r.dist_m ? r.dist_m/1000 : null,
+                duration_s: r.time_s || null, avg_hr: r.hr || null, details: { group: g, rep: k+1, of: n, zone } });
+              if (k < n-1 && r.rec && (r.rec.dist_m || r.rec.time_s)) righe.push({ phase:"recupero", label:null,
+                distance_km: r.rec.dist_m ? r.rec.dist_m/1000 : null, duration_s: r.rec.time_s || null, avg_hr: null,
+                details: { group: g, rep: k+1, how: r.rec.how || "lenta" } });
+            });
+          } else if (b.distance_km || b.duration_s || b.label) righe.push({ phase: b.phase, label: b.label || null,
+            distance_km: b.distance_km ?? null, duration_s: b.duration_s ?? null, avg_hr: b.avg_hr ?? null,
+            details: sport === "bici" && b.power_w ? { power_w: b.power_w } : (b.zone ? { zone: b.zone } : null) });
+        });
+        const rows = righe.map((r,i) => ({ ...r, workout_id: wid, athlete_id: me.id, ord: i+1 }));
         if (rows.length) await sb.from("workout_blocks").insert(rows);
       }
       closeSheet(); await loadAthlete();
@@ -2204,8 +2357,15 @@ function renderStats(){
   const vFor = o => { const a=0.000104,b=0.182258,c=-4.6-o; return (-b + Math.sqrt(b*b-4*a*c))/(2*a); };
   const predict = (V, dm) => { let lo=dm/600*60, hi=dm/40*60; for(let i=0;i<70;i++){ const m=(lo+hi)/2; vdot(dm,m)>V?lo=m:hi=m; } return (lo+hi)/2; };
   let V = null, fonte = "";
-  const prove = W.filter(w => ["gara","test"].includes(w.type) && w.distance_km >= 3 && w.duration_s).sort((a,b) => b.day.localeCompare(a.day));
-  if (prove.length){ const p = prove[0]; V = vdot(p.distance_km*1000, p.duration_s);
+  // solo la prova vera e propria: esclusi riscaldamento, defaticamento e recuperi
+  const parteProva = w => { const bl = w.blocks || [];
+    if (bl.some(b => b.details?.group)) return null;   // prova a ripetute: non adatta a stimare la forma
+    const L = bl.filter(b => b.phase === "lavoro" && b.distance_km && b.duration_s);
+    if (L.length) return { km: L.reduce((t,b) => t + +b.distance_km, 0), s: L.reduce((t,b) => t + b.duration_s, 0) };
+    return w.distance_km && w.duration_s ? { km: +w.distance_km, s: w.duration_s } : null; };
+  const prove = W.filter(w => ["gara","test"].includes(w.type)).map(w => ({ ...w, prova: parteProva(w) }))
+    .filter(w => w.prova && w.prova.km >= 3).sort((a,b) => b.day.localeCompare(a.day));
+  if (prove.length){ const p = prove[0]; V = vdot(p.prova.km*1000, p.prova.s);
     fonte = `dal tuo ${p.type === "gara" ? "ultimo risultato in gara" : "ultimo test"} del ${dayParts(p.day).n} ${dayParts(p.day).m}`; }
   else if (me.pbs?.length){ const best = me.pbs.filter(x => x.km && x.s).map(x => vdot(x.km*1000, x.s)).sort((a,b)=>b-a)[0];
     if (best){ V = best; fonte = "dai tempi che hai dichiarato"; } }
