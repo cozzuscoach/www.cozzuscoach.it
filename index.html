@@ -107,19 +107,13 @@ footer a{color:#CFE3E8;text-decoration:none;margin-right:16px}
 .pred{background:#15222A;border-radius:14px;padding:12px}
 .pred b{display:block;font:800 30px/1 var(--cond);color:var(--sun)}
 .pred span{font-size:14px;color:#B9CBD1}
-.team{display:grid;gap:22px;align-items:center}
-@media(min-width:760px){.team{grid-template-columns:1.1fr 1fr}}
-.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.stat{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:16px;text-align:center}
-.stat b{display:block;font:800 40px/1 var(--cond);color:var(--sea)}
-.stat span{font-size:14px;color:var(--muted)}
 .req{max-width:640px}
 .check{display:flex;gap:8px;align-items:flex-start;font-size:14px;color:var(--muted)}
 .check input{width:auto;margin-top:4px}
+.check a{color:var(--sea);font-weight:600}
 .skel{background:linear-gradient(90deg,#E3EAEC,#F2F6F7,#E3EAEC);border-radius:22px;min-height:380px}
 
 .calc{background:linear-gradient(rgba(21,34,42,.88),rgba(21,34,42,.92)),url("https://images.unsplash.com/photo-1549896869-ca27eeffe4fb?auto=format&fit=crop&w=1800&q=60") center/cover}
-.teamimg{border-radius:22px;aspect-ratio:4/3;background:url("https://images.unsplash.com/photo-1552674605-db6ffd4facb5?auto=format&fit=crop&w=1200&q=70") center/cover;margin-bottom:12px}
 .feat .img,.mini .img,.acard .img{background-color:#0A5C73}
 
 /* carosello consigli */
@@ -155,7 +149,7 @@ footer a{color:#CFE3E8;text-decoration:none;margin-right:16px}
 </head>
 <body>
 <header class="top"><div><a class="brand" href="/">Cozzu's Coach</a>
-<nav class="nav"><a href="/consigli">Consigli</a><a href="/calendario">Calendario</a><a href="/strumenti" >Strumenti</a><a href="/#metodo">Metodo</a><a href="/#team">Team</a></nav>
+<nav class="nav"><a href="/consigli">Consigli</a><a href="/calendario">Calendario</a><a href="/strumenti" >Strumenti</a><a href="/#metodo">Metodo</a></nav>
 <a class="enter" href="/app/">Accedi</a></div></header>
 <main><section class="front"><div class="wrap">
   <div class="grid">
@@ -212,19 +206,6 @@ footer a{color:#CFE3E8;text-decoration:none;margin-right:16px}
     <p style="margin-top:16px"><a class="btn primary" href="/strumenti" id="c-more">Vedi i tuoi ritmi di allenamento</a></p>
   </div>
 </div></section>
-<section id="team"><div class="wrap team">
-  <div>
-    <div class="kicker">Cozzu's Team</div>
-    <h2>Un gruppo che corre insieme, in Salento</h2>
-    <p class="lead">Runner di ogni livello che si allenano con lo stesso metodo, condividono le gare e crescono insieme. Dal primo 10 km alla mezza maratona in cerca del personale.</p>
-    <p style="margin-top:18px"><a class="btn sea" href="#richiedi">Unisciti al Team</a></p>
-  </div>
-  <div><div class="teamimg" role="img" aria-label="Runner in allenamento"></div><div class="stats">
-    <div class="stat"><b>20+</b><span>atleti seguiti</span></div>
-    <div class="stat"><b id="st-ev">–</b><span>gare in calendario</span></div>
-    <div class="stat"><b>1</b><span>programma per ognuno</span></div>
-  </div></div>
-</div></section>
 <section id="richiedi" style="background:var(--paper)"><div class="wrap req">
   <div class="kicker">Inizia</div>
   <h2>Vuoi un programma per la tua prossima gara?</h2>
@@ -237,15 +218,16 @@ footer a{color:#CFE3E8;text-decoration:none;margin-right:16px}
     <div class="g2"><div class="field"><label for="r-g">Gara obiettivo</label><input id="r-g" placeholder="es. Mezza di Monopoli"></div>
     <div class="field"><label for="r-k">Km a settimana, oggi</label><input id="r-k" type="number" inputmode="numeric"></div></div>
     <div class="field"><label for="r-m">Qualcosa da aggiungere?</label><textarea id="r-m" rows="3"></textarea></div>
-    <label class="check field"><input id="r-ok" type="checkbox"> Acconsento al trattamento dei miei dati per essere ricontattato.</label>
+    <label class="check field"><input id="r-ok" type="checkbox"> <span>Ho letto l'<a href="/privacy" target="_blank" rel="noopener">informativa privacy</a> e acconsento al trattamento dei miei dati per essere ricontattato.</span></label>
     <button class="btn sea" id="r-send">Invia la richiesta</button>
     <div id="r-msg" class="msg"></div>
   </div>
 </div></section>
 </main>
 <footer><div class="wrap"><div><b>Cozzu's Coach</b><p style="margin-top:6px">Allenamento per runner, dal Salento.</p></div>
-<div><a href="/consigli">Consigli</a><a href="/calendario">Calendario</a><a href="/strumenti">Strumenti</a><a href="/#richiedi">Contatti</a><a href="/app/">Area atleti</a></div></div></footer>
+<div><a href="/consigli">Consigli</a><a href="/calendario">Calendario</a><a href="/strumenti">Strumenti</a><a href="/#richiedi">Contatti</a><a href="/privacy">Privacy</a><a href="/app/">Area atleti</a></div></div></footer>
 <script>
+const PRIVACY_VERSION = "2026-10-01";
 const vo2 = v => -4.6 + 0.182258*v + 0.000104*v*v;
 const pct = t => 0.8 + 0.1894393*Math.exp(-0.012778*t) + 0.2989558*Math.exp(-0.1932605*t);
 const vdot = (dm, ts) => { const t = ts/60; return vo2(dm/t) / pct(t); };
@@ -285,7 +267,6 @@ const DN = km => ({5:"5 km",10:"10 km",21.1:"Mezza maratona",42.2:"Maratona"})[M
 (async () => {
   const { data } = await sb.from("events").select("*").eq("date_confirmed", true).gte("event_date", TODAY).order("event_date").limit(300);
   const all = data || [];
-  $("st-ev").textContent = all.length || "–";
   const score = e => (e.featured ? 0 : e.region === "Puglia" ? 1 : 2);
   const pick = [...all].sort((a,b) => score(a)-score(b) || a.event_date.localeCompare(b.event_date)).slice(0,4)
     .sort((a,b) => a.event_date.localeCompare(b.event_date));
@@ -382,6 +363,7 @@ $("r-send").onclick = async () => {
     goal:$("r-g").value.trim()||null, weekly_km: $("r-k").value ? +$("r-k").value : null, message:$("r-m").value.trim()||null };
   if (!row.full_name || !/^\S+@\S+\.\S+$/.test(row.email)){ m.className="msg err"; m.textContent="Inserisci nome e un'email valida."; return; }
   if (!$("r-ok").checked){ m.className="msg err"; m.textContent="Serve il consenso per poterti ricontattare."; return; }
+  row.consent_at = new Date().toISOString(); row.privacy_version = PRIVACY_VERSION;
   $("r-send").disabled = true;
   const { error } = await sb.from("access_requests").insert(row);
   $("r-send").disabled = false;
