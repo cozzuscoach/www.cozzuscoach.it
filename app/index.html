@@ -276,7 +276,24 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid #
   <div id="login-msg" class="msg"></div>
   <p style="margin-top:14px"><button class="link" id="btn-forgot">Password dimenticata?</button></p>
   <p id="login-gara" class="note-box hidden"></p>
-  <p style="margin-top:22px"><a class="link" href="/">Torna al sito</a></p>
+  <p style="margin-top:22px"><a class="link" href="/">Torna al sito</a> · <a class="link" href="/privacy">Privacy</a></p>
+</section>
+
+<!-- CONSENSO DATI DI SALUTE -->
+<section id="v-consent" class="login hidden" style="padding-top:calc(env(safe-area-inset-top,0px) + 30px)">
+  <h1 style="font-size:46px">Prima di iniziare</h1>
+  <p class="lead">Per costruire e adattare il tuo programma usiamo dati che riguardano la tua salute: serve il tuo consenso.</p>
+  <div class="card">
+    <p><b>Quali dati</b><br>Frequenza cardiaca, HRV, sonno, peso, sensazioni, fastidi e dolori, alimentazione, oltre agli allenamenti che registri.</p>
+    <p style="margin-top:10px"><b>Perché</b><br>Per calcolare zone e programma e per proporre al coach modifiche quando i dati indicano stanchezza o un problema.</p>
+    <p style="margin-top:10px"><b>Chi li tratta</b><br>Il tuo coach. Sono conservati su server nell'Unione Europea (Supabase). Il calcolo dei nutrienti e le proposte di adattamento usano anche Google Gemini.</p>
+    <p style="margin-top:10px">Puoi revocare il consenso in qualsiasi momento dal Profilo.</p>
+  </div>
+  <label class="check field" style="margin-top:16px;align-items:flex-start"><input id="cs-1" type="checkbox" style="margin-top:4px"> <span>Ho letto l'<a class="link" href="/privacy" target="_blank" rel="noopener">informativa privacy</a>.</span></label>
+  <label class="check field" style="align-items:flex-start"><input id="cs-2" type="checkbox" style="margin-top:4px"> <span>Acconsento al trattamento dei miei dati relativi alla salute per ricevere e adattare il programma di allenamento.</span></label>
+  <button class="btn primary full" id="cs-ok">Accetto e continuo</button>
+  <div id="cs-msg" class="msg"></div>
+  <p style="margin-top:16px"><button class="link" id="cs-no">Non accetto</button></p>
 </section>
 
 
@@ -348,6 +365,8 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid #
       <button class="btn soft full" data-open="race">+ Aggiungi gara</button>
       <h2>Notifiche</h2>
       <div class="card" id="push-box"></div>
+      <h2>Privacy</h2>
+      <div class="card" id="privacy-box"></div>
       <button class="btn soft full" id="btn-pwd">Cambia password</button>
       <button class="btn full" id="logout" style="color:var(--warn)">Esci</button>
       <p class="hint" style="text-align:center;margin-top:10px">Versione app <span id="app-ver"></span></p>
@@ -408,7 +427,9 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid #
 <div id="sheet-root"></div>
 
 <script>
-const APP_VERSION = "2026-10-01 · 28";
+const APP_VERSION = "2026-10-01 · 29";
+const PRIVACY_VERSION = "2026-10-01";          // da cambiare quando cambia l'informativa: il consenso viene richiesto di nuovo
+const PRIVACY_EMAIL = "info@cozzuscoach.it";
 const sb = supabase.createClient("https://pnoxjvssvtusjvbwpkkh.supabase.co","sb_publishable_ol7Ds9jbamCSwpNpGEPT9Q_ZZvxNHy3");
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -438,7 +459,7 @@ $("pwd").addEventListener("keydown", e => { if (e.key==="Enter") $("btn-login").
 const logout = async () => { await sb.auth.signOut(); location.reload(); };
 $("logout").onclick = logout; $("logout-c").onclick = logout; $("logout-top").onclick = logout;
 
-function showView(v){ ["v-login","v-athlete","v-coach","v-wizard"].forEach(x => $(x).classList.toggle("hidden", x!==v)); }
+function showView(v){ ["v-login","v-consent","v-athlete","v-coach","v-wizard"].forEach(x => $(x).classList.toggle("hidden", x!==v)); }
 
 async function route(){
   const { data:{ session } } = await sb.auth.getSession();
@@ -446,7 +467,37 @@ async function route(){
   const { data } = await sb.from("profiles").select("*").eq("id", session.user.id).single();
   if (!data){ showView("v-login"); $("login-msg").className="msg err"; $("login-msg").textContent="Profilo non trovato: contatta il coach."; return; }
   me = data;
+  if (me.role !== "coach" && (!me.health_consent_at || me.privacy_version !== PRIVACY_VERSION)) return showView("v-consent");
   if (me.role === "coach"){ showView("v-coach"); loadCoach(); } else if (!me.onboarded_at){ S = await fetchAthlete(me.id); startWizard(); } else { showView("v-athlete"); loadAthlete(); }
+}
+
+/* ---------- CONSENSO ---------- */
+$("cs-ok").onclick = async () => {
+  const m = $("cs-msg");
+  if (!$("cs-1").checked || !$("cs-2").checked){ m.className = "msg err"; m.textContent = "Per usare l'area atleti servono entrambe le conferme."; return; }
+  $("cs-ok").disabled = true;
+  const { error } = await sb.from("profiles").update({ health_consent_at: new Date().toISOString(), privacy_version: PRIVACY_VERSION }).eq("id", me.id);
+  $("cs-ok").disabled = false;
+  if (error){ m.className = "msg err"; m.textContent = "Non salvato: " + error.message; return; }
+  route();
+};
+$("cs-no").onclick = () => {
+  const m = $("cs-msg"); m.className = "msg";
+  m.innerHTML = `Senza questo consenso non è possibile preparare né adattare il tuo programma. Per qualsiasi dubbio scrivi a <a class="link" href="mailto:${PRIVACY_EMAIL}">${PRIVACY_EMAIL}</a>.<br><button class="link" id="cs-out" style="margin-top:8px">Esci</button>`;
+  $("cs-out").onclick = logout;
+};
+function renderPrivacy(){
+  const d = me.health_consent_at ? new Date(me.health_consent_at).toLocaleDateString("it-IT") : "–";
+  $("privacy-box").innerHTML = `<p class="sub">Consenso al trattamento dei dati relativi alla salute dato il ${d}.</p>
+    <p style="margin-top:8px"><a class="link" href="/privacy" target="_blank" rel="noopener">Leggi l'informativa</a></p>
+    <p class="sub" style="margin-top:8px">Per ricevere una copia dei tuoi dati o farli cancellare scrivi a <a class="link" href="mailto:${PRIVACY_EMAIL}">${PRIVACY_EMAIL}</a>.</p>
+    <button class="btn full" id="pv-rev" style="color:var(--warn)">Revoca il consenso</button>`;
+  $("pv-rev").onclick = async () => {
+    if (!confirm("Revocando il consenso non potrai usare l'area atleti finché non lo darai di nuovo. I dati già inseriti restano salvati: per cancellarli scrivi all'indirizzo indicato. Procedere?")) return;
+    const { error } = await sb.from("profiles").update({ health_consent_at: null }).eq("id", me.id);
+    if (error){ alert("Non riuscito: " + error.message); return; }
+    route();
+  };
 }
 
 /* ---------- DATI ATLETA ---------- */
@@ -476,7 +527,7 @@ async function loadAthlete(){
   $("hello").textContent = "Ciao " + (me.full_name||"").split(" ")[0];
   $("me-name").textContent = me.full_name;
   S = await fetchAthlete(me.id);
-  renderHome(); renderPlan(); renderDiary(S, $("diary-list"), true); renderRaces(); renderMe(); renderStats(); renderPush(); renderMeActions(); renderNutri();
+  renderHome(); renderPlan(); renderDiary(S, $("diary-list"), true); renderRaces(); renderMe(); renderStats(); renderPush(); renderMeActions(); renderNutri(); renderPrivacy();
   // arriva dal calendario con una gara scelta: diventa una richiesta al coach
   const g = pendingGara();
   if (g){ clearGara(); await loadEvents(); const e = EVENTS.find(x => x.id == g);
@@ -2720,7 +2771,8 @@ function sheetCibo(ds){
   };
 
   openSheet(`<h3>Alimentazione${day!==TODAY?" · "+dayParts(day).n+" "+dayParts(day).m:""}</h3>
-    <p class="sub" style="margin-bottom:10px">Scrivi con parole tue cosa hai mangiato in ogni pasto: i nutrienti li calcola l'app.</p>
+    <p class="sub" style="margin-bottom:6px">Scrivi con parole tue cosa hai mangiato in ogni pasto: i nutrienti li calcola l'app.</p>
+    <p class="hint" style="margin:0 0 10px">Il testo viene inviato a Google Gemini solo per calcolare i nutrienti: scrivi soltanto cosa hai mangiato.</p>
     <div class="tot" id="c-tot"></div>
     <div id="c-meals"></div>
     <div class="field"><label for="c-note">Note</label><textarea id="c-note" rows="2" placeholder="Digestione, appetito, cosa cambieresti">${esc(stato.cena.notes)}</textarea></div>
