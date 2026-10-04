@@ -227,7 +227,7 @@ footer a{color:#CFE3E8;text-decoration:none;margin-right:16px}
 <footer><div class="wrap"><div><b>Cozzu's Coach</b><p style="margin-top:6px">Allenamento per runner, dal Salento.</p></div>
 <div><a href="/consigli">Consigli</a><a href="/calendario">Calendario</a><a href="/strumenti">Strumenti</a><a href="/#richiedi">Contatti</a><a href="/privacy">Privacy</a><a href="/app/">Area atleti</a></div></div></footer>
 <script>
-const PRIVACY_VERSION = "2026-10-01";
+const PRIVACY_VERSION = "2026-10-02";
 const vo2 = v => -4.6 + 0.182258*v + 0.000104*v*v;
 const pct = t => 0.8 + 0.1894393*Math.exp(-0.012778*t) + 0.2989558*Math.exp(-0.1932605*t);
 const vdot = (dm, ts) => { const t = ts/60; return vo2(dm/t) / pct(t); };
