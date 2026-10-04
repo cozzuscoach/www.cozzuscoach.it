@@ -451,7 +451,7 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid #
 <div id="sheet-root"></div>
 
 <script>
-const APP_VERSION = "2026-10-03 · 31";
+const APP_VERSION = "2026-10-04 · 32";
 const PRIVACY_VERSION = "2026-10-02";          // da cambiare quando cambia l'informativa: il consenso viene richiesto di nuovo
 const PRIVACY_EMAIL = "info@cozzuscoach.it";
 const sb = supabase.createClient("https://pnoxjvssvtusjvbwpkkh.supabase.co","sb_publishable_ol7Ds9jbamCSwpNpGEPT9Q_ZZvxNHy3");
@@ -1318,12 +1318,30 @@ function sheetRace(ds){
 }
 
 /* ---------- COACH ---------- */
+// proposte non più utili: seduta passata o già svolta dall'atleta
+async function scadenzaProposte(ids){
+  try {
+    const { data: pend } = await sb.from("adjustments").select("id,athlete_id,planned_session_id")
+      .in("athlete_id", ids).eq("status", "in_attesa").not("planned_session_id", "is", null);
+    if (!pend?.length) return;
+    const { data: ses } = await sb.from("planned_sessions").select("id,session_date").in("id", pend.map(p => p.planned_session_id));
+    const dataDi = Object.fromEntries((ses||[]).map(x => [x.id, x.session_date]));
+    const giorni = [...new Set(Object.values(dataDi))];
+    const { data: wk } = giorni.length
+      ? await sb.from("workouts").select("athlete_id,day,sport").in("athlete_id", ids).in("day", giorni) : { data: [] };
+    const fatto = new Set((wk||[]).filter(w => (w.sport||"corsa") === "corsa").map(w => w.athlete_id + "|" + w.day));
+    const scadute = pend.filter(p => { const d = dataDi[p.planned_session_id];
+      return !d || d < TODAY || fatto.has(p.athlete_id + "|" + d); }).map(p => p.id);
+    if (scadute.length) await sb.from("adjustments").update({ status: "scaduta", reviewed_at: new Date().toISOString() }).in("id", scadute);
+  } catch (_) {}
+}
 async function loadCoach(){
   $("coach-detail").classList.add("hidden"); $("coach-list").classList.remove("hidden");
   const { data: athletes } = await sb.from("profiles").select("id,full_name").eq("coach_id", me.id).order("full_name");
   $("coach-sub").textContent = `${athletes?.length||0} atleti`;
   if (!athletes?.length){ $("athletes").innerHTML = `<div class="empty">Nessun atleta collegato.</div>`; return; }
   const ids = athletes.map(a=>a.id);
+  await scadenzaProposte(ids);
   const [{ data: ck }, { data: wk }, { data: pls }, { data: adjs }, { data: preqs }, { data: dol }, { data: nmsg }] = await Promise.all([
     sb.from("daily_checkins").select("athlete_id,day").in("athlete_id",ids).eq("day",TODAY),
     sb.from("plans").select("athlete_id,status,created_at").in("athlete_id",ids).order("created_at",{ascending:false}),
