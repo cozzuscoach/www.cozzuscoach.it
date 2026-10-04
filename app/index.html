@@ -266,6 +266,20 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid #
 .coachnote.fb b{font-size:13px}
 .coachnote.fb p{font-size:15px}
 .fbnote{display:block;font-size:12px;color:#8A5510;opacity:.85;margin-top:6px}
+.msgbtn{font-size:14px;font-weight:600;color:var(--sea);margin-top:6px;padding:6px 0;min-height:32px}
+.msgbtn .dot{background:var(--warn);color:#fff;border-radius:10px;padding:1px 7px;font-size:12px;margin-left:4px}
+.mslist{max-height:46vh;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding:2px}
+.bubble{max-width:86%;background:var(--bg);border-radius:16px 16px 16px 4px;padding:9px 12px;align-self:flex-start}
+.bubble.mine{align-self:flex-end;background:var(--foam);border-radius:16px 16px 4px 16px}
+.bubble p{white-space:pre-line;font-size:16px}
+.bubble span{display:block;font-size:12px;color:var(--muted);margin-top:3px}
+.shoebar{height:8px;border-radius:4px;background:var(--bg);overflow:hidden;margin-top:8px}
+.shoebar i{display:block;height:100%;border-radius:4px}
+.recap-km{display:flex;align-items:baseline;gap:8px;margin:6px 0 10px}
+.recap-km b{font:800 64px/0.9 var(--cond);color:var(--sea)}
+.recap-km span{font:600 20px var(--cond);color:var(--muted)}
+.rp-img{margin-top:14px;text-align:center}
+.rp-img img{max-width:100%;max-height:52vh;border-radius:16px;box-shadow:0 4px 18px rgba(7,63,80,.25)}
 </style>
 </head>
 <body>
@@ -322,6 +336,7 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid #
       <div id="race-hero"></div>
       <div class="week" id="week"></div>
       <div id="today-card"></div>
+      <div id="recap-card"></div>
       <div class="card" id="morning-card"></div>
     </section>
 
@@ -352,6 +367,7 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid #
         <button class="chip" data-p="m" aria-pressed="false">Mesi</button>
         <button class="chip" data-p="y" aria-pressed="false">Anni</button>
       </div>
+      <button class="btn soft full" id="btn-recap" style="margin:6px 0 4px">Riepilogo della settimana</button>
       <div id="st-body"></div>
       <p class="hint" style="margin-top:18px">Stime calcolate con formule pubbliche (VDOT di Daniels e riserva cardiaca) sui dati che inserisci: servono a seguire l'andamento nel tempo, non sostituiscono un test sul campo o in laboratorio.</p>
     </section>
@@ -367,6 +383,9 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid #
       <h2>Le tue gare</h2>
       <div class="card" id="races-list"></div>
       <button class="btn soft full" data-open="race">+ Aggiungi gara</button>
+      <h2>Le tue scarpe</h2>
+      <div class="card" id="shoes-list"></div>
+      <button class="btn soft full" id="btn-shoe">+ Aggiungi scarpe</button>
       <h2>Notifiche</h2>
       <div class="card" id="push-box"></div>
       <h2>Privacy</h2>
@@ -420,6 +439,7 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid #
       <button class="link" id="detail-remove" style="color:var(--warn)">Non seguo più questo atleta</button>
       <div id="detail-race" style="margin-top:12px"></div>
       <div id="detail-req"></div>
+      <div id="detail-msg"></div>
       <div id="detail-adj"></div>
       <div id="detail-plan"></div>
       <h2>Diario</h2>
@@ -431,7 +451,7 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid #
 <div id="sheet-root"></div>
 
 <script>
-const APP_VERSION = "2026-10-02 · 30";
+const APP_VERSION = "2026-10-03 · 31";
 const PRIVACY_VERSION = "2026-10-02";          // da cambiare quando cambia l'informativa: il consenso viene richiesto di nuovo
 const PRIVACY_EMAIL = "info@cozzuscoach.it";
 const sb = supabase.createClient("https://pnoxjvssvtusjvbwpkkh.supabase.co","sb_publishable_ol7Ds9jbamCSwpNpGEPT9Q_ZZvxNHy3");
@@ -518,12 +538,19 @@ async function fetchAthlete(id){
   const { data: blocks } = await sb.from("workout_blocks").select("*").eq("athlete_id",id).order("ord");
   const { data: plan } = await sb.from("plans").select("*").eq("athlete_id",id).order("created_at",{ascending:false}).limit(1).maybeSingle();
   const { data: fb } = await sb.from("feedback").select("workout_id,body,caso,created_at").eq("athlete_id",id).eq("kind","seduta").gte("day",from);
+  const [{ data: msgs }, { data: shoes }, { data: shoeRuns }] = await Promise.all([
+    sb.from("session_messages").select("*").eq("athlete_id",id).gte("day",from).order("created_at"),
+    sb.from("shoes").select("*").eq("athlete_id",id).order("created_at"),
+    sb.from("workouts").select("shoe_id,distance_km").eq("athlete_id",id).not("shoe_id","is",null)
+  ]);
+  const shoeKm = {}; (shoeRuns||[]).forEach(r => { shoeKm[r.shoe_id] = (shoeKm[r.shoe_id]||0) + (+r.distance_km||0); });
+  const SH = (shoes||[]).map(x => ({ ...x, km: (+x.start_km||0) + (shoeKm[x.id]||0) }));
   const ex = Object.fromEntries((extra||[]).map(e => [e.day,e]));
   const zmap = {}; (zones.data||[]).forEach(z => { if(!zmap[z.code]) zmap[z.code]=z; });
   return {
     races: races.data||[], sessions: sessions.data||[],
-    workouts: (workouts.data||[]).map(w => ({ ...w, blocks: (blocks||[]).filter(b => b.workout_id === w.id), feedback: (fb||[]).find(f => f.workout_id === w.id) || null })),
-    checkins: (checkins.data||[]).map(c => ({...ex[c.day], ...c})), zones: zmap, plan
+    workouts: (workouts.data||[]).map(w => ({ ...w, blocks: (blocks||[]).filter(b => b.workout_id === w.id), feedback: (fb||[]).find(f => f.workout_id === w.id) || null, shoe_name: SH.find(x => x.id === w.shoe_id)?.name || null })),
+    checkins: (checkins.data||[]).map(c => ({...ex[c.day], ...c})), zones: zmap, plan, msgs: msgs||[], shoes: SH
   };
 }
 const nextRace = races => { const f = races.filter(r => r.race_date >= TODAY); return f.find(r => r.priority==="A") || f[0] || null; };
@@ -532,7 +559,7 @@ async function loadAthlete(){
   $("hello").textContent = "Ciao " + (me.full_name||"").split(" ")[0];
   $("me-name").textContent = me.full_name;
   S = await fetchAthlete(me.id);
-  renderHome(); renderPlan(); renderDiary(S, $("diary-list"), true); renderRaces(); renderMe(); renderStats(); renderPush(); renderMeActions(); renderNutri(); renderPrivacy();
+  renderHome(); renderPlan(); renderDiary(S, $("diary-list"), true); renderRaces(); renderMe(); renderStats(); renderPush(); renderMeActions(); renderNutri(); renderPrivacy(); renderShoes(); renderRecapHome();
   // arriva dal calendario con una gara scelta: diventa una richiesta al coach
   const g = pendingGara();
   if (g){ clearGara(); await loadEvents(); const e = EVENTS.find(x => x.id == g);
@@ -600,7 +627,12 @@ function renderHome(){
         : `<button class="btn primary full" data-open="workout" data-session="${ses.id}">Ho fatto l'allenamento</button>`}
     </div>`;
   }
-  $("today-card").innerHTML = noteHtml + html;
+  const daCoach = (S.msgs||[]).filter(m => m.author_id !== me.id && !m.read_at);
+  const avvisoMsg = daCoach.length ? `<div class="note-box" style="margin-top:14px">Il coach ti ha scritto. ${msgBtn(S, daCoach[daCoach.length-1].day, me.id)}</div>` : "";
+  const usurate = (S.shoes||[]).filter(x => !x.retired && x.km >= x.alert_km);
+  const avvisoScarpe = usurate.length ? `<div class="note-box" style="margin-top:14px">${usurate.map(x => `Le tue ${esc(x.name)} hanno superato i ${x.alert_km} km (${Math.round(x.km)} km): valuta di cambiarle.`).join("<br>")}</div>` : "";
+  if (ses) html = html.replace(/<\/div>\s*$/, `<div style="margin-top:10px">${msgBtn(S, TODAY, me.id)}</div></div>`);
+  $("today-card").innerHTML = avvisoMsg + avvisoScarpe + noteHtml + html;
   renderMorning();
 }
 function renderMorning(){
@@ -648,7 +680,8 @@ function renderPlan(){
           ${rest.length?`<div class="sub" style="white-space:pre-line">${esc(rest.join("\n"))}</div>`:""}
           ${purpose?`<div class="purpose">${esc(purpose)}</div>`:""}
           ${s.coach_note?`<div class="sub" style="margin-top:6px;color:#8A5510"><b>Coach:</b> ${esc(s.coach_note)}</div>`:""}
-          ${s.edited_by_coach?`<span class="tag" style="margin-top:6px">aggiornata dal coach</span>`:""}</div></div>`;
+          ${s.edited_by_coach?`<span class="tag" style="margin-top:6px">aggiornata dal coach</span>`:""}
+          <div>${msgBtn(S, s.session_date, me.id)}</div></div></div>`;
       }).join("")}</div>`;
   }).join("");
 }
@@ -668,6 +701,7 @@ function renderDiary(D, box, own){
     const rhrHigh = c?.rhr_bpm && c?.rhr_avg7 && c.rhr_bpm >= c.rhr_avg7+5;
     return `<div class="dentry">
       <div class="dh"><b>${p.W} ${p.n} ${p.m}</b><span>${ws.map(w => w.sport && w.sport !== "corsa" ? SPORT_LBL[w.sport] : (TYPES[w.type]||"Corsa")).join(" + ")}</span></div>
+      <div>${msgBtn(D, day, own ? me.id : CUR?.a?.id)}</div>
       ${own?`<div class="hint">Tocca una riga per correggerla</div>`:""}
       ${ws.map(w => wMetrics(w, own) + (w.notes && (own||!w.notes_private)?`<div class="note">${esc(w.notes)}</div>`:"")).join("")}
       ${c ? `<div class="morning" ${own?`data-open="morning" data-day="${c.day}" style="cursor:pointer"`:""}>Mattino: HRV <b class="${hrvLow?"flag":""}">${c.hrv_ms??"–"}</b> · FC <b class="${rhrHigh?"flag":""}">${c.rhr_bpm??"–"}</b> · sonno <b>${sleep(c.sleep_min)}</b>${c.legs_feel?` · gambe <b>${c.legs_feel}/5</b>`:""}${c.weight_kg?` · peso <b>${c.weight_kg} kg</b>`:""}</div>
@@ -706,6 +740,7 @@ function wMetrics(w, own){
       cell(w.distance_km&&w.duration_s ? pace(w.duration_s/w.distance_km) : "–","/km"), cell(w.avg_hr??"–",`FC · RPE ${w.rpe}`)];
   }
   if (sp === "corsa" && w.work_pace_s && (w.blocks||[]).length > 1) info.push(`passo di lavoro ${pace(w.work_pace_s)}/km`);
+  if (sp === "corsa" && w.shoe_name) info.push(`scarpe ${esc(w.shoe_name)}`);
   const load = carico(w);
   if (load) info.push(`carico ${load}`);
   const unit = b => sp === "nuoto" ? (b.distance_km ? Math.round(b.distance_km*1000) + " m" : "") : (b.distance_km ? b.distance_km + " km" : "");
@@ -868,6 +903,7 @@ function sheetWorkout(ds){
   const noFasi = !!ex && !CON_FASI.includes(sport);
   const D = {
     type: ex ? ex.type : (ses?.type && ses.type !== "riposo" ? ses.type : "lento"),
+    shoe_id: ex ? (ex.shoe_id ?? null) : ((S.shoes||[]).find(x => x.is_default && !x.retired)?.id ?? null),
     pool: det.pool || "25", strokes: det.strokes || ["libero"], gear: det.gear || [],
     bike: det.bike || "strada", brick: !!det.brick, np_w: det.np_w ?? null, elev: ex?.elevation_gain_m ?? null,
     place: det.place || "palestra", mode: det.mode || "esercizi", focus: det.focus || [],
@@ -965,6 +1001,7 @@ function sheetWorkout(ds){
   /* ---- dettagli per sport ---- */
   const readDet = () => {
     if (sport === "corsa" && $("w-type")) D.type = val("w-type");
+    if (sport === "corsa" && $("w-shoe")) D.shoe_id = val("w-shoe") ? +val("w-shoe") : null;
     if (sport === "bici"){ D.elev = val("w-elev") === "" ? null : +val("w-elev"); D.np_w = val("w-np") === "" ? null : +val("w-np"); D.brick = !!$("w-brick")?.checked; }
     if (sport === "palestra" || sport === "altro"){ const s = (+val("w-dh")||0)*3600 + (+val("w-dm")||0)*60; D.dur_s = s || null; }
     if (sport === "palestra"){
@@ -997,7 +1034,9 @@ function sheetWorkout(ds){
   const paintBody = () => {
     let html = "";
     if (sport === "corsa") html = `<div class="field"><label for="w-type">Tipo di seduta (che cosa allenavi)</label><select id="w-type">${Object.entries(TYPES).filter(([k])=>k!=="riposo").map(([k,v])=>`<option value="${k}" ${D.type===k?"selected":""}>${v}</option>`).join("")}</select>
-      <div class="hint">Per gare e test metti la prova in "Lavoro continuo": la stima della tua forma userà solo quella parte.</div></div>`;
+      <div class="hint">Per gare e test metti la prova in "Lavoro continuo": la stima della tua forma userà solo quella parte.</div></div>
+      <div class="field"><label for="w-shoe">Scarpe</label><select id="w-shoe"><option value="">Non indicate</option>${(S.shoes||[]).filter(x => !x.retired || x.id === D.shoe_id).map(x => `<option value="${x.id}" ${D.shoe_id === x.id ? "selected" : ""}>${esc(x.name)} · ${Math.round(x.km)} km</option>`).join("")}</select>
+      ${(S.shoes||[]).length ? "" : `<div class="hint">Aggiungi le tue scarpe dal Profilo per contarne i km.</div>`}</div>`;
     if (sport === "nuoto") html = `<div class="field"><label>Dove</label>${chipRow("w-pool", VASCHE, D.pool)}</div>
       <div class="field"><label>Stile prevalente</label>${chipRow("w-stroke", STILI, D.strokes, true)}</div>
       <div class="field"><label>Attrezzi</label>${chipRow("w-gear", ATTREZZI, D.gear, true)}</div>`;
@@ -1168,6 +1207,7 @@ function sheetWorkout(ds){
       const hrB = flat().filter(b => b.avg_hr && b.duration_s);
       const row = { athlete_id: me.id, day, sport, session_no: +$("w-no").value,
         type: sport === "corsa" ? D.type : "altro",
+        shoe_id: sport === "corsa" ? D.shoe_id : null,
         planned_session_id: sport === "corsa" ? (ps?.id ?? null) : null,
         distance_km: t.km || null, duration_s: t.sec || null,
         avg_pace_s: sport === "corsa" && t.pace ? Math.round(t.pace) : null,
@@ -1284,14 +1324,16 @@ async function loadCoach(){
   $("coach-sub").textContent = `${athletes?.length||0} atleti`;
   if (!athletes?.length){ $("athletes").innerHTML = `<div class="empty">Nessun atleta collegato.</div>`; return; }
   const ids = athletes.map(a=>a.id);
-  const [{ data: ck }, { data: wk }, { data: pls }, { data: adjs }, { data: preqs }, { data: dol }] = await Promise.all([
+  const [{ data: ck }, { data: wk }, { data: pls }, { data: adjs }, { data: preqs }, { data: dol }, { data: nmsg }] = await Promise.all([
     sb.from("daily_checkins").select("athlete_id,day").in("athlete_id",ids).eq("day",TODAY),
     sb.from("plans").select("athlete_id,status,created_at").in("athlete_id",ids).order("created_at",{ascending:false}),
     sb.from("workouts").select("athlete_id,day").in("athlete_id",ids).order("day",{ascending:false}),
     sb.from("adjustments").select("athlete_id,severity").in("athlete_id",ids).eq("status","in_attesa"),
     sb.from("plan_requests").select("athlete_id").in("athlete_id",ids).eq("status","nuova"),
-    sb.from("feedback").select("athlete_id").in("athlete_id",ids).eq("caso","dolore").gte("day",addDays(TODAY,-2))
+    sb.from("feedback").select("athlete_id").in("athlete_id",ids).eq("caso","dolore").gte("day",addDays(TODAY,-2)),
+    sb.from("session_messages").select("athlete_id").in("athlete_id",ids).neq("author_id",me.id).is("read_at",null)
   ]);
+  const msgCount = {}; (nmsg||[]).forEach(m => { msgCount[m.athlete_id] = (msgCount[m.athlete_id]||0) + 1; });
   const dolSet = new Set((dol||[]).map(x => x.athlete_id));
   const ckT = new Set((ck||[]).map(c=>c.athlete_id)); const lastW = {}, lastP = {};
   (pls||[]).forEach(p => { if (!(p.athlete_id in lastP)) lastP[p.athlete_id] = p; });
@@ -1300,12 +1342,12 @@ async function loadCoach(){
   const reqSet = new Set((preqs||[]).map(x => x.athlete_id));
   (wk||[]).forEach(w => { if(!lastW[w.athlete_id]) lastW[w.athlete_id]=w.day; });
   $("athletes").innerHTML = "";
-  const prio = id => (dolSet.has(id)?3:0) + (adjAlarm[id]?3:0) + (reqSet.has(id)?2:0) + (lastP[id]?.status==="bozza"?2:0) + (adjCount[id]?1:0);
+  const prio = id => (dolSet.has(id)?3:0) + (msgCount[id]?2:0) + (adjAlarm[id]?3:0) + (reqSet.has(id)?2:0) + (lastP[id]?.status==="bozza"?2:0) + (adjCount[id]?1:0);
   athletes.sort((x,y) => prio(y.id) - prio(x.id));
   athletes.forEach(a => {
     const b = document.createElement("button"); b.className="athlete";
     const lw = lastW[a.id];
-    b.innerHTML = `<div><strong>${esc(a.full_name)}</strong>${dolSet.has(a.id)?' <span class="tag" style="background:#F7DAD0;color:#8E2F0E">Dolore segnalato</span>':""}${lastP[a.id]?.status==="bozza"?' <span class="tag q">Programma da rivedere</span>':""}${reqSet.has(a.id)?' <span class="tag q">Richiesta</span>':""}${adjAlarm[a.id]?' <span class="tag" style="background:#F7DAD0;color:#8E2F0E">Allarme</span>':adjCount[a.id]?` <span class="tag q">${adjCount[a.id]} ${adjCount[a.id]===1?"proposta":"proposte"}</span>`:""}<div class="when">${lw?`ultimo allenamento ${dayParts(lw).n} ${dayParts(lw).m}`:"nessun allenamento registrato"}</div></div>
+    b.innerHTML = `<div><strong>${esc(a.full_name)}</strong>${dolSet.has(a.id)?' <span class="tag" style="background:#F7DAD0;color:#8E2F0E">Dolore segnalato</span>':""}${msgCount[a.id]?` <span class="tag q">💬 ${msgCount[a.id]} ${msgCount[a.id]===1?"messaggio":"messaggi"}</span>`:""}${lastP[a.id]?.status==="bozza"?' <span class="tag q">Programma da rivedere</span>':""}${reqSet.has(a.id)?' <span class="tag q">Richiesta</span>':""}${adjAlarm[a.id]?' <span class="tag" style="background:#F7DAD0;color:#8E2F0E">Allarme</span>':adjCount[a.id]?` <span class="tag q">${adjCount[a.id]} ${adjCount[a.id]===1?"proposta":"proposte"}</span>`:""}<div class="when">${lw?`ultimo allenamento ${dayParts(lw).n} ${dayParts(lw).m}`:"nessun allenamento registrato"}</div></div>
       <span class="when ${ckT.has(a.id)?"good":""}">${ckT.has(a.id)?"check-in ✓":"check-in —"}</span>`;
     b.onclick = () => openAthlete(a);
     $("athletes").appendChild(b);
@@ -1317,7 +1359,7 @@ async function openAthlete(a){
   const D = await fetchAthlete(a.id);
   $("detail-race").innerHTML = raceHero(nextRace(D.races), false);
   renderDiary(D, $("detail-diary"), false);
-  CUR = { a, D }; await renderPlanRequests(); await renderAdjustments(); await renderCoachPlan();
+  CUR = { a, D }; renderMsgCoach(); await renderPlanRequests(); await renderAdjustments(); await renderCoachPlan();
 }
 $("back").onclick = loadCoach;
 $("ex-tog").onclick = () => { EX_OPEN = !EX_OPEN; renderEx(); };
@@ -2104,7 +2146,8 @@ async function renderCoachPlan(){
           <div class="t">${esc(x.title)} ${QUALITY.includes(x.type)?'<span class="tag q">Qualità</span>':""} ${x.edited_by_coach?'<span class="tag">modificata</span>':""}</div>
           <div class="sub" style="white-space:pre-line">${esc((x.description||"").split("\n").slice(1).join("\n"))}</div>
           ${x.coach_note?`<div class="sub" style="color:#8A5510"><b>Nota:</b> ${esc(x.coach_note)}</div>`:""}
-          <button class="link" data-cs="${x.id}" style="margin-top:4px">Modifica</button></div></div>`; }).join("")}</div>`; }).join("")}`;
+          <button class="link" data-cs="${x.id}" style="margin-top:4px">Modifica</button>
+          <div>${msgBtn(CUR.D, x.session_date, CUR.a.id)}</div></div></div>`; }).join("")}</div>`; }).join("")}`;
   box.querySelectorAll("[data-cs]").forEach(b => b.onclick = () => sheetCoachSession(CUR.ses.find(x => x.id == b.dataset.cs)));
   $("cp-add").onclick = () => sheetCoachSession(null);
   const saveNote = async (publish) => {
@@ -2291,6 +2334,8 @@ async function renderMeActions(){
 }
 $("app-ver").textContent = APP_VERSION;
 $("btn-dati").onclick = () => sheetDati();
+$("btn-shoe").onclick = () => sheetShoe(null);
+$("btn-recap").onclick = () => sheetRiepilogo();
 $("btn-req").onclick = () => sheetRichiesta();
 
 function sheetDati(){
@@ -2835,6 +2880,227 @@ function sheetCibo(ds){
         if (r.error){ $("c-save").disabled = false; alert("Salvataggio non riuscito: " + r.error.message); return; } }
       closeSheet(); await loadAthlete();
     };
+  });
+}
+
+/* =====================================================
+   MESSAGGI SOTTO LA SEDUTA
+   ===================================================== */
+const msgsDi = (D, day) => (D?.msgs || []).filter(m => m.day === day).sort((a,b) => String(a.created_at||"").localeCompare(String(b.created_at||"")));
+function msgBtn(D, day, athleteId){
+  const L = msgsDi(D, day), nuovi = L.filter(m => m.author_id !== me.id && !m.read_at).length;
+  const txt = L.length ? `${L.length} ${L.length === 1 ? "messaggio" : "messaggi"}` : (me.role === "coach" ? "Scrivi all'atleta" : "Scrivi al coach");
+  return `<button type="button" class="msgbtn" data-msg="${day}" data-ath="${athleteId}">💬 ${txt}${nuovi ? ` <span class="dot">${nuovi} ${nuovi === 1 ? "nuovo" : "nuovi"}</span>` : ""}</button>`;
+}
+document.addEventListener("click", e => {
+  const t = e.target.closest("[data-msg]"); if (!t) return;
+  e.preventDefault(); e.stopPropagation(); sheetMessaggi(t.dataset.msg, t.dataset.ath);
+});
+function aggiornaMessaggi(){
+  if (me.role === "coach"){ if (CUR?.D){ renderDiary(CUR.D, $("detail-diary"), false); renderCoachPlan(); renderMsgCoach(); } }
+  else { renderHome(); renderPlan(); renderDiary(S, $("diary-list"), true); }
+}
+async function sheetMessaggi(day, athleteId){
+  const coach = me.role === "coach", D = coach ? CUR.D : S, p = dayParts(day);
+  const ses = (coach ? CUR.ses : S.sessions)?.find(x => x.session_date === day);
+  const altro = coach ? (CUR.a.full_name || "").split(" ")[0] : "Coach";
+  const paint = () => {
+    const L = msgsDi(D, day);
+    $("ms-list").innerHTML = L.length ? L.map(m => `<div class="bubble ${m.author_id === me.id ? "mine" : ""}"><p>${esc(m.body)}</p>
+        <span>${m.author_id === me.id ? "Tu" : esc(altro)} · ${new Date(m.created_at).toLocaleString("it-IT", { day:"numeric", month:"short", hour:"2-digit", minute:"2-digit" })}</span></div>`).join("")
+      : `<p class="empty">Nessun messaggio su questa giornata. ${coach ? "Scrivi all'atleta." : "Scrivi al coach una domanda o com'è andata."}</p>`;
+    $("ms-list").scrollTop = $("ms-list").scrollHeight;
+  };
+  openSheet(`<h3>Messaggi · ${p.W} ${p.n} ${p.m}</h3>
+    ${ses ? `<p class="sub" style="margin:-6px 0 10px">${esc(ses.title)}</p>` : ""}
+    <div id="ms-list" class="mslist"></div>
+    <div class="field" style="margin-top:12px"><textarea id="ms-txt" rows="3" maxlength="2000" placeholder="${coach ? "Scrivi all'atleta" : "Scrivi al coach"}"></textarea></div>
+    <button class="btn primary full" id="ms-send">Invia</button><div id="f-msg" class="msg"></div>`, async () => {
+    paint();
+    const daLeggere = msgsDi(D, day).filter(m => m.author_id !== me.id && !m.read_at);
+    if (daLeggere.length){
+      const now = new Date().toISOString();
+      const { error } = await sb.from("session_messages").update({ read_at: now }).in("id", daLeggere.map(m => m.id));
+      if (!error){ daLeggere.forEach(m => m.read_at = now); aggiornaMessaggi(); }
+    }
+    $("ms-send").onclick = async () => {
+      const body = $("ms-txt").value.trim(); if (!body) return;
+      $("ms-send").disabled = true;
+      const { data, error } = await sb.from("session_messages").insert({ athlete_id: athleteId, day, author_id: me.id, body }).select().single();
+      $("ms-send").disabled = false;
+      if (error){ $("f-msg").className = "msg err"; $("f-msg").textContent = "Non inviato: " + error.message; return; }
+      (D.msgs = D.msgs || []).push(data); $("ms-txt").value = ""; paint(); aggiornaMessaggi();
+      if (coach) avvisaAtleta(athleteId, "Messaggio dal coach", `${p.n} ${p.m}: ${body.slice(0, 120)}`);
+    };
+  });
+}
+function renderMsgCoach(){
+  const box = $("detail-msg"); if (!box || !CUR?.D) return;
+  const giorni = [...new Set((CUR.D.msgs || []).filter(m => m.author_id !== me.id && !m.read_at).map(m => m.day))].sort().reverse();
+  box.innerHTML = giorni.length ? `<h2>Messaggi da leggere</h2><div class="card">${giorni.map(d => { const p = dayParts(d);
+      const ultimo = msgsDi(CUR.D, d).filter(m => m.author_id !== me.id).pop();
+      return `<div class="dentry"><div class="dh"><b>${p.W} ${p.n} ${p.m}</b></div><p class="note" style="font-style:normal">${esc((ultimo?.body || "").slice(0, 140))}</p>${msgBtn(CUR.D, d, CUR.a.id)}</div>`; }).join("")}</div>` : "";
+}
+
+/* =====================================================
+   SCARPE
+   ===================================================== */
+function renderShoes(){
+  const L = S.shoes || [], att = L.filter(x => !x.retired), rit = L.filter(x => x.retired);
+  $("shoes-list").innerHTML = (att.length ? att.map(x => { const p = Math.min(100, x.km / x.alert_km * 100), over = x.km >= x.alert_km;
+      return `<div class="dentry"><div class="dh"><b>${esc(x.name)}${x.is_default ? ' <span class="tag">predefinite</span>' : ""}</b><span>${Math.round(x.km)} km</span></div>
+        <div class="shoebar"><i style="width:${p}%;background:${over ? "var(--warn)" : p > 85 ? "var(--sun)" : "var(--sea)"}"></i></div>
+        <div class="hint">${over ? `<span class="flag">Hanno superato i ${x.alert_km} km: valuta di cambiarle.</span>` : `Avviso a ${x.alert_km} km · ne mancano ${Math.round(x.alert_km - x.km)}`} · <button class="link" data-shoe="${x.id}">modifica</button></div></div>`; }).join("")
+    : `<div class="empty">Nessuna scarpa registrata. Aggiungile per sapere quando è il momento di cambiarle.</div>`)
+    + (rit.length ? `<p class="hint" style="margin-top:10px">Ritirate: ${rit.map(x => `${esc(x.name)} (${Math.round(x.km)} km) <button class="link" data-shoe="${x.id}">modifica</button>`).join(" · ")}</p>` : "");
+  $("shoes-list").querySelectorAll("[data-shoe]").forEach(b => b.onclick = () => sheetShoe(L.find(x => x.id == b.dataset.shoe)));
+}
+function sheetShoe(x){
+  const nuova = !x; x = x || { name:"", start_km:0, alert_km:700, is_default: !(S.shoes||[]).some(s => !s.retired) };
+  const fatti = nuova ? 0 : Math.round(x.km - x.start_km);
+  openSheet(`<h3>${nuova ? "Nuove scarpe" : "Modifica scarpe"}</h3>
+    <div class="field"><label for="sh-n">Modello</label><input id="sh-n" value="${esc(x.name)}" placeholder="es. Pegasus 41 blu"></div>
+    <div class="g2"><div class="field"><label for="sh-s">Km già percorsi</label><input id="sh-s" type="number" step="1" inputmode="numeric" value="${x.start_km ?? 0}">
+      <div class="hint">${nuova ? "Quelli fatti prima di registrarle qui. Se sono nuove, lascia 0." : `Più ${fatti} km registrati nell'app.`}</div></div>
+    <div class="field"><label for="sh-a">Avviso a (km)</label><input id="sh-a" type="number" step="50" inputmode="numeric" value="${x.alert_km}">
+      <div class="hint">Di solito tra 600 e 800 km.</div></div></div>
+    <label class="check field"><input id="sh-d" type="checkbox" ${x.is_default ? "checked" : ""}> Proponile già selezionate quando registro una corsa</label>
+    <button class="btn primary full" id="sh-save">Salva</button>
+    ${nuova ? "" : `<div class="actions"><button class="btn soft" id="sh-rit">${x.retired ? "Rimetti in uso" : "Ritira"}</button><button class="btn" id="sh-del" style="color:var(--warn)">Elimina</button></div>`}
+    <div id="f-msg" class="msg"></div>`, () => {
+    const fine = async r => { if (r.error){ $("f-msg").className = "msg err"; $("f-msg").textContent = r.error.message; return; } closeSheet(); await loadAthlete(); };
+    $("sh-save").onclick = async () => {
+      const row = { name: $("sh-n").value.trim(), start_km: Math.max(0, +$("sh-s").value || 0), alert_km: Math.max(100, +$("sh-a").value || 700), is_default: $("sh-d").checked };
+      if (!row.name){ $("f-msg").className = "msg err"; $("f-msg").textContent = "Scrivi il modello."; return; }
+      $("sh-save").disabled = true;
+      if (row.is_default) await sb.from("shoes").update({ is_default: false }).eq("athlete_id", me.id);
+      fine(nuova ? await sb.from("shoes").insert({ ...row, athlete_id: me.id }) : await sb.from("shoes").update(row).eq("id", x.id));
+    };
+    if (!nuova){
+      $("sh-rit").onclick = async () => fine(await sb.from("shoes").update({ retired: !x.retired, is_default: false }).eq("id", x.id));
+      $("sh-del").onclick = async () => { if (!confirm("Eliminare queste scarpe? Le corse registrate restano, senza l'indicazione delle scarpe.")) return;
+        fine(await sb.from("shoes").delete().eq("id", x.id)); };
+    }
+  });
+}
+
+/* =====================================================
+   RIEPILOGO DELLA SETTIMANA
+   ===================================================== */
+function datiSettimana(D, mon){
+  const fine = addDays(mon, 7);
+  const W = D.workouts.filter(w => w.day >= mon && w.day < fine);
+  const run = W.filter(w => (w.sport || "corsa") === "corsa");
+  const previste = D.sessions.filter(s => s.session_date >= mon && s.session_date < fine && s.type !== "riposo");
+  const fatte = previste.filter(s => run.some(w => w.day === s.session_date)).length;
+  const rank = { gara: 6, qualita_ok: 5, qualita_veloce: 4, volume_alto: 3, facile_ok: 2 };
+  const best = [...run].sort((a,b) => (rank[b.feedback?.caso] || 0) - (rank[a.feedback?.caso] || 0) || (+b.distance_km || 0) - (+a.distance_km || 0))[0] || null;
+  const quota = previste.length ? fatte / previste.length : null;
+  const r = nextRace(D.races);
+  return { mon, n: W.length, km: run.reduce((t,w) => t + (+w.distance_km || 0), 0), uscite: run.length,
+    tempo: W.reduce((t,w) => t + (w.duration_s || 0), 0),
+    altri: W.filter(w => (w.sport || "corsa") !== "corsa").reduce((t,w) => t + (w.duration_s || 0), 0),
+    previste: previste.length, fatte, best,
+    gara: r ? { nome: r.name, giorni: daysBetween(TODAY, r.race_date) } : null,
+    titolo: quota === null ? (run.length ? "La mia settimana di corsa" : "Settimana di recupero")
+      : quota >= 1 ? "Settimana completa" : quota >= .75 ? "Settimana solida" : "Settimana in costruzione" };
+}
+function descSeduta(w){
+  const reps = (w.blocks || []).filter(b => b.phase === "lavoro" && b.details?.group && b.distance_km && b.duration_s);
+  if (reps.length >= 2){
+    const m = Math.round(reps[0].distance_km*1000), same = reps.every(b => Math.round(b.distance_km*1000) === m);
+    const avg = reps.reduce((t,b) => t + b.duration_s, 0) / reps.reduce((t,b) => t + +b.distance_km, 0);
+    return `${same ? `${reps.length} × ${m} m` : `${reps.length} ripetute`} · media ${pace(avg)}/km`;
+  }
+  const p = w.work_pace_s || w.avg_pace_s;
+  return `${String(w.distance_km ?? "–").replace(".", ",")} km${p ? ` · ${pace(p)}/km` : ""}`;
+}
+const titoloSeduta = w => { const p = dayParts(w.day); return `${TYPES[w.type] || "Corsa"} di ${p.W}`; };
+const settimanaDa = mon => { const a = dayParts(mon), b = dayParts(addDays(mon, 6)); return `${a.n} ${a.m} – ${b.n} ${b.m}`; };
+function recapHtml(R){
+  return `<div class="sub">${settimanaDa(R.mon)}</div><h3 style="font-size:28px">${R.titolo}</h3>
+    <div class="recap-km"><b>${R.km.toFixed(1).replace(".", ",")}</b><span>km di corsa</span></div>
+    <div class="metrics" style="grid-template-columns:repeat(3,1fr)">
+      <div class="metric"><div class="v">${R.previste ? `${R.fatte}/${R.previste}` : R.uscite}</div><div class="k">${R.previste ? "sedute del programma" : "uscite"}</div></div>
+      <div class="metric"><div class="v">${R.tempo ? dur(R.tempo) : "–"}</div><div class="k">tempo totale</div></div>
+      <div class="metric"><div class="v">${R.altri ? dur(R.altri) : "–"}</div><div class="k">altri sport</div></div></div>
+    ${R.best ? `<p style="margin-top:12px"><b>La seduta migliore:</b> ${esc(titoloSeduta(R.best))} · ${esc(descSeduta(R.best))}</p>` : ""}
+    ${R.best?.feedback ? `<div class="coachnote fb"><b>Il commento del coach</b><p>${esc(R.best.feedback.body)}</p><span class="fbnote">Commento automatico secondo le indicazioni del coach</span></div>` : ""}`;
+}
+function recapMonDefault(){ const dow = dt(TODAY).getDay(); return (dow === 1 || dow === 2) ? addDays(mondayOf(TODAY), -7) : mondayOf(TODAY); }
+function renderRecapHome(){
+  const box = $("recap-card"); if (!box) return;
+  const dow = dt(TODAY).getDay();
+  if (![0,1,2].includes(dow)){ box.innerHTML = ""; return; }
+  const R = datiSettimana(S, recapMonDefault());
+  if (!R.n){ box.innerHTML = ""; return; }
+  box.innerHTML = `<div class="card recap">${recapHtml(R)}<button class="btn primary full" id="recap-share">Condividi come storia</button></div>`;
+  $("recap-share").onclick = () => sheetRiepilogo(R.mon);
+}
+async function storiaSettimana(R){
+  try { await Promise.all(["800 100px 'Barlow Condensed'", "700 60px 'Barlow Condensed'", "500 40px Barlow", "600 40px Barlow"].map(f => document.fonts.load(f))); } catch (_) {}
+  const c = document.createElement("canvas"); c.width = 1080; c.height = 1920;
+  const x = c.getContext("2d");
+  const g = x.createLinearGradient(0, 0, 1080, 1920); g.addColorStop(0, "#0A5C73"); g.addColorStop(1, "#073F50");
+  x.fillStyle = g; x.fillRect(0, 0, 1080, 1920);
+  x.strokeStyle = "rgba(255,255,255,.07)";
+  x.lineWidth = 90; x.beginPath(); x.arc(1000, 1480, 430, 0, Math.PI*2); x.stroke();
+  x.lineWidth = 50; x.beginPath(); x.arc(60, 330, 230, 0, Math.PI*2); x.stroke();
+  const C = "'Barlow Condensed', 'Arial Narrow', sans-serif", B = "Barlow, system-ui, sans-serif";
+  const t = (s, px, y, o = {}) => { x.font = `${o.w || 800} ${px}px ${o.f || C}`; x.fillStyle = o.col || "#fff"; x.textAlign = o.al || "left"; x.fillText(s, o.x ?? 90, y); };
+  const rr = (bx, by, bw, bh, r) => { x.beginPath(); x.moveTo(bx + r, by); x.arcTo(bx + bw, by, bx + bw, by + bh, r); x.arcTo(bx + bw, by + bh, bx, by + bh, r); x.arcTo(bx, by + bh, bx, by, r); x.arcTo(bx, by, bx + bw, by, r); x.closePath(); };
+  const wrap = (s, px, y, maxW, o = {}) => { x.font = `${o.w || 700} ${px}px ${o.f || C}`; const words = String(s).split(" "); let line = "", yy = y;
+    for (const w of words){ const prova = line ? line + " " + w : w; if (x.measureText(prova).width > maxW && line){ t(line, px, yy, o); line = w; yy += px * 1.15; } else line = prova; }
+    if (line) t(line, px, yy, o); return yy; };
+  t("COZZU'S COACH", 42, 175, { w: 700, col: "#F2A93B" });
+  const yT = wrap(R.titolo, 108, 295, 900, { w: 800 });
+  t(settimanaDa(R.mon), 44, yT + 72, { f: B, w: 500, col: "rgba(255,255,255,.8)" });
+  const yK = yT + 72 + 290;
+  t(R.km.toFixed(1).replace(".", ","), 300, yK);
+  t("km di corsa", 64, yK + 85, { w: 600, col: "rgba(255,255,255,.85)" });
+  const box = (bx, by, val, lbl) => { x.fillStyle = "rgba(255,255,255,.10)"; rr(bx, by, 430, 200, 28); x.fill();
+    t(val, 92, by + 112, { x: bx + 36 }); t(lbl, 34, by + 165, { f: B, w: 500, col: "rgba(255,255,255,.8)", x: bx + 36 }); };
+  const yB = yK + 160;
+  box(90, yB, R.previste ? `${R.fatte}/${R.previste}` : String(R.uscite), R.previste ? "sedute del programma" : "uscite di corsa");
+  box(560, yB, R.tempo ? dur(R.tempo) : "–", "tempo di allenamento");
+  box(90, yB + 230, R.altri ? dur(R.altri) : "–", "altri sport");
+  box(560, yB + 230, R.gara && R.gara.giorni >= 0 ? String(R.gara.giorni) : "–", R.gara ? "giorni alla gara" : "nessuna gara in vista");
+  if (R.best){
+    const yS = yB + 230 + 200 + 90;
+    t("LA SEDUTA MIGLIORE", 36, yS, { w: 700, col: "#F2A93B" });
+    const y = wrap(titoloSeduta(R.best), 64, yS + 75, 900);
+    t(descSeduta(R.best), 44, y + 62, { f: B, w: 600, col: "rgba(255,255,255,.9)" });
+  }
+  x.fillStyle = "#F2A93B"; rr(90, 1700, 900, 120, 60); x.fill();
+  t("Allenati con metodo · cozzuscoach.it", 46, 1776, { w: 700, col: "#15222A", al: "center", x: 540 });
+  return new Promise(ok => c.toBlob(ok, "image/png"));
+}
+async function condividiImmagine(blob, nome){
+  const file = new File([blob], nome, { type: "image/png" });
+  if (navigator.canShare && navigator.canShare({ files: [file] })){
+    try { await navigator.share({ files: [file], title: "La mia settimana" }); return; }
+    catch (e){ if (e.name === "AbortError") return; }
+  }
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = nome;
+  document.body.appendChild(a); a.click(); a.remove();
+}
+async function sheetRiepilogo(mon){
+  mon = mon || recapMonDefault();
+  const R = datiSettimana(S, mon), questa = mondayOf(TODAY), scorsa = addDays(questa, -7);
+  openSheet(`<h3>La tua settimana</h3>
+    <div class="chips" style="margin-bottom:12px"><button class="chip" data-rw="${questa}" aria-pressed="${mon === questa}">Questa settimana</button><button class="chip" data-rw="${scorsa}" aria-pressed="${mon === scorsa}">Settimana scorsa</button></div>
+    ${R.n ? `<div class="card" style="margin-top:0">${recapHtml(R)}</div>
+      <div class="rp-img" id="rp-img"><p class="sub">Preparo l'immagine…</p></div>
+      <button class="btn primary full" id="rp-share" disabled>Condividi come storia</button>
+      <p class="hint" style="margin-top:8px">L'immagine contiene km, sedute e tempi della settimana, senza il tuo nome né i dati del cuore.</p>`
+      : `<div class="empty">Nessun allenamento registrato in questa settimana.</div>`}`, async () => {
+    document.querySelectorAll("[data-rw]").forEach(b => b.onclick = () => sheetRiepilogo(b.dataset.rw));
+    if (!R.n) return;
+    const blob = await storiaSettimana(R);
+    if (!$("rp-img")) return;
+    $("rp-img").innerHTML = `<img src="${URL.createObjectURL(blob)}" alt="Anteprima della storia con il riepilogo della settimana">`;
+    $("rp-share").disabled = false;
+    $("rp-share").onclick = () => condividiImmagine(blob, `settimana-${mon}.png`);
   });
 }
 
