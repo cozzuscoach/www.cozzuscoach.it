@@ -262,6 +262,10 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid #
 .seg{display:grid;grid-template-columns:1fr 1fr;gap:4px;background:var(--bg);border-radius:12px;padding:4px;margin-bottom:12px}
 .seg button{min-height:40px;border-radius:9px;font-weight:600;font-size:15px;color:var(--muted)}
 .seg button[aria-pressed=true]{background:var(--paper);color:var(--sea);box-shadow:0 1px 3px rgba(7,63,80,.15)}
+.coachnote.fb{margin-top:10px;padding:10px 12px}
+.coachnote.fb b{font-size:13px}
+.coachnote.fb p{font-size:15px}
+.fbnote{display:block;font-size:12px;color:#8A5510;opacity:.85;margin-top:6px}
 </style>
 </head>
 <body>
@@ -286,7 +290,7 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid #
   <div class="card">
     <p><b>Quali dati</b><br>Frequenza cardiaca, HRV, sonno, peso, sensazioni, fastidi e dolori, alimentazione, oltre agli allenamenti che registri.</p>
     <p style="margin-top:10px"><b>Perché</b><br>Per calcolare zone e programma e per proporre al coach modifiche quando i dati indicano stanchezza o un problema.</p>
-    <p style="margin-top:10px"><b>Chi li tratta</b><br>Il tuo coach. Sono conservati su server nell'Unione Europea (Supabase). Il calcolo dei nutrienti e le proposte di adattamento usano anche Google Gemini.</p>
+    <p style="margin-top:10px"><b>Chi li tratta</b><br>Il tuo coach. Sono conservati su server nell'Unione Europea (Supabase). Il calcolo dei nutrienti, le proposte di adattamento, i commenti automatici alle sedute e gli spunti sull'alimentazione usano anche Google Gemini.</p>
     <p style="margin-top:10px">Puoi revocare il consenso in qualsiasi momento dal Profilo.</p>
   </div>
   <label class="check field" style="margin-top:16px;align-items:flex-start"><input id="cs-1" type="checkbox" style="margin-top:4px"> <span>Ho letto l'<a class="link" href="/privacy" target="_blank" rel="noopener">informativa privacy</a>.</span></label>
@@ -427,8 +431,8 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid #
 <div id="sheet-root"></div>
 
 <script>
-const APP_VERSION = "2026-10-01 · 29";
-const PRIVACY_VERSION = "2026-10-01";          // da cambiare quando cambia l'informativa: il consenso viene richiesto di nuovo
+const APP_VERSION = "2026-10-02 · 30";
+const PRIVACY_VERSION = "2026-10-02";          // da cambiare quando cambia l'informativa: il consenso viene richiesto di nuovo
 const PRIVACY_EMAIL = "info@cozzuscoach.it";
 const sb = supabase.createClient("https://pnoxjvssvtusjvbwpkkh.supabase.co","sb_publishable_ol7Ds9jbamCSwpNpGEPT9Q_ZZvxNHy3");
 const $ = id => document.getElementById(id);
@@ -513,11 +517,12 @@ async function fetchAthlete(id){
   const { data: extra } = await sb.from("daily_checkins").select("*").eq("athlete_id",id).gte("day",from);
   const { data: blocks } = await sb.from("workout_blocks").select("*").eq("athlete_id",id).order("ord");
   const { data: plan } = await sb.from("plans").select("*").eq("athlete_id",id).order("created_at",{ascending:false}).limit(1).maybeSingle();
+  const { data: fb } = await sb.from("feedback").select("workout_id,body,caso,created_at").eq("athlete_id",id).eq("kind","seduta").gte("day",from);
   const ex = Object.fromEntries((extra||[]).map(e => [e.day,e]));
   const zmap = {}; (zones.data||[]).forEach(z => { if(!zmap[z.code]) zmap[z.code]=z; });
   return {
     races: races.data||[], sessions: sessions.data||[],
-    workouts: (workouts.data||[]).map(w => ({ ...w, blocks: (blocks||[]).filter(b => b.workout_id === w.id) })),
+    workouts: (workouts.data||[]).map(w => ({ ...w, blocks: (blocks||[]).filter(b => b.workout_id === w.id), feedback: (fb||[]).find(f => f.workout_id === w.id) || null })),
     checkins: (checkins.data||[]).map(c => ({...ex[c.day], ...c})), zones: zmap, plan
   };
 }
@@ -715,8 +720,9 @@ function wMetrics(w, own){
     ? [d.wod ? esc(d.wod) : "", d.result ? "Risultato: " + esc(d.result) : ""].filter(Boolean).join("\n")
     : (d.exercises||[]).map(e => `${esc(e.name)}${e.sets&&e.reps?` ${e.sets}×${e.reps}`:""}${e.kg?` · ${String(e.kg).replace(".",",")} kg`:""}`).join("\n");
   const infoTxt = info.filter(Boolean).join(" · ");
+  const fbHtml = w.feedback ? `<div class="coachnote fb"><b>Il commento del coach</b><p>${esc(w.feedback.body)}</p><span class="fbnote">Commento automatico secondo le indicazioni del coach</span></div>` : "";
   return `<div class="metrics" ${own?`data-open="workout" data-edit="${w.id}" style="cursor:pointer"`:""}>${cells.join("")}</div>
-    ${fasi}${infoTxt?`<div class="exlist">${infoTxt}</div>`:""}${body?`<div class="exlist" style="white-space:pre-line;color:var(--ink)">${body}</div>`:""}`;
+    ${fasi}${infoTxt?`<div class="exlist">${infoTxt}</div>`:""}${body?`<div class="exlist" style="white-space:pre-line;color:var(--ink)">${body}</div>`:""}${fbHtml}`;
 }
 
 /* ---------- PROFILO / GARE ---------- */
@@ -1194,7 +1200,9 @@ function sheetWorkout(ds){
         const rows = righe.map((r,i) => ({ ...r, workout_id: wid, athlete_id: me.id, ord: i+1 }));
         if (rows.length) await sb.from("workout_blocks").insert(rows);
       }
-      closeSheet(); await loadAthlete();
+      closeSheet();
+      if (ex){ await loadAthlete(); sb.functions.invoke("commento", { body: { workout_id: wid } }).then(() => loadAthlete()).catch(() => {}); }
+      else mostraCommento(wid);
     };
     if ($("w-del")) $("w-del").onclick = async () => {
       if (!confirm("Eliminare questo allenamento dal diario?")) return;
@@ -1276,13 +1284,15 @@ async function loadCoach(){
   $("coach-sub").textContent = `${athletes?.length||0} atleti`;
   if (!athletes?.length){ $("athletes").innerHTML = `<div class="empty">Nessun atleta collegato.</div>`; return; }
   const ids = athletes.map(a=>a.id);
-  const [{ data: ck }, { data: wk }, { data: pls }, { data: adjs }, { data: preqs }] = await Promise.all([
+  const [{ data: ck }, { data: wk }, { data: pls }, { data: adjs }, { data: preqs }, { data: dol }] = await Promise.all([
     sb.from("daily_checkins").select("athlete_id,day").in("athlete_id",ids).eq("day",TODAY),
     sb.from("plans").select("athlete_id,status,created_at").in("athlete_id",ids).order("created_at",{ascending:false}),
     sb.from("workouts").select("athlete_id,day").in("athlete_id",ids).order("day",{ascending:false}),
     sb.from("adjustments").select("athlete_id,severity").in("athlete_id",ids).eq("status","in_attesa"),
-    sb.from("plan_requests").select("athlete_id").in("athlete_id",ids).eq("status","nuova")
+    sb.from("plan_requests").select("athlete_id").in("athlete_id",ids).eq("status","nuova"),
+    sb.from("feedback").select("athlete_id").in("athlete_id",ids).eq("caso","dolore").gte("day",addDays(TODAY,-2))
   ]);
+  const dolSet = new Set((dol||[]).map(x => x.athlete_id));
   const ckT = new Set((ck||[]).map(c=>c.athlete_id)); const lastW = {}, lastP = {};
   (pls||[]).forEach(p => { if (!(p.athlete_id in lastP)) lastP[p.athlete_id] = p; });
   const adjCount = {}, adjAlarm = {};
@@ -1290,12 +1300,12 @@ async function loadCoach(){
   const reqSet = new Set((preqs||[]).map(x => x.athlete_id));
   (wk||[]).forEach(w => { if(!lastW[w.athlete_id]) lastW[w.athlete_id]=w.day; });
   $("athletes").innerHTML = "";
-  const prio = id => (adjAlarm[id]?3:0) + (reqSet.has(id)?2:0) + (lastP[id]?.status==="bozza"?2:0) + (adjCount[id]?1:0);
+  const prio = id => (dolSet.has(id)?3:0) + (adjAlarm[id]?3:0) + (reqSet.has(id)?2:0) + (lastP[id]?.status==="bozza"?2:0) + (adjCount[id]?1:0);
   athletes.sort((x,y) => prio(y.id) - prio(x.id));
   athletes.forEach(a => {
     const b = document.createElement("button"); b.className="athlete";
     const lw = lastW[a.id];
-    b.innerHTML = `<div><strong>${esc(a.full_name)}</strong>${lastP[a.id]?.status==="bozza"?' <span class="tag q">Programma da rivedere</span>':""}${reqSet.has(a.id)?' <span class="tag q">Richiesta</span>':""}${adjAlarm[a.id]?' <span class="tag" style="background:#F7DAD0;color:#8E2F0E">Allarme</span>':adjCount[a.id]?` <span class="tag q">${adjCount[a.id]} ${adjCount[a.id]===1?"proposta":"proposte"}</span>`:""}<div class="when">${lw?`ultimo allenamento ${dayParts(lw).n} ${dayParts(lw).m}`:"nessun allenamento registrato"}</div></div>
+    b.innerHTML = `<div><strong>${esc(a.full_name)}</strong>${dolSet.has(a.id)?' <span class="tag" style="background:#F7DAD0;color:#8E2F0E">Dolore segnalato</span>':""}${lastP[a.id]?.status==="bozza"?' <span class="tag q">Programma da rivedere</span>':""}${reqSet.has(a.id)?' <span class="tag q">Richiesta</span>':""}${adjAlarm[a.id]?' <span class="tag" style="background:#F7DAD0;color:#8E2F0E">Allarme</span>':adjCount[a.id]?` <span class="tag q">${adjCount[a.id]} ${adjCount[a.id]===1?"proposta":"proposte"}</span>`:""}<div class="when">${lw?`ultimo allenamento ${dayParts(lw).n} ${dayParts(lw).m}`:"nessun allenamento registrato"}</div></div>
       <span class="when ${ckT.has(a.id)?"good":""}">${ckT.has(a.id)?"check-in ✓":"check-in —"}</span>`;
     b.onclick = () => openAthlete(a);
     $("athletes").appendChild(b);
@@ -2701,8 +2711,44 @@ async function renderNutri(){
       ? `Oggi è una seduta lunga: durante la corsa servono 30-60 g di carboidrati all'ora oltre i 75 minuti, e 400-800 ml di liquidi all'ora.`
       : `Distribuisci le proteine in 4 assunzioni da circa ${f.pasti} g ciascuna: conta più la ripartizione della quantità totale.`}</p>
     <button class="btn soft full" data-open="cibo">${S.meals.length ? "Aggiorna quello che hai mangiato" : "Registra i pasti di oggi"}</button>
+    <button class="btn primary full" id="n-idee" style="margin-top:10px">Cosa mangio adesso?</button>
     <p class="hint" style="margin-top:8px">Indicazioni generali di orientamento, non un piano alimentare personale: per obiettivi di peso, problemi digestivi ricorrenti o diete particolari serve un professionista.</p>
   </div>`;
+  $("n-idee").onclick = () => sheetIdee(f, t, ses);
+}
+
+/* ---------- COMMENTO DEL COACH E SPUNTI ---------- */
+async function mostraCommento(wid){
+  openSheet(`<h3>Il commento del coach</h3>
+    <div class="coachnote" id="fb-body" style="margin-top:0"><p class="sub">Sto leggendo la tua seduta…</p></div>
+    <p class="hint" id="fb-note" style="margin-top:8px"></p>
+    <button class="btn primary full" id="fb-ok">Chiudi</button>`, () => { $("fb-ok").onclick = closeSheet; });
+  loadAthlete();
+  let txt = null;
+  try { const { data } = await sb.functions.invoke("commento", { body: { workout_id: wid } }); txt = data?.body || null; } catch (_) {}
+  if (!$("fb-body")) return;
+  if (!txt){ $("fb-body").innerHTML = `<p>Allenamento salvato. Il commento non è disponibile in questo momento.</p>`; return; }
+  $("fb-body").innerHTML = `<p style="font-size:17px">${esc(txt)}</p>`;
+  $("fb-note").textContent = "Commento automatico secondo le indicazioni del coach.";
+  loadAthlete();
+}
+async function sheetIdee(f, t, ses){
+  openSheet(`<h3>Cosa mangio adesso?</h3>
+    <div id="id-body"><p class="sub">Preparo qualche idea…</p></div>
+    <p class="hint" style="margin-top:12px">Spunti automatici di orientamento, non un piano alimentare personale.</p>
+    <button class="btn primary full" id="id-ok">Chiudi</button>`, () => { $("id-ok").onclick = closeSheet; });
+  const domani = S.sessions.find(x => x.session_date === addDays(TODAY,1));
+  const pasti = (S.meals||[]).map(m => `${(MEALS.find(x => x[0] === m.meal)||[])[1] || m.meal}: ${(m.items||[]).map(it => foodOf(it)?.[0]).filter(Boolean).join(", ")}`);
+  const cibo = { ora: new Date().toLocaleTimeString("it-IT", { hour:"2-digit", minute:"2-digit" }),
+    obiettivo: { cho: f.cho, pro: f.pro, fat: f.fat }, mangiato: { cho: Math.round(t.cho), pro: Math.round(t.pro), fat: Math.round(t.fat) },
+    pasti, oggi: ses ? (TYPES[ses.type] || ses.type) : "nessuna seduta in programma",
+    oggi_fatto: S.workouts.some(w => w.day === TODAY), domani: domani ? (TYPES[domani.type] || domani.type) : "non indicato" };
+  let d = null;
+  try { const r = await sb.functions.invoke("commento", { body: { cibo } }); d = r.data; } catch (_) {}
+  if (!$("id-body")) return;
+  if (!d || d.error || !d.idee?.length){ $("id-body").innerHTML = `<p class="sub">Non riesco a preparare gli spunti in questo momento: riprova tra poco.</p>`; return; }
+  $("id-body").innerHTML = (d.intro ? `<p>${esc(d.intro)}</p>` : "") + d.idee.map(i => `<div class="card" style="margin-top:10px">
+      <b style="font:700 20px var(--cond)">${esc(i.titolo)}</b><p style="margin-top:4px">${esc(i.cosa)}</p><p class="sub" style="margin-top:4px">${esc(i.perche)}</p></div>`).join("");
 }
 
 function sheetCibo(ds){
