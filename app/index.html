@@ -415,6 +415,8 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid #
       <div id="athletes" style="margin-top:14px"></div>
       <button class="link" id="ex-tog" style="margin-top:10px">Mostra atleti non più seguiti</button>
       <div id="ex-list" class="hidden" style="margin-top:12px"></div>
+      <h2>Notifiche</h2>
+      <div class="card" id="coach-push"></div>
     </div>
     <div id="coach-post" class="hidden">
       <h1>Consigli</h1><p class="lead" id="post-sub"></p>
@@ -451,7 +453,7 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid #
 <div id="sheet-root"></div>
 
 <script>
-const APP_VERSION = "2026-10-04 · 33";
+const APP_VERSION = "2026-10-05 · 34";
 const PRIVACY_VERSION = "2026-10-02";          // da cambiare quando cambia l'informativa: il consenso viene richiesto di nuovo
 const PRIVACY_EMAIL = "info@cozzuscoach.it";
 const sb = supabase.createClient("https://pnoxjvssvtusjvbwpkkh.supabase.co","sb_publishable_ol7Ds9jbamCSwpNpGEPT9Q_ZZvxNHy3");
@@ -1341,6 +1343,7 @@ async function loadCoach(){
   $("coach-sub").textContent = `${athletes?.length||0} atleti`;
   if (!athletes?.length){ $("athletes").innerHTML = `<div class="empty">Nessun atleta collegato.</div>`; return; }
   const ids = athletes.map(a=>a.id);
+  renderPush("coach-push", true);
   await scadenzaProposte(ids);
   const [{ data: ck }, { data: wk }, { data: pls }, { data: adjs }, { data: preqs }, { data: dol }, { data: nmsg }] = await Promise.all([
     sb.from("daily_checkins").select("athlete_id,day").in("athlete_id",ids).eq("day",TODAY),
@@ -2239,11 +2242,14 @@ if ("serviceWorker" in navigator) navigator.serviceWorker.register("/app/sw.js",
     reg.addEventListener("updatefound", () => { const w = reg.installing;
       if (w) w.addEventListener("statechange", () => { if (w.state === "installed" && navigator.serviceWorker.controller) location.reload(); }); });
   }).catch(() => {});
-async function renderPush(){
-  const box = $("push-box"); if (!box) return;
+async function renderPush(boxId = "push-box", coach = false){
+  const box = $(boxId); if (!box) return;
+  const T = coach
+    ? { titolo: "Ricevi una notifica quando un atleta ti scrive", spiega: "Ti avvisa appena un atleta lascia un messaggio sotto una seduta.", attive: "Ricevi una notifica a ogni nuovo messaggio degli atleti." }
+    : { titolo: "Ricevi ogni mattina la seduta del giorno", spiega: "Una notifica alle 7 con l'allenamento, le note del coach e i giorni alla gara.", attive: "Ogni mattina alle 7 ricevi la seduta del giorno." };
   const supported = "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
   if (isIOS && !standalone){
-    box.innerHTML = `<b>Ricevi ogni mattina la seduta del giorno</b>
+    box.innerHTML = `<b>${T.titolo}</b>
       <p class="sub" style="margin-top:6px">Su iPhone le notifiche funzionano solo dall'app installata:</p>
       <p style="margin-top:6px">1. Tocca il pulsante <b>Condividi</b> di Safari (il quadrato con la freccia).<br>2. Scegli <b>Aggiungi alla schermata Home</b>.<br>3. Apri Cozzu's Coach dall'icona e torna qui.</p>`; return;
   }
@@ -2252,9 +2258,9 @@ async function renderPush(){
   const sub = await reg.pushManager.getSubscription();
   if (Notification.permission === "denied"){ box.innerHTML = `<p class="sub">Hai bloccato le notifiche per questo sito. Riattivale dalle impostazioni del browser o del telefono, poi torna qui.</p>`; return; }
   box.innerHTML = sub
-    ? `<div class="status ok"><div class="ic">✓</div><div><b>Notifiche attive</b><div class="sub">Ogni mattina alle 7 ricevi la seduta del giorno.</div></div></div>
+    ? `<div class="status ok"><div class="ic">✓</div><div><b>Notifiche attive</b><div class="sub">${T.attive}</div></div></div>
        <div class="actions"><button class="btn soft" id="push-test">Invia una prova</button><button class="btn" id="push-off" style="color:var(--warn)">Disattiva</button></div><div id="push-msg" class="msg"></div>`
-    : `<b>Ricevi ogni mattina la seduta del giorno</b><p class="sub" style="margin-top:4px">Una notifica alle 7 con l'allenamento, le note del coach e i giorni alla gara.</p>
+    : `<b>${T.titolo}</b><p class="sub" style="margin-top:4px">${T.spiega}</p>
        <button class="btn primary full" id="push-on">Attiva le notifiche</button><div id="push-msg" class="msg"></div>`;
   const msg = (t, ok) => { $("push-msg").className = "msg " + (ok ? "ok" : "err"); $("push-msg").textContent = t; };
   if ($("push-on")) $("push-on").onclick = async () => {
@@ -2265,7 +2271,7 @@ async function renderPush(){
       const j = s.toJSON();
       const { error } = await sb.from("push_subscriptions").upsert({ athlete_id: me.id, endpoint: j.endpoint, p256dh: j.keys.p256dh, auth: j.keys.auth }, { onConflict: "endpoint" });
       if (error) return msg("Attivazione non riuscita: " + error.message, false);
-      renderPush();
+      renderPush(boxId, coach);
     } catch (e) { msg("Attivazione non riuscita: " + e.message, false); }
   };
   if ($("push-test")) $("push-test").onclick = async () => {
@@ -2276,7 +2282,7 @@ async function renderPush(){
   if ($("push-off")) $("push-off").onclick = async () => {
     const j = sub.toJSON(); await sub.unsubscribe();
     await sb.from("push_subscriptions").delete().eq("endpoint", j.endpoint);
-    renderPush();
+    renderPush(boxId, coach);
   };
 }
 
@@ -2332,7 +2338,9 @@ async function renderAdjustments(){
     const ses = CUR.ses?.find(s => s.id === x.planned_session_id);
     const p = x.proposal || {};
     const body = x.kind === "zone"
-      ? `<div class="sub">Ritmi ${p.shift_s < 0 ? "più veloci" : "più lenti"} di ${Math.abs(p.shift_s)} secondi al km su tutte le zone.</div>
+      ? `<div class="sub">${p.vdot ? `VDOT da ${String(p.vdot.da).replace(".", ",")} a ${String(p.vdot.a).replace(".", ",")}: ritmi più veloci di circa ${Math.abs(p.shift_s)} secondi al km.`
+          : `Ritmi ${p.shift_s < 0 ? "più veloci" : "più lenti"} di ${Math.abs(p.shift_s)} secondi al km su tutte le zone.`}</div>
+         ${x.triggers?.scartate?.length ? `<div class="hint">Non considerate perché i dati non sono plausibili: ${x.triggers.scartate.map(esc).join("; ")}. Controlla con l'atleta.</div>` : ""}
          <div class="zones">${(p.zones||[]).map(z => `<div class="zone"><b>${ZNAMES[z.code]||z.code}</b>${pace(z.pace_min_s)}–${pace(z.pace_max_s)}</div>`).join("")}</div>`
       : `<div class="sub"><b>Prevista:</b> ${esc(ses?.title || "seduta di oggi")}</div>
          <div class="sub"><b>Proposta:</b> ${esc(p.title || "")}</div>
@@ -2995,6 +3003,7 @@ async function sheetMessaggi(day, athleteId){
       if (error){ $("f-msg").className = "msg err"; $("f-msg").textContent = "Non inviato: " + error.message; return; }
       (D.msgs = D.msgs || []).push(data); $("ms-txt").value = ""; paint(); aggiornaMessaggi();
       if (coach) avvisaAtleta(athleteId, "Messaggio dal coach", `${p.n} ${p.m}: ${body.slice(0, 120)}`);
+      else sb.functions.invoke("daily-push", { body: { msg: { day, text: body.slice(0, 200) } } }).catch(() => {});
     };
   });
 }
