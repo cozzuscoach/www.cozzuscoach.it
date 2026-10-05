@@ -451,7 +451,7 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid #
 <div id="sheet-root"></div>
 
 <script>
-const APP_VERSION = "2026-10-04 · 32";
+const APP_VERSION = "2026-10-04 · 33";
 const PRIVACY_VERSION = "2026-10-02";          // da cambiare quando cambia l'informativa: il consenso viene richiesto di nuovo
 const PRIVACY_EMAIL = "info@cozzuscoach.it";
 const sb = supabase.createClient("https://pnoxjvssvtusjvbwpkkh.supabase.co","sb_publishable_ol7Ds9jbamCSwpNpGEPT9Q_ZZvxNHy3");
@@ -2154,6 +2154,7 @@ async function renderCoachPlan(){
       ${draft ? `<button class="btn primary full" id="cp-pub">Pubblica il programma</button><p class="hint" style="margin-top:6px">Fino alla pubblicazione l'atleta vede "programma in preparazione".</p>`
               : `<button class="btn soft full" id="cp-savenote">Salva messaggio</button>`}
       <button class="btn soft full" id="cp-add">+ Aggiungi seduta</button>
+      <button class="btn soft full" id="cp-ritmi">Aggiorna i ritmi nelle sedute</button>
       <div id="cp-msg" class="msg"></div>
     </div>
     ${Object.keys(groups).sort().map(m => { const info = weeks.find(w => w.mon===m); const p0 = dayParts(m);
@@ -2168,6 +2169,16 @@ async function renderCoachPlan(){
           <div>${msgBtn(CUR.D, x.session_date, CUR.a.id)}</div></div></div>`; }).join("")}</div>`; }).join("")}`;
   box.querySelectorAll("[data-cs]").forEach(b => b.onclick = () => sheetCoachSession(CUR.ses.find(x => x.id == b.dataset.cs)));
   $("cp-add").onclick = () => sheetCoachSession(null);
+  $("cp-ritmi").onclick = async () => {
+    if (!confirm("Nelle sedute da oggi in poi sostituisco i ritmi della versione precedente delle zone con quelli attuali. Procedo?")) return;
+    const { cur, prev } = await zoneStoria(a.id);
+    if (!Object.keys(prev).length){ $("cp-msg").className = "msg err"; $("cp-msg").textContent = "Non c'è una versione precedente delle zone da sostituire."; return; }
+    const n = await riscriviRitmi(a.id, prev, cur);
+    await renderCoachPlan();
+    $("cp-msg").className = n ? "msg ok" : "msg err";
+    $("cp-msg").textContent = n ? `Ritmi aggiornati in ${n} ${n === 1 ? "seduta" : "sedute"}.` : "Nessuna seduta conteneva i ritmi precedenti: scrivimi il testo di una seduta per controllare il formato.";
+    if (n) avvisaAtleta(a.id, "Ritmi aggiornati", "Il coach ha aggiornato i ritmi delle prossime sedute. Li trovi nel Programma.");
+  };
   const saveNote = async (publish) => {
     const upd = { coach_note: $("cp-note").value.trim() || null };
     if (publish){ upd.status = "pubblicato"; upd.published_at = new Date().toISOString(); }
@@ -2275,6 +2286,39 @@ async function avvisaAtleta(athlete_id, title, body){
   try { await sb.functions.invoke("daily-push", { body: { notify: { athlete_id, title, body } } }); } catch (_) {}
 }
 
+/* ---------- RITMI SCRITTI NELLE SEDUTE ---------- */
+// le stesse due andature possono essere scritte in più modi: 4'57"-5'02", 4'57" – 5'02", 4:57-5:02
+function variantiRitmo(min, max){
+  const c = x => `${Math.floor(x/60)}:${String(Math.round(x%60)).padStart(2,"0")}`, out = [];
+  for (const [a,b] of [[pace(min), pace(max)], [c(min), c(max)]])
+    for (const sep of ["-","–"," - "," – "]) out.push(a + sep + b);
+  return out;
+}
+async function riscriviRitmi(athleteId, vecchie, nuove){
+  const codici = Object.keys(nuove).filter(k => vecchie[k] && nuove[k] &&
+    (vecchie[k].pace_min_s !== nuove[k].pace_min_s || vecchie[k].pace_max_s !== nuove[k].pace_max_s));
+  if (!codici.length) return 0;
+  const { data: fut } = await sb.from("planned_sessions").select("id,description")
+    .eq("athlete_id", athleteId).eq("is_current", true).gte("session_date", TODAY);
+  let n = 0;
+  for (const x of fut || []){
+    if (!x.description) continue;
+    let d = x.description;
+    // prima segnaposto, poi i valori nuovi: così una zona non viene scambiata con un'altra
+    codici.forEach(k => variantiRitmo(vecchie[k].pace_min_s, vecchie[k].pace_max_s).forEach(v => { d = d.split(v).join(`§${k}§`); }));
+    codici.forEach(k => { d = d.split(`§${k}§`).join(`${pace(nuove[k].pace_min_s)}-${pace(nuove[k].pace_max_s)}`); });
+    if (d !== x.description){ const r = await sb.from("planned_sessions").update({ description: d }).eq("id", x.id); if (!r.error) n++; }
+  }
+  return n;
+}
+// zone attuali e versione precedente di ciascuna
+async function zoneStoria(athleteId){
+  const { data } = await sb.from("zones").select("*").eq("athlete_id", athleteId).order("valid_from", { ascending: false });
+  const cur = {}, prev = {};
+  (data||[]).forEach(z => { if (!cur[z.code]) cur[z.code] = z; else if (!prev[z.code] && z.valid_from !== cur[z.code].valid_from) prev[z.code] = z; });
+  return { cur, prev };
+}
+
 /* ---------- COACH: PROPOSTE DI ADATTAMENTO ---------- */
 const SEV = { allarme:["Allarme","#8E2F0E","#F7DAD0"], rilevante:["Da decidere","#8A5510","#FCEBD0"], minore:["Segnalazione","var(--sea)","var(--foam)"] };
 async function renderAdjustments(){
@@ -2321,6 +2365,8 @@ async function applyAdjustment(x){
       hr_min: (CUR.D.zones?.[z.code]||{}).hr_min, hr_max: (CUR.D.zones?.[z.code]||{}).hr_max, reason: "ricalibrazione approvata dal coach" }));
     const r = await sb.from("zones").insert(rows);
     if (r.error) return fail(r.error.message);
+    const n = await riscriviRitmi(CUR.a.id, CUR.D.zones || {}, Object.fromEntries((x.proposal.zones||[]).map(z => [z.code, z])));
+    msg.className = "msg ok"; msg.textContent = `Zone aggiornate e ritmi riscritti in ${n} ${n === 1 ? "seduta" : "sedute"}.`;
   } else {
     const p = x.proposal || {};
     const upd = { edited_by_coach: true, coach_note: x.rationale_athlete };
