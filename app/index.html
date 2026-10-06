@@ -464,7 +464,7 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid #
 <div id="sheet-root"></div>
 
 <script>
-const APP_VERSION = "2026-10-06 · 35";
+const APP_VERSION = "2026-10-06 · 36";
 const PRIVACY_VERSION = "2026-10-02";          // da cambiare quando cambia l'informativa: il consenso viene richiesto di nuovo
 const PRIVACY_EMAIL = "info@cozzuscoach.it";
 const sb = supabase.createClient("https://pnoxjvssvtusjvbwpkkh.supabase.co","sb_publishable_ol7Ds9jbamCSwpNpGEPT9Q_ZZvxNHy3");
@@ -908,7 +908,7 @@ function sheetWorkout(ds){
   const ses = ds.session ? S.sessions.find(x=>x.id==ds.session) : S.sessions.find(x=>x.session_date===TODAY);
   const CON_FASI = ["corsa","nuoto","bici"];
   const W0 = ds.wod ? (S.wods||[]).find(w => w.id == ds.wod) : null;
-  let sport = ex?.sport || (W0 ? "palestra" : "corsa");
+  let sport = ex?.sport || (W0 ? (WOD_ALTRO.includes(W0.district) ? "altro" : "palestra") : "corsa");
   const det = ex?.details ? JSON.parse(JSON.stringify(ex.details)) : {};
   const fasiBase = () => [{ phase:"riscaldamento" }, { phase:"lavoro" }, { phase:"defaticamento" }];
   let blocks = !ex ? ((sport === "corsa" && daSeduta(ses)) || fasiBase())
@@ -930,7 +930,8 @@ function sheetWorkout(ds){
     wod_id: det.wod_id ?? null
   };
   if (W0){ D.mode = "circuito"; D.format = "circuito"; D.wod = `${W0.title}\n${W0.youtube_url}`; D.focus = [FOCUS_DA_WOD[W0.district]];
-    D.dur_s = W0.duration_min * 60; D.wod_id = W0.id; D.place = (W0.equipment||[]).includes("palestra") ? "palestra" : "casa"; }
+    D.dur_s = W0.duration_min * 60; D.wod_id = W0.id; D.place = (W0.equipment||[]).includes("palestra") ? "palestra" : "casa";
+    if (WOD_ALTRO.includes(W0.district)) D.what = `${lblW(DISTR_WOD, W0.district)}: ${W0.title}`; }
   const nOggi = S.workouts.filter(w => w.day === TODAY).length;
   const sNo = ex ? (ex.session_no === 2 ? 2 : 1) : (nOggi ? 2 : 1);
   const conFasi = () => CON_FASI.includes(sport);
@@ -1220,7 +1221,7 @@ function sheetWorkout(ds){
           ? { exercises: exs, volume_kg: Math.round(volumeForza(exs)) }
           : { format: D.format, wod: (D.wod||"").trim() || null, result: (D.result||"").trim() || null }) };
       }
-      if (sport === "altro") details = { what: D.what.trim() };
+      if (sport === "altro") details = { what: D.what.trim(), wod_id: D.wod_id || null };
       const ps = S.sessions.find(x => x.session_date === day);
       const hrB = flat().filter(b => b.avg_hr && b.duration_s);
       const row = { athlete_id: me.id, day, sport, session_no: +$("w-no").value,
@@ -3199,10 +3200,11 @@ async function sheetRiepilogo(mon){
 /* =====================================================
    WOD: LIBRERIA DEL COACH E PROPOSTA ALL'ATLETA
    ===================================================== */
-const DISTR_WOD = [["upper","Upper"],["leg","Leg"],["core","Core"],["total","Total body"]];
+const DISTR_WOD = [["upper","Upper"],["leg","Leg"],["core","Core"],["total","Total body"],["pliometria","Pliometria"],["tecnica","Tecnica di corsa"],["stretching","Stretching"]];
+const WOD_ALTRO = ["tecnica","stretching"];   // nel diario vanno come "Altro", non come forza
 const INTENS_WOD = [["leggero","Leggero"],["medio","Medio"],["intenso","Intenso"]];
 const ATTR_WOD = [["corpo libero","Corpo libero"],["elastici","Elastici"],["manubri","Manubri"],["kettlebell","Kettlebell"],["palestra","Palestra"]];
-const FOCUS_DA_WOD = { upper:"alta", leg:"gambe", core:"core", total:"total" };
+const FOCUS_DA_WOD = { upper:"alta", leg:"gambe", core:"core", total:"total", pliometria:"gambe" };
 const ytId = u => (String(u||"").match(/(?:youtu\.be\/|[?&]v=|shorts\/|embed\/|live\/)([\w-]{11})/) || [])[1] || null;
 const ytThumb = u => { const id = ytId(u); return id ? `https://i.ytimg.com/vi/${id}/mqdefault.jpg` : null; };
 const lblW = (arr, v) => (arr.find(x => x[0] === v) || [, v])[1];
@@ -3241,7 +3243,7 @@ function sheetWodEdit(w){
     <div class="g2"><div class="field"><label for="wd-d">Distretto</label><select id="wd-d">${DISTR_WOD.map(([v,l]) => `<option value="${v}" ${w.district===v?"selected":""}>${l}</option>`).join("")}</select></div>
       <div class="field"><label for="wd-m">Durata (minuti)</label><input id="wd-m" type="number" inputmode="numeric" value="${w.duration_min}"></div></div>
     <div class="field"><label for="wd-i">Intensità</label><select id="wd-i">${INTENS_WOD.map(([v,l]) => `<option value="${v}" ${w.intensity===v?"selected":""}>${l}</option>`).join("")}</select>
-      <div class="hint">Leggero: si può fare anche il giorno prima di una qualità. Intenso: solo nei giorni duri o lontano dalle sedute importanti.</div></div>
+      <div class="hint">Leggero: si può fare anche il giorno prima di una qualità. Intenso: solo nei giorni duri o lontano dalle sedute importanti. La pliometria segue le regole delle gambe; lo stretching viene proposto solo se leggero quando l'atleta ha segnalato un dolore.</div></div>
     <div class="field"><label>Attrezzatura</label><div class="chips sm" id="wd-a">${ATTR_WOD.map(([v,l]) => `<button type="button" class="chip" data-v="${v}" aria-pressed="${attr.includes(v)}">${l}</button>`).join("")}</div></div>
     <div class="field"><label for="wd-e">Esercizi (facoltativo)</label><textarea id="wd-e" rows="4" placeholder="Per chi preferisce leggere: un esercizio per riga">${esc(w.exercises)}</textarea></div>
     <label class="check field"><input id="wd-on" type="checkbox" ${w.active?"checked":""}> Attivo: può essere proposto agli atleti</label>
@@ -3294,12 +3296,15 @@ async function caricaWods(){
 }
 async function sheetWod(){
   const W = await caricaWods(), C = contestoWod();
-  let distr = C.maxLeg ? "core" : "upper", tempo = 30, attr = "casa", giro = 0;
+  let distr = C.maxLeg ? "core" : "stretching", tempo = 30, attr = "casa", giro = 0;
   const ordine = ["leggero","medio","intenso"];
   const ok = (w, max) => max && ordine.indexOf(w.intensity) <= ordine.indexOf(max);
   const fatti = new Set(S.workouts.filter(w => w.day >= addDays(TODAY, -14) && w.details?.wod_id).map(w => w.details.wod_id));
   const paint = () => {
-    const max = distr === "leg" || distr === "total" ? C.maxLeg : C.maxAltro;
+    const max = ["leg","total","pliometria"].includes(distr) ? C.maxLeg
+      : distr === "tecnica" ? (C.maxLeg ? (C.maxAltro === "intenso" ? "medio" : C.maxAltro) : null)
+      : distr === "stretching" ? (C.maxLeg ? "intenso" : "leggero")
+      : C.maxAltro;
     const base = W.filter(w => w.district === distr && w.duration_min <= tempo
       && (attr === "palestra" || (w.equipment||[]).every(e => attr === "libero" ? e === "corpo libero" : e !== "palestra")));
     let L = base.filter(w => ok(w, max));
@@ -3309,7 +3314,7 @@ async function sheetWod(){
     const scelti = L.length ? [L[giro % L.length], ...(L.length > 1 ? [L[(giro + 1) % L.length]] : [])] : [];
     const bloccati = base.length && !L.length;
     $("wo-out").innerHTML = !W.length ? `<div class="empty">Il coach sta preparando la libreria dei WOD: torna presto.</div>`
-      : !max && (distr === "leg" || distr === "total") ? `<div class="note-box">Oggi meglio non allenare le gambe: scegli core o upper.</div>`
+      : !max ? `<div class="note-box">Oggi meglio evitarlo: scegli core, upper o stretching.</div>`
       : !scelti.length ? `<div class="empty">${bloccati ? "Ci sono WOD per questi filtri, ma oggi sarebbero troppo intensi." : "Nessun WOD con questi filtri: prova più tempo o un'altra attrezzatura."}</div>`
       : scelti.map(w => `<div class="card" style="margin-top:10px">${wodRiga(w, false)}
           ${w.exercises ? `<details style="margin-top:8px"><summary class="link">Esercizi</summary><p style="white-space:pre-line;margin-top:6px">${esc(w.exercises)}</p></details>` : ""}
