@@ -280,6 +280,12 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid #
 .recap-km span{font:600 20px var(--cond);color:var(--muted)}
 .rp-img{margin-top:14px;text-align:center}
 .rp-img img{max-width:100%;max-height:52vh;border-radius:16px;box-shadow:0 4px 18px rgba(7,63,80,.25)}
+.wodrow{display:grid;grid-template-columns:112px 1fr;gap:12px;align-items:center;padding:8px 0;border-top:1px solid var(--line)}
+.card > .wodrow:first-child{border-top:0}
+.wodrow b{font:700 18px/1.15 var(--cond)}
+.wodth{display:grid;place-items:center;aspect-ratio:16/9;border-radius:10px;background:var(--deep) center/cover;text-decoration:none}
+.wodth span{width:34px;height:34px;border-radius:50%;background:rgba(0,0,0,.55);color:#fff;display:grid;place-items:center;font-size:14px}
+.wodprev img{width:100%;max-width:320px;border-radius:12px;margin-top:8px}
 </style>
 </head>
 <body>
@@ -409,7 +415,7 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid #
 <div id="v-coach" class="hidden">
   <div class="wrap">
     <div class="top"><a class="brand" href="/" style="text-decoration:none">Cozzu's Coach</a><div style="display:flex;gap:14px;align-items:center"><a class="link" href="/" style="text-decoration:none">Vai al sito</a><button class="link" id="logout-c">Esci</button></div></div>
-    <div class="chips" id="coach-tabs" style="margin-bottom:16px"><button class="chip" data-ct="athl" aria-pressed="true">Atleti</button><button class="chip" data-ct="ev" aria-pressed="false">Calendario gare</button><button class="chip" data-ct="req" aria-pressed="false">Richieste</button><button class="chip" data-ct="post" aria-pressed="false">Consigli</button></div>
+    <div class="chips" id="coach-tabs" style="margin-bottom:16px"><button class="chip" data-ct="athl" aria-pressed="true">Atleti</button><button class="chip" data-ct="ev" aria-pressed="false">Calendario gare</button><button class="chip" data-ct="req" aria-pressed="false">Richieste</button><button class="chip" data-ct="post" aria-pressed="false">Consigli</button><button class="chip" data-ct="wod" aria-pressed="false">WOD</button></div>
     <div id="coach-list">
       <h1>Il gruppo</h1><p class="lead" id="coach-sub"></p>
       <div id="athletes" style="margin-top:14px"></div>
@@ -417,6 +423,11 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid #
       <div id="ex-list" class="hidden" style="margin-top:12px"></div>
       <h2>Notifiche</h2>
       <div class="card" id="coach-push"></div>
+    </div>
+    <div id="coach-wod" class="hidden">
+      <h1>WOD</h1><p class="lead" id="wod-sub"></p>
+      <button class="btn soft full" id="wod-new">+ Aggiungi un WOD</button>
+      <div id="wod-list" style="margin-top:14px"></div>
     </div>
     <div id="coach-post" class="hidden">
       <h1>Consigli</h1><p class="lead" id="post-sub"></p>
@@ -453,7 +464,7 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid #
 <div id="sheet-root"></div>
 
 <script>
-const APP_VERSION = "2026-10-05 · 34";
+const APP_VERSION = "2026-10-06 · 35";
 const PRIVACY_VERSION = "2026-10-02";          // da cambiare quando cambia l'informativa: il consenso viene richiesto di nuovo
 const PRIVACY_EMAIL = "info@cozzuscoach.it";
 const sb = supabase.createClient("https://pnoxjvssvtusjvbwpkkh.supabase.co","sb_publishable_ol7Ds9jbamCSwpNpGEPT9Q_ZZvxNHy3");
@@ -633,8 +644,9 @@ function renderHome(){
   const avvisoMsg = daCoach.length ? `<div class="note-box" style="margin-top:14px">Il coach ti ha scritto. ${msgBtn(S, daCoach[daCoach.length-1].day, me.id)}</div>` : "";
   const usurate = (S.shoes||[]).filter(x => !x.retired && x.km >= x.alert_km);
   const avvisoScarpe = usurate.length ? `<div class="note-box" style="margin-top:14px">${usurate.map(x => `Le tue ${esc(x.name)} hanno superato i ${x.alert_km} km (${Math.round(x.km)} km): valuta di cambiarle.`).join("<br>")}</div>` : "";
-  if (ses) html = html.replace(/<\/div>\s*$/, `<div style="margin-top:10px">${msgBtn(S, TODAY, me.id)}</div></div>`);
+  html = html.replace(/<\/div>\s*$/, `<button class="btn soft full" id="btn-wod">💪 Allenamento di forza</button>${ses ? `<div style="margin-top:10px">${msgBtn(S, TODAY, me.id)}</div>` : ""}</div>`);
   $("today-card").innerHTML = avvisoMsg + avvisoScarpe + noteHtml + html;
+  if ($("btn-wod")) $("btn-wod").onclick = () => sheetWod();
   renderMorning();
 }
 function renderMorning(){
@@ -895,7 +907,8 @@ function sheetWorkout(ds){
   const ex = ds.edit ? S.workouts.find(w => w.id == ds.edit) : null;
   const ses = ds.session ? S.sessions.find(x=>x.id==ds.session) : S.sessions.find(x=>x.session_date===TODAY);
   const CON_FASI = ["corsa","nuoto","bici"];
-  let sport = ex?.sport || "corsa";
+  const W0 = ds.wod ? (S.wods||[]).find(w => w.id == ds.wod) : null;
+  let sport = ex?.sport || (W0 ? "palestra" : "corsa");
   const det = ex?.details ? JSON.parse(JSON.stringify(ex.details)) : {};
   const fasiBase = () => [{ phase:"riscaldamento" }, { phase:"lavoro" }, { phase:"defaticamento" }];
   let blocks = !ex ? ((sport === "corsa" && daSeduta(ses)) || fasiBase())
@@ -913,8 +926,11 @@ function sheetWorkout(ds){
                                      : [{ name:"", sets:"", reps:"", kg:"" }],
     format: det.format || "amrap", wod: det.wod || "", result: det.result || "",
     what: det.what || "", dur_s: noFasi ? ex.duration_s : null,
-    dist_km: noFasi && sport === "altro" ? ex.distance_km : null, hr: noFasi ? ex.avg_hr : null
+    dist_km: noFasi && sport === "altro" ? ex.distance_km : null, hr: noFasi ? ex.avg_hr : null,
+    wod_id: det.wod_id ?? null
   };
+  if (W0){ D.mode = "circuito"; D.format = "circuito"; D.wod = `${W0.title}\n${W0.youtube_url}`; D.focus = [FOCUS_DA_WOD[W0.district]];
+    D.dur_s = W0.duration_min * 60; D.wod_id = W0.id; D.place = (W0.equipment||[]).includes("palestra") ? "palestra" : "casa"; }
   const nOggi = S.workouts.filter(w => w.day === TODAY).length;
   const sNo = ex ? (ex.session_no === 2 ? 2 : 1) : (nOggi ? 2 : 1);
   const conFasi = () => CON_FASI.includes(sport);
@@ -1200,7 +1216,7 @@ function sheetWorkout(ds){
       if (sport === "palestra"){
         const exs = D.exercises.filter(e => String(e.name||"").trim()).map(e => ({ name: String(e.name).trim(),
           sets: e.sets === "" ? null : +e.sets, reps: e.reps === "" ? null : +e.reps, kg: e.kg === "" ? null : +e.kg }));
-        details = { place: D.place, focus: D.focus, mode: D.mode, ...(D.mode === "esercizi"
+        details = { place: D.place, focus: D.focus, mode: D.mode, wod_id: D.wod_id || null, ...(D.mode === "esercizi"
           ? { exercises: exs, volume_kg: Math.round(volumeForza(exs)) }
           : { format: D.format, wod: (D.wod||"").trim() || null, result: (D.result||"").trim() || null }) };
       }
@@ -1878,6 +1894,8 @@ document.querySelectorAll("[data-ct]").forEach(b => b.onclick = () => {
   $("coach-events").classList.toggle("hidden", t!=="ev");
   $("coach-req").classList.toggle("hidden", t!=="req");
   $("coach-post").classList.toggle("hidden", t!=="post");
+  $("coach-wod").classList.toggle("hidden", t!=="wod");
+  if (t==="wod") renderWods();
   if (t==="post") renderPosts();
   $("coach-list").classList.toggle("hidden", t!=="athl");
   $("coach-detail").classList.add("hidden");
@@ -2407,6 +2425,7 @@ async function renderMeActions(){
 $("app-ver").textContent = APP_VERSION;
 $("btn-dati").onclick = () => sheetDati();
 $("btn-shoe").onclick = () => sheetShoe(null);
+$("wod-new").onclick = () => sheetWodEdit(null);
 $("btn-recap").onclick = () => sheetRiepilogo();
 $("btn-req").onclick = () => sheetRichiesta();
 
@@ -3174,6 +3193,142 @@ async function sheetRiepilogo(mon){
     $("rp-img").innerHTML = `<img src="${URL.createObjectURL(blob)}" alt="Anteprima della storia con il riepilogo della settimana">`;
     $("rp-share").disabled = false;
     $("rp-share").onclick = () => condividiImmagine(blob, `settimana-${mon}.png`);
+  });
+}
+
+/* =====================================================
+   WOD: LIBRERIA DEL COACH E PROPOSTA ALL'ATLETA
+   ===================================================== */
+const DISTR_WOD = [["upper","Upper"],["leg","Leg"],["core","Core"],["total","Total body"]];
+const INTENS_WOD = [["leggero","Leggero"],["medio","Medio"],["intenso","Intenso"]];
+const ATTR_WOD = [["corpo libero","Corpo libero"],["elastici","Elastici"],["manubri","Manubri"],["kettlebell","Kettlebell"],["palestra","Palestra"]];
+const FOCUS_DA_WOD = { upper:"alta", leg:"gambe", core:"core", total:"total" };
+const ytId = u => (String(u||"").match(/(?:youtu\.be\/|[?&]v=|shorts\/|embed\/|live\/)([\w-]{11})/) || [])[1] || null;
+const ytThumb = u => { const id = ytId(u); return id ? `https://i.ytimg.com/vi/${id}/mqdefault.jpg` : null; };
+const lblW = (arr, v) => (arr.find(x => x[0] === v) || [, v])[1];
+
+/* ---------- coach: libreria ---------- */
+let WODS = [];
+async function renderWods(){
+  const { data, error } = await sb.from("wods").select("*").eq("coach_id", me.id).order("created_at");
+  if (error){ $("wod-list").innerHTML = `<div class="empty">${esc(error.message)}</div>`; return; }
+  WODS = data || [];
+  const att = WODS.filter(w => w.active);
+  $("wod-sub").textContent = `${att.length} WOD attivi${WODS.length > att.length ? ` · ${WODS.length - att.length} disattivati` : ""}`;
+  const conta = (d, i) => att.filter(w => w.district === d && w.intensity === i).length;
+  const tab = `<div class="card"><table class="ztable"><tr><td></td>${INTENS_WOD.map(([,l]) => `<td style="font:600 13px var(--body);color:var(--muted)">${l}</td>`).join("")}</tr>
+    ${DISTR_WOD.map(([d,l]) => `<tr><td>${l}</td>${INTENS_WOD.map(([i]) => { const n = conta(d,i); return `<td style="${n ? "" : "color:var(--warn)"}">${n}</td>`; }).join("")}</tr>`).join("")}</table>
+    <p class="hint" style="margin-top:8px">Per variare bene servono almeno 3-4 WOD per distretto, tra leggeri e intensi. In rosso le combinazioni ancora vuote.</p></div>`;
+  $("wod-list").innerHTML = tab + DISTR_WOD.map(([d,l]) => { const L = WODS.filter(w => w.district === d);
+    return L.length ? `<h2>${l}</h2><div class="card">${L.map(w => wodRiga(w, true)).join("")}</div>` : ""; }).join("");
+  $("wod-list").querySelectorAll("[data-wedit]").forEach(b => b.onclick = () => sheetWodEdit(WODS.find(w => w.id == b.dataset.wedit)));
+}
+function wodRiga(w, coach){
+  const th = ytThumb(w.youtube_url);
+  return `<div class="wodrow">
+    <a href="${esc(w.youtube_url)}" target="_blank" rel="noopener" class="wodth" ${th ? `style="background-image:url('${th}')"` : ""} aria-label="Apri il video su YouTube"><span>▶</span></a>
+    <div><b>${esc(w.title)}</b>${coach && !w.active ? ' <span class="tag rest">disattivato</span>' : ""}
+      <div class="sub">${w.duration_min}' · ${lblW(INTENS_WOD, w.intensity).toLowerCase()} · ${(w.equipment||[]).map(e => lblW(ATTR_WOD, e).toLowerCase()).join(", ") || "corpo libero"}</div>
+      ${coach ? `<button class="link" data-wedit="${w.id}">Modifica</button>` : ""}</div></div>`;
+}
+function sheetWodEdit(w){
+  const nuovo = !w; w = w || { title:"", district:"core", duration_min:15, intensity:"medio", equipment:["corpo libero"], youtube_url:"", exercises:"", active:true };
+  let attr = [...(w.equipment || [])];
+  openSheet(`<h3>${nuovo ? "Nuovo WOD" : "Modifica WOD"}</h3>
+    <div class="field"><label for="wd-u">Link YouTube</label><input id="wd-u" type="url" value="${esc(w.youtube_url)}" placeholder="https://youtu.be/…">
+      <div id="wd-prev" class="wodprev"></div></div>
+    <div class="field"><label for="wd-t">Titolo</label><input id="wd-t" value="${esc(w.title)}" placeholder="es. Core 15' per runner"></div>
+    <div class="g2"><div class="field"><label for="wd-d">Distretto</label><select id="wd-d">${DISTR_WOD.map(([v,l]) => `<option value="${v}" ${w.district===v?"selected":""}>${l}</option>`).join("")}</select></div>
+      <div class="field"><label for="wd-m">Durata (minuti)</label><input id="wd-m" type="number" inputmode="numeric" value="${w.duration_min}"></div></div>
+    <div class="field"><label for="wd-i">Intensità</label><select id="wd-i">${INTENS_WOD.map(([v,l]) => `<option value="${v}" ${w.intensity===v?"selected":""}>${l}</option>`).join("")}</select>
+      <div class="hint">Leggero: si può fare anche il giorno prima di una qualità. Intenso: solo nei giorni duri o lontano dalle sedute importanti.</div></div>
+    <div class="field"><label>Attrezzatura</label><div class="chips sm" id="wd-a">${ATTR_WOD.map(([v,l]) => `<button type="button" class="chip" data-v="${v}" aria-pressed="${attr.includes(v)}">${l}</button>`).join("")}</div></div>
+    <div class="field"><label for="wd-e">Esercizi (facoltativo)</label><textarea id="wd-e" rows="4" placeholder="Per chi preferisce leggere: un esercizio per riga">${esc(w.exercises)}</textarea></div>
+    <label class="check field"><input id="wd-on" type="checkbox" ${w.active?"checked":""}> Attivo: può essere proposto agli atleti</label>
+    <button class="btn primary full" id="wd-save">Salva</button>
+    ${nuovo ? "" : `<button class="btn full" id="wd-del" style="color:var(--warn)">Elimina</button>`}
+    <div id="f-msg" class="msg"></div>`, () => {
+    const prev = () => { const th = ytThumb($("wd-u").value); $("wd-prev").innerHTML = th ? `<img src="${th}" alt="Anteprima del video">`
+      : ($("wd-u").value.trim() ? `<span class="flag">Link YouTube non riconosciuto.</span>` : ""); };
+    $("wd-u").oninput = prev; prev();
+    $("wd-a").querySelectorAll(".chip").forEach(c => c.onclick = () => { const v = c.dataset.v;
+      attr = attr.includes(v) ? attr.filter(x => x !== v) : [...attr, v]; c.setAttribute("aria-pressed", String(attr.includes(v))); });
+    $("wd-save").onclick = async () => {
+      const row = { title: $("wd-t").value.trim(), district: $("wd-d").value, duration_min: Math.max(1, +$("wd-m").value || 0),
+        intensity: $("wd-i").value, equipment: attr.length ? attr : ["corpo libero"], youtube_url: $("wd-u").value.trim(),
+        exercises: $("wd-e").value.trim() || null, active: $("wd-on").checked };
+      if (!row.title || !ytId(row.youtube_url)){ $("f-msg").className = "msg err"; $("f-msg").textContent = "Servono un titolo e un link YouTube valido."; return; }
+      $("wd-save").disabled = true;
+      const r = nuovo ? await sb.from("wods").insert({ ...row, coach_id: me.id }) : await sb.from("wods").update(row).eq("id", w.id);
+      $("wd-save").disabled = false;
+      if (r.error){ $("f-msg").className = "msg err"; $("f-msg").textContent = r.error.message; return; }
+      closeSheet(); renderWods();
+    };
+    if ($("wd-del")) $("wd-del").onclick = async () => { if (!confirm("Eliminare questo WOD? Se vuoi solo non proporlo più, togli la spunta Attivo.")) return;
+      await sb.from("wods").delete().eq("id", w.id); closeSheet(); renderWods(); };
+  });
+}
+
+/* ---------- atleta: proposta in base al programma ---------- */
+function contestoWod(){
+  const oggi = S.sessions.find(x => x.session_date === TODAY), dom = S.sessions.find(x => x.session_date === addDays(TODAY, 1));
+  const r = nextRace(S.races), giorniGara = r ? daysBetween(TODAY, r.race_date) : null;
+  const sett = (S.plan?.params?.weeks || []).find(w => w.mon === mondayOf(TODAY));
+  const dolore = S.workouts.some(w => w.day >= addDays(TODAY, -3) && w.feedback?.caso === "dolore");
+  const duro = t => t && (QUALITY.includes(t) || t.startsWith("lungo"));
+  // intensità massima per le gambe e per il resto
+  let maxLeg = "intenso", maxAltro = "intenso", perche = "";
+  if (dolore){ maxLeg = null; maxAltro = "leggero"; perche = "Hai segnalato un fastidio negli ultimi giorni: niente gambe, solo lavori leggeri finché non ne parliamo."; }
+  else if (giorniGara !== null && giorniGara <= 7){ maxLeg = "leggero"; maxAltro = "leggero"; perche = `Mancano ${giorniGara} giorni alla gara: solo lavori leggeri, per arrivare freschi.`; }
+  else if (sett?.phase === "taper"){ maxLeg = "leggero"; maxAltro = "medio"; perche = "Sei in settimana di scarico: forza leggera, il carico lo togliamo apposta."; }
+  else if (duro(dom?.type)){ maxLeg = "leggero"; perche = `Domani c'è ${esc((dom.title || "").toLowerCase())}: gambe solo leggere, per non arrivarci stanco.`; }
+  else if (duro(oggi?.type)){ perche = "Oggi è un giorno duro: puoi fare anche gambe intense, ma dopo la corsa. I giorni facili restano facili."; }
+  else if (sett?.recovery){ maxLeg = "medio"; maxAltro = "medio"; perche = "Settimana di recupero: forza senza esagerare."; }
+  else perche = "Nessuna seduta impegnativa vicina: puoi scegliere anche un lavoro intenso.";
+  return { maxLeg, maxAltro, perche };
+}
+async function caricaWods(){
+  if (S.wods) return S.wods;
+  const { data } = await sb.from("wods").select("*").eq("active", true);
+  S.wods = data || []; return S.wods;
+}
+async function sheetWod(){
+  const W = await caricaWods(), C = contestoWod();
+  let distr = C.maxLeg ? "core" : "upper", tempo = 30, attr = "casa", giro = 0;
+  const ordine = ["leggero","medio","intenso"];
+  const ok = (w, max) => max && ordine.indexOf(w.intensity) <= ordine.indexOf(max);
+  const fatti = new Set(S.workouts.filter(w => w.day >= addDays(TODAY, -14) && w.details?.wod_id).map(w => w.details.wod_id));
+  const paint = () => {
+    const max = distr === "leg" || distr === "total" ? C.maxLeg : C.maxAltro;
+    const base = W.filter(w => w.district === distr && w.duration_min <= tempo
+      && (attr === "palestra" || (w.equipment||[]).every(e => attr === "libero" ? e === "corpo libero" : e !== "palestra")));
+    let L = base.filter(w => ok(w, max));
+    const nuovi = L.filter(w => !fatti.has(w.id)); if (nuovi.length) L = nuovi;
+    // a rotazione, prima i più intensi consentiti
+    L.sort((a,b) => ordine.indexOf(b.intensity) - ordine.indexOf(a.intensity) || a.id - b.id);
+    const scelti = L.length ? [L[giro % L.length], ...(L.length > 1 ? [L[(giro + 1) % L.length]] : [])] : [];
+    const bloccati = base.length && !L.length;
+    $("wo-out").innerHTML = !W.length ? `<div class="empty">Il coach sta preparando la libreria dei WOD: torna presto.</div>`
+      : !max && (distr === "leg" || distr === "total") ? `<div class="note-box">Oggi meglio non allenare le gambe: scegli core o upper.</div>`
+      : !scelti.length ? `<div class="empty">${bloccati ? "Ci sono WOD per questi filtri, ma oggi sarebbero troppo intensi." : "Nessun WOD con questi filtri: prova più tempo o un'altra attrezzatura."}</div>`
+      : scelti.map(w => `<div class="card" style="margin-top:10px">${wodRiga(w, false)}
+          ${w.exercises ? `<details style="margin-top:8px"><summary class="link">Esercizi</summary><p style="white-space:pre-line;margin-top:6px">${esc(w.exercises)}</p></details>` : ""}
+          <div class="actions"><a class="btn soft" href="${esc(w.youtube_url)}" target="_blank" rel="noopener" style="text-decoration:none">Guarda il video</a>
+          <button class="btn primary" data-open="workout" data-wod="${w.id}">L'ho fatto</button></div></div>`).join("")
+        + (L.length > 2 ? `<button class="btn soft full" id="wo-altro">Proponimene altri</button>` : "");
+    if ($("wo-altro")) $("wo-altro").onclick = () => { giro += 2; paint(); };
+  };
+  const chips = (id, opts, cur) => `<div class="chips sm" id="${id}">${opts.map(([v,l]) => `<button type="button" class="chip" data-v="${v}" aria-pressed="${cur == v}">${l}</button>`).join("")}</div>`;
+  openSheet(`<h3>Allenamento di forza</h3>
+    <div class="note-box" style="margin:0 0 12px">${C.perche}</div>
+    <div class="field"><label>Cosa vuoi allenare</label>${chips("wo-d", DISTR_WOD, distr)}</div>
+    <div class="field"><label>Quanto tempo hai</label>${chips("wo-t", [[15,"15'"],[30,"30'"],[60,"Anche di più"]], tempo)}</div>
+    <div class="field"><label>Dove</label>${chips("wo-a", [["libero","Senza attrezzi"],["casa","Casa con attrezzi"],["palestra","Palestra"]], attr)}</div>
+    <div id="wo-out"></div>`, () => {
+    const lega = (id, set) => $(id).querySelectorAll(".chip").forEach(c => c.onclick = () => { set(c.dataset.v); giro = 0;
+      $(id).querySelectorAll(".chip").forEach(x => x.setAttribute("aria-pressed", String(x === c))); paint(); });
+    lega("wo-d", v => distr = v); lega("wo-t", v => tempo = +v); lega("wo-a", v => attr = v);
+    paint();
   });
 }
 
