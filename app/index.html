@@ -286,6 +286,8 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid #
 .wodth{display:grid;place-items:center;aspect-ratio:16/9;border-radius:10px;background:var(--deep) center/cover;text-decoration:none}
 .wodth span{width:34px;height:34px;border-radius:50%;background:rgba(0,0,0,.55);color:#fff;display:grid;place-items:center;font-size:14px}
 .wodprev img{width:100%;max-width:320px;border-radius:12px;margin-top:8px}
+.skipline{margin-top:8px;padding:8px 10px;border-radius:10px;background:#EDEFF0;color:var(--muted);font-size:14px}
+.skipline b{color:var(--ink);font-weight:600}
 </style>
 </head>
 <body>
@@ -464,7 +466,7 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid #
 <div id="sheet-root"></div>
 
 <script>
-const APP_VERSION = "2026-10-06 · 36";
+const APP_VERSION = "2026-10-09 · 37";
 const PRIVACY_VERSION = "2026-10-02";          // da cambiare quando cambia l'informativa: il consenso viene richiesto di nuovo
 const PRIVACY_EMAIL = "info@cozzuscoach.it";
 const sb = supabase.createClient("https://pnoxjvssvtusjvbwpkkh.supabase.co","sb_publishable_ol7Ds9jbamCSwpNpGEPT9Q_ZZvxNHy3");
@@ -551,10 +553,11 @@ async function fetchAthlete(id){
   const { data: blocks } = await sb.from("workout_blocks").select("*").eq("athlete_id",id).order("ord");
   const { data: plan } = await sb.from("plans").select("*").eq("athlete_id",id).order("created_at",{ascending:false}).limit(1).maybeSingle();
   const { data: fb } = await sb.from("feedback").select("workout_id,body,caso,created_at").eq("athlete_id",id).eq("kind","seduta").gte("day",from);
-  const [{ data: msgs }, { data: shoes }, { data: shoeRuns }] = await Promise.all([
+  const [{ data: msgs }, { data: shoes }, { data: shoeRuns }, { data: skips }] = await Promise.all([
     sb.from("session_messages").select("*").eq("athlete_id",id).gte("day",from).order("created_at"),
     sb.from("shoes").select("*").eq("athlete_id",id).order("created_at"),
-    sb.from("workouts").select("shoe_id,distance_km").eq("athlete_id",id).not("shoe_id","is",null)
+    sb.from("workouts").select("shoe_id,distance_km").eq("athlete_id",id).not("shoe_id","is",null),
+    sb.from("session_skips").select("*").eq("athlete_id",id).gte("day",from)
   ]);
   const shoeKm = {}; (shoeRuns||[]).forEach(r => { shoeKm[r.shoe_id] = (shoeKm[r.shoe_id]||0) + (+r.distance_km||0); });
   const SH = (shoes||[]).map(x => ({ ...x, km: (+x.start_km||0) + (shoeKm[x.id]||0) }));
@@ -563,7 +566,7 @@ async function fetchAthlete(id){
   return {
     races: races.data||[], sessions: sessions.data||[],
     workouts: (workouts.data||[]).map(w => ({ ...w, blocks: (blocks||[]).filter(b => b.workout_id === w.id), feedback: (fb||[]).find(f => f.workout_id === w.id) || null, shoe_name: SH.find(x => x.id === w.shoe_id)?.name || null })),
-    checkins: (checkins.data||[]).map(c => ({...ex[c.day], ...c})), zones: zmap, plan, msgs: msgs||[], shoes: SH
+    checkins: (checkins.data||[]).map(c => ({...ex[c.day], ...c})), zones: zmap, plan, msgs: msgs||[], shoes: SH, skips: skips||[]
   };
 }
 const nextRace = races => { const f = races.filter(r => r.race_date >= TODAY); return f.find(r => r.priority==="A") || f[0] || null; };
@@ -621,6 +624,7 @@ function renderHome(){
   // seduta di oggi
   const ses = S.sessions.find(s => s.session_date===TODAY);
   const done = S.workouts.find(x => x.day===TODAY && (x.sport||"corsa")==="corsa");
+  const saltata = !done && skipDi(S, TODAY);
   let html;
   if (!ses){
     html = `<div class="card session"><div class="sub">Oggi</div><h3>Nessuna seduta programmata</h3>
@@ -630,14 +634,17 @@ function renderHome(){
     const isQ = QUALITY.includes(ses.type), rest = ses.type==="riposo";
     html = `<div class="card session">
       <div class="head"><div><div class="sub">Oggi</div><h3>${esc(ses.title)}</h3></div>
-      <span class="tag ${done?"done":rest?"rest":isQ?"q":""}">${done?"Fatto":TYPES[ses.type]}</span></div>
+      <span class="tag ${done?"done":saltata||rest?"rest":isQ?"q":""}">${done?"Fatto":saltata?"Non fatta":TYPES[ses.type]}</span></div>
       ${ses.description?(()=>{const [pp,...rr]=ses.description.split("\n");return `${rr.length?`<div class="desc">${esc(rr.join("\n"))}</div>`:""}<div class="purpose">${esc(pp)}</div>`;})():""}
       ${zoneChips(ses)}
       ${ses.strength_note?`<p class="sub" style="margin-top:10px">Forza: ${esc(ses.strength_note)}</p>`:""}
       ${ses.coach_note?`<div class="coachnote" style="margin-top:10px"><b>Nota del coach</b><p>${esc(ses.coach_note)}</p></div>`:""}
       ${rest ? "" : done
         ? `<p class="sub" style="margin-top:12px">Registrato: ${done.distance_km??"–"} km in ${dur(done.duration_s)}, RPE ${done.rpe}</p>`
-        : `<button class="btn primary full" data-open="workout" data-session="${ses.id}">Ho fatto l'allenamento</button>`}
+        : saltata
+        ? `<p class="sub" style="margin-top:12px">Segnata come non fatta: ${esc(skipTxt(saltata.reason).toLowerCase())}. <button class="link" data-skip="${TODAY}">modifica</button></p>
+           <button class="btn soft full" data-open="workout" data-session="${ses.id}">L'ho fatta comunque</button>`
+        : `<div class="actions"><button class="btn primary" data-open="workout" data-session="${ses.id}">Ho fatto l'allenamento</button><button class="btn soft" data-skip="${TODAY}">Non l'ho fatta</button></div>`}
     </div>`;
   }
   const daCoach = (S.msgs||[]).filter(m => m.author_id !== me.id && !m.read_at);
@@ -687,14 +694,16 @@ function renderPlan(){
     return `<div class="wk-head"><b>${info?`Settimana ${info.n} · ${PHASES[info.phase]}`:`Settimana dal ${p.n} ${p.m}`}</b><span>${km ? `${Math.round(km)} km${info?.recovery?" · scarico":""}` : `${p.n} ${p.m} – ${e.n} ${e.m}`}</span></div>
       <div class="card" style="margin-top:0">${groups[m].map(s => {
         const d = dayParts(s.session_date), done = S.workouts.some(w => w.day===s.session_date && (w.sport||"corsa")==="corsa");
+        const sk = !done && skipDi(S, s.session_date), aperta = !done && !sk && s.type !== "riposo" && s.session_date < TODAY && s.session_date >= addDays(TODAY,-7);
         const [purpose, ...rest] = (s.description||"").split("\n");
         return `<div class="pday ${s.session_date<TODAY?"past":""} ${s.session_date===TODAY?"is-today":""}">
           <div class="d">${d.n}<span>${d.w}</span></div>
-          <div><div class="t">${esc(s.title)} ${done?'<span class="tag done">Fatto</span>':QUALITY.includes(s.type)?'<span class="tag q">Qualità</span>':""}</div>
+          <div><div class="t">${esc(s.title)} ${done?'<span class="tag done">Fatto</span>':sk?'<span class="tag rest">Non fatta</span>':QUALITY.includes(s.type)?'<span class="tag q">Qualità</span>':""}</div>
           ${rest.length?`<div class="sub" style="white-space:pre-line">${esc(rest.join("\n"))}</div>`:""}
           ${purpose?`<div class="purpose">${esc(purpose)}</div>`:""}
           ${s.coach_note?`<div class="sub" style="margin-top:6px;color:#8A5510"><b>Coach:</b> ${esc(s.coach_note)}</div>`:""}
           ${s.edited_by_coach?`<span class="tag" style="margin-top:6px">aggiornata dal coach</span>`:""}
+          ${aperta ? `<div class="hint" style="margin-top:4px">Non registrata: <button class="link" data-open="workout" data-session="${s.id}">l'ho fatta</button> · <button class="link" data-skip="${s.session_date}">non l'ho fatta</button></div>` : ""}
           <div>${msgBtn(S, s.session_date, me.id)}</div></div></div>`;
       }).join("")}</div>`;
   }).join("");
@@ -702,8 +711,9 @@ function renderPlan(){
 const mondayOf = s => addDays(s, -((dt(s).getDay()+6)%7));
 
 /* ---------- DIARIO ---------- */
-function renderDiary(D, box, own){
-  const days = [...new Set([...D.workouts.map(w=>w.day), ...D.checkins.map(c=>c.day)])].sort().reverse();
+function renderDiary(D, box, own, quanti){
+  const all = [...new Set([...D.workouts.map(w=>w.day), ...D.checkins.map(c=>c.day), ...(D.skips||[]).map(x=>x.day)])].sort().reverse();
+  const n = quanti || 7, days = all.slice(0, n);
   const w7 = D.workouts.filter(w => w.day >= addDays(TODAY,-6));
   const run7 = w7.filter(w => (w.sport||"corsa") === "corsa"), oth7 = w7.filter(w => (w.sport||"corsa") !== "corsa");
   const km7 = run7.reduce((a,w)=>a+(+w.distance_km||0),0), sOth = oth7.reduce((a,w)=>a+(w.duration_s||0),0);
@@ -711,17 +721,21 @@ function renderDiary(D, box, own){
   if (!days.length){ box.innerHTML = `<div class="empty">${own?"Il diario è vuoto. Registra il primo allenamento o il check-in di stamattina.":"Nessun dato inserito."}</div>`; return; }
   box.innerHTML = days.map(day => {
     const p = dayParts(day), ws = D.workouts.filter(w=>w.day===day), c = D.checkins.find(x=>x.day===day);
+    const sk = skipDi(D, day), skSes = sk && D.sessions.find(x => x.session_date === day);
     const hrvLow = c?.hrv_ms && c?.hrv_avg7 && c.hrv_ms < c.hrv_avg7*0.85;
     const rhrHigh = c?.rhr_bpm && c?.rhr_avg7 && c.rhr_bpm >= c.rhr_avg7+5;
     return `<div class="dentry">
-      <div class="dh"><b>${p.W} ${p.n} ${p.m}</b><span>${ws.map(w => w.sport && w.sport !== "corsa" ? SPORT_LBL[w.sport] : (TYPES[w.type]||"Corsa")).join(" + ")}</span></div>
+      <div class="dh"><b>${p.W} ${p.n} ${p.m}</b><span>${ws.map(w => w.sport && w.sport !== "corsa" ? SPORT_LBL[w.sport] : (TYPES[w.type]||"Corsa")).join(" + ") || (sk ? "Seduta non fatta" : "")}</span></div>
+      ${sk ? `<div class="skipline" ${own?`data-skip="${day}" style="cursor:pointer"`:""}>Non fatta${skSes ? `: ${esc(skSes.title)}` : ""} · <b>${esc(skipTxt(sk.reason).toLowerCase())}</b>${sk.note ? ` · ${esc(sk.note)}` : ""}</div>` : ""}
       <div>${msgBtn(D, day, own ? me.id : CUR?.a?.id)}</div>
       ${own?`<div class="hint">Tocca una riga per correggerla</div>`:""}
       ${ws.map(w => wMetrics(w, own) + (w.notes && (own||!w.notes_private)?`<div class="note">${esc(w.notes)}</div>`:"")).join("")}
       ${c ? `<div class="morning" ${own?`data-open="morning" data-day="${c.day}" style="cursor:pointer"`:""}>Mattino: HRV <b class="${hrvLow?"flag":""}">${c.hrv_ms??"–"}</b> · FC <b class="${rhrHigh?"flag":""}">${c.rhr_bpm??"–"}</b> · sonno <b>${sleep(c.sleep_min)}</b>${c.legs_feel?` · gambe <b>${c.legs_feel}/5</b>`:""}${c.weight_kg?` · peso <b>${c.weight_kg} kg</b>`:""}</div>
         ${c.notes && (own||!c.notes_private)?`<div class="note">${esc(c.notes)}</div>`:""}` : ""}
     </div>`;
-  }).join("");
+  }).join("") + (all.length > n ? `<button class="btn soft full" data-more="1">Mostra altri giorni (${Math.min(7, all.length - n)} di ${all.length - n})</button>` : "");
+  const more = box.querySelector("[data-more]");
+  if (more) more.onclick = () => { renderDiary(D, box, own, n + 7); };
 }
 
 // riga del diario con le metriche adatte allo sport
@@ -1259,6 +1273,7 @@ function sheetWorkout(ds){
         const rows = righe.map((r,i) => ({ ...r, workout_id: wid, athlete_id: me.id, ord: i+1 }));
         if (rows.length) await sb.from("workout_blocks").insert(rows);
       }
+      if (sport === "corsa") await sb.from("session_skips").delete().eq("athlete_id", me.id).eq("day", day);
       closeSheet();
       if (ex){ await loadAthlete(); sb.functions.invoke("commento", { body: { workout_id: wid } }).then(() => loadAthlete()).catch(() => {}); }
       else mostraCommento(wid);
@@ -1349,6 +1364,8 @@ async function scadenzaProposte(ids){
     const { data: wk } = giorni.length
       ? await sb.from("workouts").select("athlete_id,day,sport").in("athlete_id", ids).in("day", giorni) : { data: [] };
     const fatto = new Set((wk||[]).filter(w => (w.sport||"corsa") === "corsa").map(w => w.athlete_id + "|" + w.day));
+    if (giorni.length){ const { data: sk } = await sb.from("session_skips").select("athlete_id,day").in("athlete_id", ids).in("day", giorni);
+      (sk||[]).forEach(x => fatto.add(x.athlete_id + "|" + x.day)); }
     const scadute = pend.filter(p => { const d = dataDi[p.planned_session_id];
       return !d || d < TODAY || fatto.has(p.athlete_id + "|" + d); }).map(p => p.id);
     if (scadute.length) await sb.from("adjustments").update({ status: "scaduta", reviewed_at: new Date().toISOString() }).in("id", scadute);
@@ -3334,6 +3351,52 @@ async function sheetWod(){
       $(id).querySelectorAll(".chip").forEach(x => x.setAttribute("aria-pressed", String(x === c))); paint(); });
     lega("wo-d", v => distr = v); lega("wo-t", v => tempo = +v); lega("wo-a", v => attr = v);
     paint();
+  });
+}
+
+/* =====================================================
+   SEDUTA NON FATTA
+   ===================================================== */
+const MOTIVI_SKIP = [["stanchezza","Stanchezza"],["impegni","Impegni"],["malessere","Malessere"],["dolore","Dolore o fastidio"],["altro","Altro"]];
+const skipDi = (D, day) => (D?.skips || []).find(x => x.day === day) || null;
+const skipTxt = k => (MOTIVI_SKIP.find(m => m[0] === k) || [, k])[1];
+document.addEventListener("click", e => {
+  const t = e.target.closest("[data-skip]"); if (!t) return;
+  e.preventDefault(); e.stopPropagation(); sheetSkip(t.dataset.skip);
+});
+function sheetSkip(day){
+  const ses = S.sessions.find(x => x.session_date === day), ex = skipDi(S, day), p = dayParts(day);
+  let motivo = ex?.reason || "stanchezza";
+  openSheet(`<h3>Seduta non fatta</h3>
+    <p class="sub" style="margin:-6px 0 12px">${p.W} ${p.n} ${p.m}${ses ? ` · ${esc(ses.title)}` : ""}</p>
+    <div class="field"><label>Perché?</label><div class="chips sm" id="sk-m">${MOTIVI_SKIP.map(([v,l]) => `<button type="button" class="chip" data-v="${v}" aria-pressed="${motivo===v}">${l}</button>`).join("")}</div></div>
+    <div id="sk-dol" class="note-box hidden" style="margin:0 0 12px">Il coach riceverà un messaggio: non correre sopra il dolore finché non ne parlate.</div>
+    <div class="field"><label for="sk-n">Note (facoltative)</label><textarea id="sk-n" rows="2" placeholder="es. turno di lavoro, gambe molto pesanti">${esc(ex?.note)}</textarea></div>
+    <p class="hint" style="margin-bottom:12px">Saltare una seduta ogni tanto non è un problema: segnarlo aiuta il coach a capire come stai e ad adattare i giorni successivi.</p>
+    <button class="btn primary full" id="sk-save">Segna come non fatta</button>
+    ${ex ? `<button class="btn full" id="sk-del" style="color:var(--warn)">Annulla: l'ho fatta o la faccio</button>` : ""}
+    <div id="f-msg" class="msg"></div>`, () => {
+    const sync = () => $("sk-dol").classList.toggle("hidden", motivo !== "dolore");
+    $("sk-m").querySelectorAll(".chip").forEach(c => c.onclick = () => { motivo = c.dataset.v;
+      $("sk-m").querySelectorAll(".chip").forEach(x => x.setAttribute("aria-pressed", String(x === c))); sync(); });
+    sync();
+    $("sk-save").onclick = async () => {
+      const note = $("sk-n").value.trim() || null;
+      $("sk-save").disabled = true;
+      const r = await sb.from("session_skips").upsert({ athlete_id: me.id, day, planned_session_id: ses?.id ?? null, reason: motivo, note }, { onConflict: "athlete_id,day" });
+      $("sk-save").disabled = false;
+      if (r.error){ $("f-msg").className = "msg err"; $("f-msg").textContent = "Non salvato: " + r.error.message; return; }
+      if (motivo === "dolore" || motivo === "malessere"){
+        const testo = `Oggi non ho fatto la seduta: ${skipTxt(motivo).toLowerCase()}.${note ? " " + note : ""}`;
+        await sb.from("session_messages").insert({ athlete_id: me.id, day, author_id: me.id, body: testo });
+        sb.functions.invoke("daily-push", { body: { msg: { day, text: testo } } }).catch(() => {});
+      }
+      closeSheet(); await loadAthlete();
+    };
+    if ($("sk-del")) $("sk-del").onclick = async () => {
+      await sb.from("session_skips").delete().eq("athlete_id", me.id).eq("day", day);
+      closeSheet(); await loadAthlete();
+    };
   });
 }
 
