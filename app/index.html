@@ -288,6 +288,13 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid #
 .wodprev img{width:100%;max-width:320px;border-radius:12px;margin-top:8px}
 .skipline{margin-top:8px;padding:8px 10px;border-radius:10px;background:#EDEFF0;color:var(--muted);font-size:14px}
 .skipline b{color:var(--ink);font-weight:600}
+.subblock h3{font:800 28px var(--cond)}
+.pkgs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+.pkgs div{background:var(--bg);border-radius:12px;padding:10px;text-align:center}
+.pkgs b{display:block;font:700 18px var(--cond)}
+.pkgs span{font:800 24px var(--cond);color:var(--sea)}
+.servizi{margin:12px 0 0 18px;font-size:15px}
+.servizi li{margin-top:4px}
 </style>
 </head>
 <body>
@@ -388,6 +395,8 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid #
       <button class="btn soft full" id="btn-dati">Aggiorna i miei dati</button>
       <button class="btn primary full" id="btn-req">Chiedi un nuovo programma</button>
       <div id="req-state" class="msg"></div>
+      <h2>Abbonamento</h2>
+      <div class="card" id="sub-box"></div>
       <h2>Le tue gare</h2>
       <div class="card" id="races-list"></div>
       <button class="btn soft full" data-open="race">+ Aggiungi gara</button>
@@ -452,6 +461,7 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid #
       <button class="link" id="back">Torna al gruppo</button>
       <h1 id="detail-name" style="margin-top:10px"></h1>
       <button class="link" id="detail-remove" style="color:var(--warn)">Non seguo più questo atleta</button>
+      <div id="detail-sub"></div>
       <div id="detail-race" style="margin-top:12px"></div>
       <div id="detail-req"></div>
       <div id="detail-msg"></div>
@@ -466,7 +476,7 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid #
 <div id="sheet-root"></div>
 
 <script>
-const APP_VERSION = "2026-10-09 · 37";
+const APP_VERSION = "2026-10-13 · 39";
 const PRIVACY_VERSION = "2026-10-02";          // da cambiare quando cambia l'informativa: il consenso viene richiesto di nuovo
 const PRIVACY_EMAIL = "info@cozzuscoach.it";
 const sb = supabase.createClient("https://pnoxjvssvtusjvbwpkkh.supabase.co","sb_publishable_ol7Ds9jbamCSwpNpGEPT9Q_ZZvxNHy3");
@@ -575,7 +585,7 @@ async function loadAthlete(){
   $("hello").textContent = "Ciao " + (me.full_name||"").split(" ")[0];
   $("me-name").textContent = me.full_name;
   S = await fetchAthlete(me.id);
-  renderHome(); renderPlan(); renderDiary(S, $("diary-list"), true); renderRaces(); renderMe(); renderStats(); renderPush(); renderMeActions(); renderNutri(); renderPrivacy(); renderShoes(); renderRecapHome();
+  renderHome(); renderPlan(); renderDiary(S, $("diary-list"), true); renderRaces(); renderMe(); renderStats(); renderPush(); renderMeActions(); renderNutri(); renderPrivacy(); renderShoes(); renderRecapHome(); renderSub();
   // arriva dal calendario con una gara scelta: diventa una richiesta al coach
   const g = pendingGara();
   if (g){ clearGara(); await loadEvents(); const e = EVENTS.find(x => x.id == g);
@@ -599,6 +609,7 @@ function raceHero(race, editable){
 
 function renderHome(){
   $("race-hero").innerHTML = raceHero(nextRace(S.races), true);
+  if (!subOk()){ $("week").innerHTML = ""; $("today-card").innerHTML = subBloccoHtml(); renderMorning(); return; }
   // settimana lun-dom
   const d0 = dt(TODAY); const mon = addDays(TODAY, -((d0.getDay()+6)%7));
   let w = "";
@@ -652,7 +663,7 @@ function renderHome(){
   const usurate = (S.shoes||[]).filter(x => !x.retired && x.km >= x.alert_km);
   const avvisoScarpe = usurate.length ? `<div class="note-box" style="margin-top:14px">${usurate.map(x => `Le tue ${esc(x.name)} hanno superato i ${x.alert_km} km (${Math.round(x.km)} km): valuta di cambiarle.`).join("<br>")}</div>` : "";
   html = html.replace(/<\/div>\s*$/, `<button class="btn soft full" id="btn-wod">💪 Allenamento di forza</button>${ses ? `<div style="margin-top:10px">${msgBtn(S, TODAY, me.id)}</div>` : ""}</div>`);
-  $("today-card").innerHTML = avvisoMsg + avvisoScarpe + noteHtml + html;
+  $("today-card").innerHTML = avvisoScadenza() + avvisoMsg + avvisoScarpe + noteHtml + html;
   if ($("btn-wod")) $("btn-wod").onclick = () => sheetWod();
   renderMorning();
 }
@@ -676,6 +687,7 @@ function zoneChips(ses){
 /* ---------- PROGRAMMA ---------- */
 const PHASES = {base:"Base aerobica",build:"Costruzione",spec:"Specifica",taper:"Scarico pre-gara"};
 function renderPlan(){
+  if (!subOk()){ $("plan-lead").textContent = "Il programma di allenamento"; $("zones-box").innerHTML = ""; $("plan-list").innerHTML = subBloccoHtml(); return; }
   const r = nextRace(S.races);
   $("plan-lead").textContent = r ? `Verso ${r.name}` : "Il programma di allenamento";
   const zs = S.zones||{};
@@ -1275,7 +1287,8 @@ function sheetWorkout(ds){
       }
       if (sport === "corsa") await sb.from("session_skips").delete().eq("athlete_id", me.id).eq("day", day);
       closeSheet();
-      if (ex){ await loadAthlete(); sb.functions.invoke("commento", { body: { workout_id: wid } }).then(() => loadAthlete()).catch(() => {}); }
+      if (!subOk()){ await loadAthlete(); }
+      else if (ex){ await loadAthlete(); sb.functions.invoke("commento", { body: { workout_id: wid } }).then(() => loadAthlete()).catch(() => {}); }
       else mostraCommento(wid);
     };
     if ($("w-del")) $("w-del").onclick = async () => {
@@ -1373,7 +1386,7 @@ async function scadenzaProposte(ids){
 }
 async function loadCoach(){
   $("coach-detail").classList.add("hidden"); $("coach-list").classList.remove("hidden");
-  const { data: athletes } = await sb.from("profiles").select("id,full_name").eq("coach_id", me.id).order("full_name");
+  const { data: athletes } = await sb.from("profiles").select("id,full_name,sub_until,sub_plan,role").eq("coach_id", me.id).order("full_name");
   $("coach-sub").textContent = `${athletes?.length||0} atleti`;
   if (!athletes?.length){ $("athletes").innerHTML = `<div class="empty">Nessun atleta collegato.</div>`; return; }
   const ids = athletes.map(a=>a.id);
@@ -1402,7 +1415,7 @@ async function loadCoach(){
   athletes.forEach(a => {
     const b = document.createElement("button"); b.className="athlete";
     const lw = lastW[a.id];
-    b.innerHTML = `<div><strong>${esc(a.full_name)}</strong>${dolSet.has(a.id)?' <span class="tag" style="background:#F7DAD0;color:#8E2F0E">Dolore segnalato</span>':""}${msgCount[a.id]?` <span class="tag q">💬 ${msgCount[a.id]} ${msgCount[a.id]===1?"messaggio":"messaggi"}</span>`:""}${lastP[a.id]?.status==="bozza"?' <span class="tag q">Programma da rivedere</span>':""}${reqSet.has(a.id)?' <span class="tag q">Richiesta</span>':""}${adjAlarm[a.id]?' <span class="tag" style="background:#F7DAD0;color:#8E2F0E">Allarme</span>':adjCount[a.id]?` <span class="tag q">${adjCount[a.id]} ${adjCount[a.id]===1?"proposta":"proposte"}</span>`:""}<div class="when">${lw?`ultimo allenamento ${dayParts(lw).n} ${dayParts(lw).m}`:"nessun allenamento registrato"}</div></div>
+    b.innerHTML = `<div><strong>${esc(a.full_name)}</strong>${!subOk(a) ? ` <span class="tag" style="background:#F7DAD0;color:#8E2F0E">${a.sub_until ? "Abbonamento scaduto" : "Nessun abbonamento"}</span>` : subGiorni(a) <= 7 ? ` <span class="tag q">Scade tra ${subGiorni(a)} g</span>` : ""}${dolSet.has(a.id)?' <span class="tag" style="background:#F7DAD0;color:#8E2F0E">Dolore segnalato</span>':""}${msgCount[a.id]?` <span class="tag q">💬 ${msgCount[a.id]} ${msgCount[a.id]===1?"messaggio":"messaggi"}</span>`:""}${lastP[a.id]?.status==="bozza"?' <span class="tag q">Programma da rivedere</span>':""}${reqSet.has(a.id)?' <span class="tag q">Richiesta</span>':""}${adjAlarm[a.id]?' <span class="tag" style="background:#F7DAD0;color:#8E2F0E">Allarme</span>':adjCount[a.id]?` <span class="tag q">${adjCount[a.id]} ${adjCount[a.id]===1?"proposta":"proposte"}</span>`:""}<div class="when">${lw?`ultimo allenamento ${dayParts(lw).n} ${dayParts(lw).m}`:"nessun allenamento registrato"}</div></div>
       <span class="when ${ckT.has(a.id)?"good":""}">${ckT.has(a.id)?"check-in ✓":"check-in —"}</span>`;
     b.onclick = () => openAthlete(a);
     $("athletes").appendChild(b);
@@ -1414,7 +1427,7 @@ async function openAthlete(a){
   const D = await fetchAthlete(a.id);
   $("detail-race").innerHTML = raceHero(nextRace(D.races), false);
   renderDiary(D, $("detail-diary"), false);
-  CUR = { a, D }; renderMsgCoach(); await renderPlanRequests(); await renderAdjustments(); await renderCoachPlan();
+  CUR = { a, D }; renderMsgCoach(); renderSubCoach(); await renderPlanRequests(); await renderAdjustments(); await renderCoachPlan();
 }
 $("back").onclick = loadCoach;
 $("ex-tog").onclick = () => { EX_OPEN = !EX_OPEN; renderEx(); };
@@ -2184,7 +2197,7 @@ async function renderCoachPlan(){
   const groups = {};
   CUR.ses.filter(x => x.session_date >= addDays(TODAY,-1)).forEach(x => { const m = mondayOf(x.session_date); (groups[m] = groups[m] || []).push(x); });
   const weeks = pr.weeks || [];
-  box.innerHTML = `<h2>Programma ${draft?'<span class="tag q">Da rivedere</span>':'<span class="tag done">Pubblicato</span>'}</h2>
+  box.innerHTML = `<h2>Programma ${draft?'<span class="tag q">Da rivedere</span>':plan.status==="scaduto"?'<span class="tag rest">Sospeso: abbonamento scaduto</span>':'<span class="tag done">Pubblicato</span>'}</h2>
     <div class="card">
       <div class="sub">${esc(plan.title)} · VDOT ${pr.vdot??"–"} · FC max ${pr.hrmax??"–"} · FC riposo ${pr.rhr??"–"}</div>
       <div class="sub">Partenza ${pr.vol0??"–"} km/sett. · picco ${pr.peak??"–"} km · ${pr.runs??"–"} uscite · riposo ${(pr.rest||[]).map(d=>WD[d]).join(", ")||"–"}</div>
@@ -2865,10 +2878,10 @@ async function renderNutri(){
       ? `Oggi è una seduta lunga: durante la corsa servono 30-60 g di carboidrati all'ora oltre i 75 minuti, e 400-800 ml di liquidi all'ora.`
       : `Distribuisci le proteine in 4 assunzioni da circa ${f.pasti} g ciascuna: conta più la ripartizione della quantità totale.`}</p>
     <button class="btn soft full" data-open="cibo">${S.meals.length ? "Aggiorna quello che hai mangiato" : "Registra i pasti di oggi"}</button>
-    <button class="btn primary full" id="n-idee" style="margin-top:10px">Cosa mangio adesso?</button>
+    ${subOk() ? `<button class="btn primary full" id="n-idee" style="margin-top:10px">Cosa mangio adesso?</button>` : ""}
     <p class="hint" style="margin-top:8px">Indicazioni generali di orientamento, non un piano alimentare personale: per obiettivi di peso, problemi digestivi ricorrenti o diete particolari serve un professionista.</p>
   </div>`;
-  $("n-idee").onclick = () => sheetIdee(f, t, ses);
+  if ($("n-idee")) $("n-idee").onclick = () => sheetIdee(f, t, ses);
 }
 
 /* ---------- COMMENTO DEL COACH E SPUNTI ---------- */
@@ -3312,6 +3325,7 @@ async function caricaWods(){
   S.wods = data || []; return S.wods;
 }
 async function sheetWod(){
+  if (!subOk()) return;
   const W = await caricaWods(), C = contestoWod();
   let distr = C.maxLeg ? "core" : "stretching", tempo = 30, attr = "casa", giro = 0;
   const ordine = ["leggero","medio","intenso"];
@@ -3396,6 +3410,116 @@ function sheetSkip(day){
     if ($("sk-del")) $("sk-del").onclick = async () => {
       await sb.from("session_skips").delete().eq("athlete_id", me.id).eq("day", day);
       closeSheet(); await loadAthlete();
+    };
+  });
+}
+
+/* =====================================================
+   ABBONAMENTI
+   ===================================================== */
+const PACCHETTI = [[3,"3 mesi",100],[6,"6 mesi",150],[12,"12 mesi",250]];
+const METODI = [["bonifico","Bonifico"],["satispay","Satispay"],["contanti","Contanti"],["altro","Altro"]];
+const SERVIZI = ["Programma di allenamento personalizzato verso la tua gara, aggiornato dal coach",
+  "Monitoraggio da parte del coach tramite l'app: diario, check-in e adattamenti",
+  "Comunicazione con il coach tramite l'app e, se serve, WhatsApp",
+  "Allenamenti di forza (WOD) proposti in base al programma"];
+const subOk = (p = me) => p?.role === "coach" || (!!p?.sub_until && p.sub_until >= TODAY);
+const subGiorni = (p = me) => p?.sub_until ? daysBetween(TODAY, p.sub_until) : null;
+const dataLunga = s => { const p = dayParts(s); return `${p.n} ${p.m} ${s.slice(0,4)}`; };
+const addMonths = (s, n) => { const d = dt(s); d.setMonth(d.getMonth() + n); return addDays(iso(d), -1); };
+function subBloccoHtml(){
+  const scaduto = me.sub_until && me.sub_until < TODAY;
+  return `<div class="card subblock">
+    <div class="sub">Abbonamento</div>
+    <h3>${scaduto ? `Scaduto il ${dataLunga(me.sub_until)}` : "Non ancora attivo"}</h3>
+    <p style="margin-top:6px">Programma, proposte del coach, commenti alle sedute e WOD si riattivano appena rinnovi. Il diario resta sempre disponibile: puoi continuare a registrare allenamenti e check-in.</p>
+    <div class="pkgs">${PACCHETTI.map(([m,l,e]) => `<div><b>${l}</b><span>${e} €</span></div>`).join("")}</div>
+    <ul class="servizi">${SERVIZI.map(x => `<li>${esc(x)}</li>`).join("")}</ul>
+    <p class="sub" style="margin-top:10px">Per il pagamento mettiti d'accordo direttamente con il coach: appena lo registra, il tuo abbonamento si attiva per la durata scelta.</p>
+    <div style="margin-top:6px">${msgBtn(S, TODAY, me.id)}</div>
+  </div>`;
+}
+function renderSub(){
+  const box = $("sub-box"); if (!box) return;
+  const g = subGiorni();
+  box.innerHTML = subOk()
+    ? `<div class="status ok"><div class="ic">✓</div><div><b>Attivo fino al ${dataLunga(me.sub_until)}</b><div class="sub">${me.sub_plan === "prova" ? "Prova gratuita" : `Pacchetto ${esc(me.sub_plan || "")}`} · ${g === 0 ? "scade oggi" : `ancora ${g} ${g === 1 ? "giorno" : "giorni"}`}</div></div></div>
+       <ul class="servizi">${SERVIZI.map(x => `<li>${esc(x)}</li>`).join("")}</ul>
+       <p class="hint">Per rinnovare mettiti d'accordo con il coach: il nuovo periodo parte dalla scadenza attuale.</p>`
+    : subBloccoHtml().replace('class="card subblock"', 'class="subblock"');
+}
+function avvisoScadenza(){
+  const g = subGiorni();
+  return subOk() && me.role !== "coach" && g !== null && g <= 7
+    ? `<div class="note-box" style="margin-top:14px">Il tuo abbonamento scade ${g === 0 ? "oggi" : g === 1 ? "domani" : `tra ${g} giorni`} (${dataLunga(me.sub_until)}). Per rinnovarlo mettiti d'accordo con il coach.</div>` : "";
+}
+
+/* ---------- coach ---------- */
+async function renderSubCoach(){
+  const box = $("detail-sub"); if (!box || !CUR?.a) return;
+  const a = CUR.a, g = subGiorni(a);
+  const { data: pag } = await sb.from("subscriptions").select("*").eq("athlete_id", a.id).order("start_date", { ascending: false });
+  const stato = subOk(a)
+    ? `<span class="tag done">Attivo fino al ${dataLunga(a.sub_until)}</span>${g <= 7 ? ` <span class="tag q">scade tra ${g} g</span>` : ""}`
+    : a.sub_until ? `<span class="tag" style="background:#F7DAD0;color:#8E2F0E">Scaduto il ${dataLunga(a.sub_until)}</span>` : `<span class="tag rest">Nessun abbonamento</span>`;
+  box.innerHTML = `<h2>Abbonamento</h2><div class="card">
+    <div>${stato}${a.sub_plan === "prova" ? ' <span class="tag">prova</span>' : ""}</div>
+    ${(pag||[]).length ? `<div style="margin-top:10px">${pag.map(x => `<div class="foodline"><span><b>${esc(x.package)}</b> · ${dataLunga(x.start_date)} – ${dataLunga(x.end_date)}<br><span class="hint">${x.amount != null ? x.amount + " €" : "–"} · ${esc((METODI.find(m => m[0] === x.method)||[,x.method||""])[1])}${x.note ? " · " + esc(x.note) : ""}</span></span><button class="link" data-paydel="${x.id}" style="color:var(--warn)">elimina</button></div>`).join("")}</div>` : `<p class="hint" style="margin-top:8px">Nessun pagamento registrato.</p>`}
+    <button class="btn primary full" id="sub-add">${subOk(a) ? "Registra un rinnovo" : "Attiva l'abbonamento"}</button>
+    ${!(pag||[]).length ? `<button class="btn soft full" id="sub-prova">Prova gratuita 7 giorni</button>` : ""}
+    <div id="sub-msg" class="msg"></div></div>`;
+  $("sub-add").onclick = () => sheetSub();
+  if ($("sub-prova")) $("sub-prova").onclick = async () => {
+    const fine = addDays(TODAY, 6);
+    if (!confirm(`Attivare la prova gratuita fino al ${dataLunga(fine)}?`)) return;
+    const { error } = await sb.from("profiles").update({ sub_until: fine, sub_plan: "prova" }).eq("id", a.id);
+    if (error){ $("sub-msg").className = "msg err"; $("sub-msg").textContent = error.message; return; }
+    a.sub_until = fine; a.sub_plan = "prova";
+    avvisaAtleta(a.id, "Prova gratuita attiva", `Hai una settimana di prova di Cozzu's Coach, fino al ${dataLunga(fine)}. Buon allenamento!`);
+    renderSubCoach(); renderCoachPlan();
+  };
+  box.querySelectorAll("[data-paydel]").forEach(b => b.onclick = async () => {
+    if (!confirm("Eliminare questo pagamento? La scadenza viene ricalcolata sui pagamenti che restano.")) return;
+    await sb.from("subscriptions").delete().eq("id", b.dataset.paydel);
+    const { data: rest } = await sb.from("subscriptions").select("end_date,package").eq("athlete_id", a.id).order("end_date", { ascending: false }).limit(1);
+    const upd = { sub_until: rest?.[0]?.end_date || null, sub_plan: rest?.[0]?.package || null };
+    await sb.from("profiles").update(upd).eq("id", a.id); Object.assign(a, upd);
+    renderSubCoach();
+  });
+}
+function sheetSub(){
+  const a = CUR.a;
+  let mesi = 3;
+  const inizioDef = subOk(a) ? addDays(a.sub_until, 1) : TODAY;   // un rinnovo parte dal giorno dopo la scadenza
+  openSheet(`<h3>${subOk(a) ? "Rinnovo" : "Attiva abbonamento"}</h3>
+    <p class="sub" style="margin:-6px 0 12px">${esc(a.full_name)}</p>
+    <div class="field"><label>Pacchetto</label><div class="chips" id="sb-p">${PACCHETTI.map(([m,l,e]) => `<button type="button" class="chip" data-m="${m}" data-e="${e}" aria-pressed="${m===mesi}">${l} · ${e} €</button>`).join("")}</div></div>
+    <div class="g2"><div class="field"><label for="sb-i">Inizio</label><input id="sb-i" type="date" value="${inizioDef}"></div>
+      <div class="field"><label>Scadenza</label><div id="sb-f" style="font:700 20px var(--cond);padding:10px 0"></div></div></div>
+    <div class="g2"><div class="field"><label for="sb-e">Importo (€)</label><input id="sb-e" type="number" inputmode="decimal" value="100"></div>
+      <div class="field"><label for="sb-m">Pagamento</label><select id="sb-m">${METODI.map(([v,l]) => `<option value="${v}">${l}</option>`).join("")}</select></div></div>
+    <div class="field"><label for="sb-n">Note (facoltative)</label><input id="sb-n" placeholder="es. pagato il 13/10"></div>
+    <label class="check field"><input id="sb-avv" type="checkbox" checked> Avvisa l'atleta con una notifica</label>
+    <button class="btn primary full" id="sb-save">Salva e attiva</button><div id="f-msg" class="msg"></div>`, () => {
+    const fine = () => addMonths($("sb-i").value || TODAY, mesi);
+    const paint = () => { $("sb-f").textContent = dataLunga(fine()); };
+    $("sb-p").querySelectorAll(".chip").forEach(c => c.onclick = () => { mesi = +c.dataset.m; $("sb-e").value = c.dataset.e;
+      $("sb-p").querySelectorAll(".chip").forEach(x => x.setAttribute("aria-pressed", String(x === c))); paint(); });
+    $("sb-i").oninput = paint; paint();
+    $("sb-save").onclick = async () => {
+      const start = $("sb-i").value; if (!start){ $("f-msg").className = "msg err"; $("f-msg").textContent = "Indica la data di inizio."; return; }
+      const end = fine(), pkg = (PACCHETTI.find(p => p[0] === mesi) || [,""])[1];
+      $("sb-save").disabled = true;
+      const r = await sb.from("subscriptions").insert({ athlete_id: a.id, package: pkg, start_date: start, end_date: end,
+        amount: $("sb-e").value === "" ? null : +$("sb-e").value, method: $("sb-m").value, note: $("sb-n").value.trim() || null });
+      if (r.error){ $("sb-save").disabled = false; $("f-msg").className = "msg err"; $("f-msg").textContent = r.error.message; return; }
+      const nuova = a.sub_until && a.sub_until > end ? a.sub_until : end;
+      const r2 = await sb.from("profiles").update({ sub_until: nuova, sub_plan: pkg }).eq("id", a.id);
+      $("sb-save").disabled = false;
+      if (r2.error){ $("f-msg").className = "msg err"; $("f-msg").textContent = r2.error.message; return; }
+      a.sub_until = nuova; a.sub_plan = pkg;
+      if ($("sb-avv").checked) avvisaAtleta(a.id, "Abbonamento attivo", `Il tuo abbonamento Cozzu's Coach è attivo fino al ${dataLunga(nuova)}. Buon allenamento!`);
+      closeSheet(); renderSubCoach(); renderCoachPlan();
     };
   });
 }
