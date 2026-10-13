@@ -476,7 +476,7 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid #
 <div id="sheet-root"></div>
 
 <script>
-const APP_VERSION = "2026-10-13 · 39";
+const APP_VERSION = "2026-10-13 · 41";
 const PRIVACY_VERSION = "2026-10-02";          // da cambiare quando cambia l'informativa: il consenso viene richiesto di nuovo
 const PRIVACY_EMAIL = "info@cozzuscoach.it";
 const sb = supabase.createClient("https://pnoxjvssvtusjvbwpkkh.supabase.co","sb_publishable_ol7Ds9jbamCSwpNpGEPT9Q_ZZvxNHy3");
@@ -586,6 +586,7 @@ async function loadAthlete(){
   $("me-name").textContent = me.full_name;
   S = await fetchAthlete(me.id);
   renderHome(); renderPlan(); renderDiary(S, $("diary-list"), true); renderRaces(); renderMe(); renderStats(); renderPush(); renderMeActions(); renderNutri(); renderPrivacy(); renderShoes(); renderRecapHome(); renderSub();
+  if (!$("sheet-root").innerHTML) mostraAnnuncio();
   // arriva dal calendario con una gara scelta: diventa una richiesta al coach
   const g = pendingGara();
   if (g){ clearGara(); await loadEvents(); const e = EVENTS.find(x => x.id == g);
@@ -3427,13 +3428,34 @@ const subOk = (p = me) => p?.role === "coach" || (!!p?.sub_until && p.sub_until 
 const subGiorni = (p = me) => p?.sub_until ? daysBetween(TODAY, p.sub_until) : null;
 const dataLunga = s => { const p = dayParts(s); return `${p.n} ${p.m} ${s.slice(0,4)}`; };
 const addMonths = (s, n) => { const d = dt(s); d.setMonth(d.getMonth() + n); return addDays(iso(d), -1); };
+const pkgsHtml = () => `<div class="pkgs">${PACCHETTI.map(([m,l,e]) => `<div><b>${l}</b><span>${e} €</span></div>`).join("")}</div>`;
+// annuncio mostrato una sola volta all'apertura dell'app (cambiare l'id per mostrarne uno nuovo)
+const ANNUNCIO_ID = "pacchetti-2026-10";
+function mostraAnnuncio(){
+  if (me.role === "coach" || me.sub_plan !== "prova" || me.announce_seen === ANNUNCIO_ID) return;
+  const fino = me.sub_until ? dataLunga(me.sub_until) : "";
+  const dopo = me.sub_until ? dataLunga(addDays(me.sub_until, 1)) : "";
+  openSheet(`<h3>Cozzu's Coach diventa a pagamento</h3>
+    <p>${me.sub_until && me.sub_until >= TODAY ? `La prova gratuita resta attiva fino al <b>${fino}</b> compreso.` : "La prova gratuita è terminata."}</p>
+    <p style="margin-top:10px">${dopo && me.sub_until >= TODAY ? `Dal ${dopo}, per` : "Per"} continuare si sceglie un pacchetto:</p>
+    ${pkgsHtml()}
+    <p style="margin-top:12px"><b>Cosa comprende</b></p>
+    <ul class="servizi" style="margin-top:4px">${SERVIZI.map(x => `<li>${esc(x)}</li>`).join("")}</ul>
+    <p style="margin-top:12px">Per il pagamento ci mettiamo d'accordo direttamente: appena lo registro, l'abbonamento si attiva e parte dal giorno dopo la fine della prova, quindi non perdi nessun giorno. Se non rinnovi, il programma viene sospeso, ma il diario e tutti i tuoi dati restano sempre disponibili.</p>
+    <p class="sub" style="margin-top:10px">Trovi tutto anche in Profilo → Abbonamento.</p>
+    <div class="actions"><button class="btn soft" data-msg="${TODAY}" data-ath="${me.id}" id="an-msg">Scrivi al coach</button><button class="btn primary" id="an-ok">Ho capito</button></div>`, () => {
+    const visto = async () => { me.announce_seen = ANNUNCIO_ID; await sb.from("profiles").update({ announce_seen: ANNUNCIO_ID }).eq("id", me.id); };
+    $("an-ok").onclick = async () => { closeSheet(); await visto(); };
+    $("an-msg").addEventListener("click", () => { visto(); }, true);
+  });
+}
 function subBloccoHtml(){
   const scaduto = me.sub_until && me.sub_until < TODAY;
   return `<div class="card subblock">
     <div class="sub">Abbonamento</div>
     <h3>${scaduto ? `Scaduto il ${dataLunga(me.sub_until)}` : "Non ancora attivo"}</h3>
     <p style="margin-top:6px">Programma, proposte del coach, commenti alle sedute e WOD si riattivano appena rinnovi. Il diario resta sempre disponibile: puoi continuare a registrare allenamenti e check-in.</p>
-    <div class="pkgs">${PACCHETTI.map(([m,l,e]) => `<div><b>${l}</b><span>${e} €</span></div>`).join("")}</div>
+    ${pkgsHtml()}
     <ul class="servizi">${SERVIZI.map(x => `<li>${esc(x)}</li>`).join("")}</ul>
     <p class="sub" style="margin-top:10px">Per il pagamento mettiti d'accordo direttamente con il coach: appena lo registra, il tuo abbonamento si attiva per la durata scelta.</p>
     <div style="margin-top:6px">${msgBtn(S, TODAY, me.id)}</div>
@@ -3445,11 +3467,20 @@ function renderSub(){
   box.innerHTML = subOk()
     ? `<div class="status ok"><div class="ic">✓</div><div><b>Attivo fino al ${dataLunga(me.sub_until)}</b><div class="sub">${me.sub_plan === "prova" ? "Prova gratuita" : `Pacchetto ${esc(me.sub_plan || "")}`} · ${g === 0 ? "scade oggi" : `ancora ${g} ${g === 1 ? "giorno" : "giorni"}`}</div></div></div>
        <ul class="servizi">${SERVIZI.map(x => `<li>${esc(x)}</li>`).join("")}</ul>
-       <p class="hint">Per rinnovare mettiti d'accordo con il coach: il nuovo periodo parte dalla scadenza attuale.</p>`
+       ${pkgsHtml()}
+       <p class="hint" style="margin-top:10px">${me.sub_plan === "prova" ? "Per continuare dopo la prova" : "Per rinnovare"} scegli un pacchetto e mettiti d'accordo con il coach per il pagamento: il nuovo periodo parte dal giorno dopo la scadenza attuale.</p>
+       <div>${msgBtn(S, TODAY, me.id)}</div>`
     : subBloccoHtml().replace('class="card subblock"', 'class="subblock"');
 }
 function avvisoScadenza(){
   const g = subGiorni();
+  if (subOk() && me.role !== "coach" && me.sub_plan === "prova") return `<div class="card subblock" style="border-color:var(--sun)">
+    <div class="sub">Prova gratuita</div>
+    <h3>${g === 0 ? "Scade oggi" : `Attiva fino al ${dataLunga(me.sub_until)}`}</h3>
+    <p style="margin-top:6px">Dal giorno dopo programma, proposte del coach, commenti e WOD si sospendono. Per continuare scegli un pacchetto e mettiti d'accordo con il coach per il pagamento.</p>
+    ${pkgsHtml()}
+    <p class="sub" style="margin-top:8px">I servizi inclusi li trovi in Profilo → Abbonamento.</p>
+    <div style="margin-top:6px">${msgBtn(S, TODAY, me.id)}</div></div>`;
   return subOk() && me.role !== "coach" && g !== null && g <= 7
     ? `<div class="note-box" style="margin-top:14px">Il tuo abbonamento scade ${g === 0 ? "oggi" : g === 1 ? "domani" : `tra ${g} giorni`} (${dataLunga(me.sub_until)}). Per rinnovarlo mettiti d'accordo con il coach.</div>` : "";
 }
