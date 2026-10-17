@@ -476,7 +476,7 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid #
 <div id="sheet-root"></div>
 
 <script>
-const APP_VERSION = "2026-10-13 · 41";
+const APP_VERSION = "2026-10-17 · 42";
 const PRIVACY_VERSION = "2026-10-02";          // da cambiare quando cambia l'informativa: il consenso viene richiesto di nuovo
 const PRIVACY_EMAIL = "info@cozzuscoach.it";
 const sb = supabase.createClient("https://pnoxjvssvtusjvbwpkkh.supabase.co","sb_publishable_ol7Ds9jbamCSwpNpGEPT9Q_ZZvxNHy3");
@@ -1428,7 +1428,7 @@ async function openAthlete(a){
   const D = await fetchAthlete(a.id);
   $("detail-race").innerHTML = raceHero(nextRace(D.races), false);
   renderDiary(D, $("detail-diary"), false);
-  CUR = { a, D }; renderMsgCoach(); renderSubCoach(); await renderPlanRequests(); await renderAdjustments(); await renderCoachPlan();
+  CUR = { a, D }; renderMsgCoach(); renderSubCoach(); await renderCoachZones(); await renderPlanRequests(); await renderAdjustments(); await renderCoachPlan();
 }
 $("back").onclick = loadCoach;
 $("ex-tog").onclick = () => { EX_OPEN = !EX_OPEN; renderEx(); };
@@ -2373,6 +2373,50 @@ async function zoneStoria(athleteId){
   const cur = {}, prev = {};
   (data||[]).forEach(z => { if (!cur[z.code]) cur[z.code] = z; else if (!prev[z.code] && z.valid_from !== cur[z.code].valid_from) prev[z.code] = z; });
   return { cur, prev };
+}
+
+/* ---------- COACH: RITMI DELL'ATLETA ---------- */
+async function renderCoachZones(){
+  const { a } = CUR;
+  let box = $("detail-zones");
+  if (!box){
+    box = document.createElement("div");
+    box.id = "detail-zones";
+    const dopo = $("detail-adj") || $("detail-diary");
+    dopo.parentNode.insertBefore(box, dopo);
+  }
+  const { cur, prev } = await zoneStoria(a.id);
+  const codici = ["R","E","M","T","RG","I"].filter(c => cur[c]);
+  if (!codici.length){
+    box.innerHTML = `<h2>Ritmi</h2><div class="card"><div class="hint">Nessuna zona impostata per ${esc(a.full_name.split(" ")[0])}.</div></div>`;
+    return;
+  }
+  const dal = cur[codici[0]].valid_from;
+  const perche = cur[codici[0]].reason;
+  const righe = codici.map(c => {
+    const z = cur[c], p = prev[c];
+    const d = p ? Math.round(((z.pace_min_s + z.pace_max_s) - (p.pace_min_s + p.pace_max_s)) / 2) : 0;
+    const delta = !p || d === 0 ? ""
+      : `<span class="tag" style="background:${d < 0 ? "var(--foam)" : "#FCEBD0"};color:${d < 0 ? "var(--sea)" : "#8A5510"}">${d < 0 ? "−" : "+"}${Math.abs(d)}"</span>`;
+    return `<tr>
+      <td style="font:700 15px var(--cond)">${ZNAMES[c] || c}</td>
+      <td style="white-space:nowrap">${pace(z.pace_min_s)}–${pace(z.pace_max_s)}</td>
+      <td style="white-space:nowrap;color:#5b6b70">${z.hr_min ? z.hr_min + "–" + z.hr_max : "—"}</td>
+      <td style="text-align:right">${delta}</td>
+    </tr>`;
+  }).join("");
+  box.innerHTML = `<h2>Ritmi</h2>
+    <div class="card">
+      <div class="dh"><b style="font:700 20px var(--cond)">Zone in uso</b><span class="tag">dal ${dt(dal).toLocaleDateString("it-IT")}</span></div>
+      <table style="width:100%;border-collapse:collapse;margin-top:8px;font-size:15px">
+        <thead><tr style="color:#5b6b70;font-size:13px;text-align:left">
+          <th>Zona</th><th>Passo /km</th><th>FC</th><th style="text-align:right">vs prec.</th>
+        </tr></thead>
+        <tbody>${righe}</tbody>
+      </table>
+      ${perche ? `<div class="hint" style="margin-top:8px">${esc(perche)}</div>` : ""}
+      <div class="hint">La colonna a destra confronta con la versione precedente delle zone: valore negativo significa ritmi più veloci.</div>
+    </div>`;
 }
 
 /* ---------- COACH: PROPOSTE DI ADATTAMENTO ---------- */
