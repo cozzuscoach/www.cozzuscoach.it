@@ -476,7 +476,7 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid #
 <div id="sheet-root"></div>
 
 <script>
-const APP_VERSION = "2026-10-17 · 43";
+const APP_VERSION = "2026-10-17 · 44";
 const PRIVACY_VERSION = "2026-10-02";          // da cambiare quando cambia l'informativa: il consenso viene richiesto di nuovo
 const PRIVACY_EMAIL = "info@cozzuscoach.it";
 const sb = supabase.createClient("https://pnoxjvssvtusjvbwpkkh.supabase.co","sb_publishable_ol7Ds9jbamCSwpNpGEPT9Q_ZZvxNHy3");
@@ -2347,8 +2347,13 @@ async function avvisaAtleta(athlete_id, title, body){
 function variantiRitmo(min, max){
   const c = x => `${Math.floor(x/60)}:${String(Math.round(x%60)).padStart(2,"0")}`, out = [];
   for (const [a,b] of [[pace(min), pace(max)], [c(min), c(max)]])
-    for (const sep of ["-","–"," - "," – "]) out.push(a + sep + b);
+    for (const sep of ["-","–","—"," - "," – "]) out.push(a + sep + b);
   return out;
+}
+// un singolo ritmo, in tutte le grafie usate nei programmi: 5'58" · 5'58 · 5:58
+function variantiSingolo(s){
+  const m = Math.floor(s/60), x = String(Math.round(s%60)).padStart(2,"0");
+  return [`${m}'${x}"`, `${m}'${x}’`.replace("’",""), `${m}:${x}`].filter((v,i,a) => a.indexOf(v) === i);
 }
 async function riscriviRitmi(athleteId, vecchie, nuove){
   const codici = Object.keys(nuove).filter(k => vecchie[k] && nuove[k] &&
@@ -2356,13 +2361,31 @@ async function riscriviRitmi(athleteId, vecchie, nuove){
   if (!codici.length) return 0;
   const { data: fut } = await sb.from("planned_sessions").select("id,description")
     .eq("athlete_id", athleteId).eq("is_current", true).gte("session_date", TODAY);
+  // valori singoli: min, max e media di ciascuna zona. Si sostituisce solo
+  // ciò che appartiene a una zona sola, per non scambiare una zona con un'altra.
+  const mid = z => Math.round((z.pace_min_s + z.pace_max_s) / 2);
+  const conta = {};
+  const singoli = [];
+  codici.forEach(k => {
+    [["pace_min_s", vecchie[k].pace_min_s, nuove[k].pace_min_s],
+     ["pace_max_s", vecchie[k].pace_max_s, nuove[k].pace_max_s],
+     ["mid",        mid(vecchie[k]),       mid(nuove[k])]].forEach(([ruolo, da, a]) => {
+      if (!da || !a || da === a) return;
+      variantiSingolo(da).forEach(v => { conta[v] = (conta[v] || 0) + 1; singoli.push({ v, a, k, ruolo }); });
+    });
+  });
+  const unici = singoli.filter(x => conta[x.v] === 1).sort((p, q) => q.v.length - p.v.length);
+
   let n = 0;
   for (const x of fut || []){
     if (!x.description) continue;
     let d = x.description;
-    // prima segnaposto, poi i valori nuovi: così una zona non viene scambiata con un'altra
+    // prima le coppie, con segnaposto, così una zona non viene scambiata con un'altra
     codici.forEach(k => variantiRitmo(vecchie[k].pace_min_s, vecchie[k].pace_max_s).forEach(v => { d = d.split(v).join(`§${k}§`); }));
     codici.forEach(k => { d = d.split(`§${k}§`).join(`${pace(nuove[k].pace_min_s)}-${pace(nuove[k].pace_max_s)}`); });
+    // poi i ritmi singoli, dal più lungo al più corto
+    unici.forEach((u, i) => { d = d.split(u.v).join(`§s${i}§`); });
+    unici.forEach((u, i) => { d = d.split(`§s${i}§`).join(pace(u.a)); });
     if (d !== x.description){ const r = await sb.from("planned_sessions").update({ description: d }).eq("id", x.id); if (!r.error) n++; }
   }
   return n;
@@ -2420,8 +2443,19 @@ async function renderCoachZones(){
       ${perche ? `<div class="hint" style="margin-top:8px">${esc(perche)}</div>` : ""}
       <div class="hint">La colonna a destra confronta con la versione precedente delle zone: valore negativo significa ritmi più veloci.${gKm ? ` Il ritmo gara è calcolato sulla distanza della gara obiettivo (${String(gKm).replace(".", ",")} km).` : ""}</div>
       <button class="btn soft full" id="z-edit" style="margin-top:10px">Correggi i ritmi</button>
+      ${prev[codici[0]] ? `<button class="link" id="z-sync" style="margin-top:10px">Riallinea i ritmi scritti nelle sedute future</button>` : ""}
+      <div class="msg" id="z-msg"></div>
     </div>`;
   $("z-edit").onclick = () => sheetZone(cur);
+  if ($("z-sync")) $("z-sync").onclick = async () => {
+    const m = $("z-msg"); m.className = "msg"; m.textContent = "Controllo in corso…";
+    const n = await riscriviRitmi(a.id, prev, cur);
+    m.className = n ? "msg ok" : "msg";
+    m.textContent = n ? `Ritmi riscritti in ${n} ${n === 1 ? "seduta" : "sedute"}.`
+                      : "Nessun ritmo da sostituire: i testi contengono valori che non corrispondono alle zone precedenti.";
+    if (n){ await renderCoachPlan(); await avvisaAtleta(a.id, "Ritmi aggiornati",
+      "Ho rivisto i tuoi ritmi di allenamento: trovi i valori nuovi nelle prossime sedute."); }
+  };
 }
 
 // Correzione manuale delle zone, con riscrittura dei ritmi nelle sedute future
