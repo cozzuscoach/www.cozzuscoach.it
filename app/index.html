@@ -3177,11 +3177,15 @@ async function sheetMessaggi(day, athleteId){
     <div class="field" style="margin-top:12px"><textarea id="ms-txt" rows="3" maxlength="2000" placeholder="${coach ? "Scrivi all'atleta" : "Scrivi al coach"}"></textarea></div>
     <button class="btn primary full" id="ms-send">Invia</button><div id="f-msg" class="msg"></div>`, async () => {
     paint();
-    const daLeggere = msgsDi(D, day).filter(m => m.author_id !== me.id && !m.read_at);
-    if (daLeggere.length){
-      const now = new Date().toISOString();
-      const { error } = await sb.from("session_messages").update({ read_at: now }).in("id", daLeggere.map(m => m.id));
-      if (!error){ daLeggere.forEach(m => m.read_at = now); aggiornaMessaggi(); }
+    // segna come letti direttamente nel database (non dalla copia locale, che può essere vecchia)
+    const now = new Date().toISOString();
+    const { data: letti, error } = await sb.from("session_messages").update({ read_at: now })
+      .eq("athlete_id", athleteId).eq("day", day).neq("author_id", me.id).is("read_at", null).select("id");
+    if (error){ $("f-msg").className = "msg err"; $("f-msg").textContent = "Lettura non salvata: " + error.message; }
+    else if (letti?.length){
+      const ids = new Set(letti.map(l => l.id));
+      (D.msgs || []).forEach(m => { if (ids.has(m.id)) m.read_at = now; });
+      aggiornaMessaggi();
     }
     $("ms-send").onclick = async () => {
       const body = $("ms-txt").value.trim(); if (!body) return;
