@@ -464,6 +464,7 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid #
       <div id="detail-sub"></div>
       <div id="detail-race" style="margin-top:12px"></div>
       <div id="detail-req"></div>
+      <div id="detail-dol"></div>
       <div id="detail-msg"></div>
       <div id="detail-adj"></div>
       <div id="detail-plan"></div>
@@ -1399,7 +1400,7 @@ async function loadCoach(){
     sb.from("workouts").select("athlete_id,day").in("athlete_id",ids).order("day",{ascending:false}),
     sb.from("adjustments").select("athlete_id,severity").in("athlete_id",ids).eq("status","in_attesa"),
     sb.from("plan_requests").select("athlete_id").in("athlete_id",ids).eq("status","nuova"),
-    sb.from("feedback").select("athlete_id").in("athlete_id",ids).eq("caso","dolore").gte("day",addDays(TODAY,-2)),
+    sb.from("feedback").select("athlete_id").in("athlete_id",ids).eq("caso","dolore").is("handled_at",null).gte("day",addDays(TODAY,-2)),
     sb.from("session_messages").select("athlete_id").in("athlete_id",ids).neq("author_id",me.id).is("read_at",null)
   ]);
   const msgCount = {}; (nmsg||[]).forEach(m => { msgCount[m.athlete_id] = (msgCount[m.athlete_id]||0) + 1; });
@@ -1428,7 +1429,7 @@ async function openAthlete(a){
   const D = await fetchAthlete(a.id);
   $("detail-race").innerHTML = raceHero(nextRace(D.races), false);
   renderDiary(D, $("detail-diary"), false);
-  CUR = { a, D }; renderMsgCoach(); renderSubCoach(); await renderCoachZones(); await renderPlanRequests(); await renderAdjustments(); await renderCoachPlan();
+  CUR = { a, D }; renderDolore(); renderMsgCoach(); renderSubCoach(); await renderCoachZones(); await renderPlanRequests(); await renderAdjustments(); await renderCoachPlan();
 }
 $("back").onclick = loadCoach;
 $("ex-tog").onclick = () => { EX_OPEN = !EX_OPEN; renderEx(); };
@@ -3198,6 +3199,20 @@ async function sheetMessaggi(day, athleteId){
       else sb.functions.invoke("daily-push", { body: { msg: { day, text: body.slice(0, 200) } } }).catch(() => {});
     };
   });
+}
+/* dolore segnalato dall'atleta: resta finché il coach non lo segna come gestito */
+async function renderDolore(){
+  const box = $("detail-dol"); if (!box || !CUR?.a) return;
+  const { data } = await sb.from("feedback").select("id,day,body").eq("athlete_id", CUR.a.id).eq("caso","dolore").is("handled_at", null).order("created_at",{ascending:false});
+  if (!data?.length){ box.innerHTML = ""; return; }
+  box.innerHTML = `<h2>Dolore segnalato</h2><div class="card">${data.map(f => { const p = dayParts(f.day);
+      return `<div class="dentry"><div class="dh"><b>${p.W} ${p.n} ${p.m}</b></div><p class="note" style="font-style:normal">${esc(f.body || "")}</p></div>`; }).join("")}
+    <div class="actions"><button class="btn primary" id="dol-ok">Segna come gestito</button></div><div class="msg" id="dol-msg"></div></div>`;
+  $("dol-ok").onclick = async () => {
+    const { error } = await sb.from("feedback").update({ handled_at: new Date().toISOString() }).eq("athlete_id", CUR.a.id).eq("caso","dolore").is("handled_at", null);
+    if (error){ $("dol-msg").className = "msg err"; $("dol-msg").textContent = "Non salvato: " + error.message; return; }
+    renderDolore();
+  };
 }
 function renderMsgCoach(){
   const box = $("detail-msg"); if (!box || !CUR?.D) return;
