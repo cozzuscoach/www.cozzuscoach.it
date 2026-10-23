@@ -3711,6 +3711,8 @@ function sheetSub(){
         await sb.from("planned_sessions").update({ is_current: true }).in("id", hid.map(x => x.id));
         await sb.from("hidden_sessions_backup").delete().eq("athlete_id", a.id);
       }
+      // il programma sospeso dalla scadenza torna pubblicato
+      await sb.from("plans").update({ status: "pubblicato" }).eq("athlete_id", a.id).eq("status", "scaduto");
       if ($("sb-avv").checked) avvisaAtleta(a.id, "Abbonamento attivo", `Il tuo abbonamento Cozzu's Coach è attivo fino al ${dataLunga(nuova)}. Buon allenamento!`);
       closeSheet(); renderSubCoach(); renderCoachPlan();
     };
