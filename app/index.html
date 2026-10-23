@@ -352,6 +352,7 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid #
       <div class="week" id="week"></div>
       <div id="today-card"></div>
       <div id="pillola"></div>
+      <div id="progresso"></div>
       <div id="recap-card"></div>
       <div class="card" id="morning-card"></div>
     </section>
@@ -578,7 +579,7 @@ async function fetchAthlete(id){
   return {
     races: races.data||[], sessions: sessions.data||[],
     workouts: (workouts.data||[]).map(w => ({ ...w, blocks: (blocks||[]).filter(b => b.workout_id === w.id), feedback: (fb||[]).find(f => f.workout_id === w.id) || null, shoe_name: SH.find(x => x.id === w.shoe_id)?.name || null })),
-    checkins: (checkins.data||[]).map(c => ({...ex[c.day], ...c})), zones: zmap, plan, msgs: msgs||[], shoes: SH, skips: skips||[]
+    checkins: (checkins.data||[]).map(c => ({...ex[c.day], ...c})), zones: zmap, zonesAll: zones.data||[], plan, msgs: msgs||[], shoes: SH, skips: skips||[]
   };
 }
 const nextRace = races => { const f = races.filter(r => r.race_date >= TODAY); return f.find(r => r.priority==="A") || f[0] || null; };
@@ -631,8 +632,37 @@ async function renderPillola(){
          <p style="margin-top:8px">${esc(PILLOLA.body)}</p></div>`
     : "";
 }
+/* Progresso: km settimanali delle ultime 8 settimane, andamento del passo di soglia, ultime gare */
+function renderProgresso(){
+  const box = $("progresso"); if (!box || !S) return;
+  const lun = d => addDays(d, -((dt(d).getDay() + 6) % 7));
+  const oggiLun = lun(TODAY);
+  const settimane = Array.from({ length: 8 }, (_, i) => addDays(oggiLun, -7 * (7 - i)));
+  const km = settimane.map(l => (S.workouts || []).filter(w => (w.sport || "corsa") === "corsa" && w.day >= l && w.day < addDays(l, 7))
+    .reduce((t, w) => t + (+w.distance_km || 0), 0));
+  const max = Math.max(1, ...km);
+  const barre = km.map((k, i) => `<div style="flex:1;text-align:center">
+      <div style="height:90px;display:flex;align-items:flex-end"><div style="width:100%;height:${Math.round(k / max * 100)}%;min-height:${k ? 3 : 0}px;background:var(--sea);border-radius:4px 4px 0 0"></div></div>
+      <div class="sub" style="font-size:11px;margin-top:4px">${k ? Math.round(k) : "–"}</div>
+      <div class="sub" style="font-size:10px">${dayParts(settimane[i]).n} ${dayParts(settimane[i]).m}</div></div>`).join("");
+
+  const soglia = (S.zonesAll || []).filter(z => z.code === "T").sort((a, b) => String(a.valid_from).localeCompare(String(b.valid_from)));
+  const storico = soglia.length ? `<div class="sub" style="margin-top:14px">Passo di soglia nel tempo</div>` + soglia.map(z =>
+      `<div class="dentry" style="display:flex;justify-content:space-between"><span>dal ${dayParts(z.valid_from).n} ${dayParts(z.valid_from).m}</span><b>${pace(z.pace_min_s)}–${pace(z.pace_max_s)}/km</b></div>`).join("") : "";
+
+  const gare = (S.races || []).filter(r => r.result_time_s && r.race_date < TODAY).slice(-3).reverse();
+  const risultati = gare.length ? `<div class="sub" style="margin-top:14px">Ultime gare</div>` + gare.map(r => {
+      const t = Math.round(r.result_time_s), h = Math.floor(t / 3600), m = Math.floor(t % 3600 / 60), s = t % 60;
+      return `<div class="dentry" style="display:flex;justify-content:space-between"><span>${esc(r.name)}</span><b>${h ? h + "h" : ""}${String(m).padStart(2, "0")}'${String(s).padStart(2, "0")}"</b></div>`; }).join("") : "";
+
+  box.innerHTML = `<div class="card"><div class="sub" style="font-weight:700;letter-spacing:.06em;text-transform:uppercase">I tuoi progressi</div>
+      <h3 style="margin-top:6px">Chilometri a settimana</h3>
+      <div style="display:flex;gap:6px;margin-top:10px">${barre}</div>
+      ${storico}${risultati}</div>`;
+}
 function renderHome(){
   renderPillola();
+  renderProgresso();
   $("race-hero").innerHTML = raceHero(nextRace(S.races), true);
   if (!subOk()){ $("week").innerHTML = ""; $("today-card").innerHTML = subBloccoHtml(); renderMorning(); return; }
   // settimana lun-dom
