@@ -610,15 +610,18 @@ function raceHero(race, editable){
   </div>`;
 }
 
-/* "Lo sai?": la pillola più recente già pubblicata (publish_date <= oggi), caricata una volta */
-let PILLOLA;
+/* "Lo sai?": una pillola a caso tra quelle già pubblicate (publish_date <= oggi), scelta a ogni apertura dell'app */
+let PILLOLE, PILLOLA;
 async function renderPillola(){
   const box = $("pillola"); if (!box) return;
   if (PILLOLA === undefined){
     try {
-      const { data } = await sb.from("posts").select("id,title,body,category,publish_date")
-        .lte("publish_date", TODAY).order("publish_date", { ascending: false }).limit(1);
-      PILLOLA = data?.[0] || null;
+      if (PILLOLE === undefined){
+        const { data } = await sb.from("posts").select("id,title,body,category,publish_date")
+          .lte("publish_date", TODAY).limit(200);
+        PILLOLE = data || [];
+      }
+      PILLOLA = PILLOLE.length ? PILLOLE[Math.floor(Math.random() * PILLOLE.length)] : null;
     } catch (_) { PILLOLA = null; }
   }
   box.innerHTML = PILLOLA
