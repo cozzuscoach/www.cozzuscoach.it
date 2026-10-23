@@ -351,6 +351,7 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid #
       <div id="race-hero"></div>
       <div class="week" id="week"></div>
       <div id="today-card"></div>
+      <div id="pillola"></div>
       <div id="recap-card"></div>
       <div class="card" id="morning-card"></div>
     </section>
@@ -609,7 +610,23 @@ function raceHero(race, editable){
   </div>`;
 }
 
+/* "Lo sai?": la pillola più recente già pubblicata (publish_date <= oggi), caricata una volta */
+let PILLOLA;
+async function renderPillola(){
+  const box = $("pillola"); if (!box) return;
+  if (PILLOLA === undefined){
+    try {
+      const { data } = await sb.from("posts").select("id,title,body,category,publish_date")
+        .lte("publish_date", TODAY).order("publish_date", { ascending: false }).limit(1);
+      PILLOLA = data?.[0] || null;
+    } catch (_) { PILLOLA = null; }
+  }
+  box.innerHTML = PILLOLA
+    ? `<div class="card"><div class="sub">Lo sai? · ${esc(PILLOLA.category)}</div><h3>${esc(PILLOLA.title)}</h3><p style="margin-top:6px">${esc(PILLOLA.body)}</p></div>`
+    : "";
+}
 function renderHome(){
+  renderPillola();
   $("race-hero").innerHTML = raceHero(nextRace(S.races), true);
   if (!subOk()){ $("week").innerHTML = ""; $("today-card").innerHTML = subBloccoHtml(); renderMorning(); return; }
   // settimana lun-dom
