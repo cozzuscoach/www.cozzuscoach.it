@@ -625,7 +625,10 @@ async function renderPillola(){
     } catch (_) { PILLOLA = null; }
   }
   box.innerHTML = PILLOLA
-    ? `<div class="card"><div class="sub">Lo sai? · ${esc(PILLOLA.category)}</div><h3>${esc(PILLOLA.title)}</h3><p style="margin-top:6px">${esc(PILLOLA.body)}</p></div>`
+    ? `<div class="card" style="background:var(--foam);border-left:6px solid var(--sea)">
+         <div style="font:700 13px var(--cond);letter-spacing:.08em;text-transform:uppercase;color:var(--sea)">💡 Lo sai? · ${esc(PILLOLA.category)}</div>
+         <h3 style="margin-top:6px;font-size:22px">${esc(PILLOLA.title)}</h3>
+         <p style="margin-top:8px">${esc(PILLOLA.body)}</p></div>`
     : "";
 }
 function renderHome(){
