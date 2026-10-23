@@ -3705,6 +3705,12 @@ function sheetSub(){
       $("sb-save").disabled = false;
       if (r2.error){ $("f-msg").className = "msg err"; $("f-msg").textContent = r2.error.message; return; }
       a.sub_until = nuova; a.sub_plan = pkg;
+      // riattiva le sedute nascoste alla scadenza (vedi hidden_sessions_backup)
+      const { data: hid } = await sb.from("hidden_sessions_backup").select("id").eq("athlete_id", a.id);
+      if (hid?.length){
+        await sb.from("planned_sessions").update({ is_current: true }).in("id", hid.map(x => x.id));
+        await sb.from("hidden_sessions_backup").delete().eq("athlete_id", a.id);
+      }
       if ($("sb-avv").checked) avvisaAtleta(a.id, "Abbonamento attivo", `Il tuo abbonamento Cozzu's Coach è attivo fino al ${dataLunga(nuova)}. Buon allenamento!`);
       closeSheet(); renderSubCoach(); renderCoachPlan();
     };
