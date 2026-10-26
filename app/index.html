@@ -485,6 +485,7 @@ const PRIVACY_EMAIL = "info@cozzuscoach.it";
 const sb = supabase.createClient("https://pnoxjvssvtusjvbwpkkh.supabase.co","sb_publishable_ol7Ds9jbamCSwpNpGEPT9Q_ZZvxNHy3");
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const descHtml = s => esc(s).replace(/^(MATTINA:|SERA:)/gm, "<b>$1</b>");
 const iso = d => { const x = new Date(d); x.setMinutes(x.getMinutes() - x.getTimezoneOffset()); return x.toISOString().slice(0,10); };
 const TODAY = iso(new Date());
 const dt = s => new Date(s + "T12:00:00");
@@ -762,12 +763,11 @@ function renderPlan(){
       <div class="card" style="margin-top:0">${groups[m].map(s => {
         const d = dayParts(s.session_date), done = S.workouts.some(w => w.day===s.session_date && (w.sport||"corsa")==="corsa");
         const sk = !done && skipDi(S, s.session_date), aperta = !done && !sk && s.type !== "riposo" && s.session_date < TODAY && s.session_date >= addDays(TODAY,-7);
-        const [purpose, ...rest] = (s.description||"").split("\n");
+        const purpose = "";
         return `<div class="pday ${s.session_date<TODAY?"past":""} ${s.session_date===TODAY?"is-today":""}">
           <div class="d">${d.n}<span>${d.w}</span></div>
           <div><div class="t">${esc(s.title)} ${done?'<span class="tag done">Fatto</span>':sk?'<span class="tag rest">Non fatta</span>':QUALITY.includes(s.type)?'<span class="tag q">Qualità</span>':""}</div>
-          ${rest.length?`<div class="sub" style="white-space:pre-line">${esc(rest.join("\n"))}</div>`:""}
-          ${purpose?`<div class="purpose">${esc(purpose)}</div>`:""}
+          ${s.description?`<div class="sub" style="white-space:pre-line">${descHtml(s.description)}</div>`:""}
           ${s.coach_note?`<div class="sub" style="margin-top:6px;color:#8A5510"><b>Coach:</b> ${esc(s.coach_note)}</div>`:""}
           ${s.edited_by_coach?`<span class="tag" style="margin-top:6px">aggiornata dal coach</span>`:""}
           ${aperta ? `<div class="hint" style="margin-top:4px">Non registrata: <button class="link" data-open="workout" data-session="${s.id}">l'ho fatta</button> · <button class="link" data-skip="${s.session_date}">non l'ho fatta</button></div>` : ""}
@@ -2270,7 +2270,7 @@ async function renderCoachPlan(){
       <div class="card" style="margin-top:0">${groups[m].map(x => { const d = dayParts(x.session_date);
         return `<div class="pday"><div class="d">${d.n}<span>${d.w}</span></div><div>
           <div class="t">${esc(x.title)} ${QUALITY.includes(x.type)?'<span class="tag q">Qualità</span>':""} ${x.edited_by_coach?'<span class="tag">modificata</span>':""}</div>
-          <div class="sub" style="white-space:pre-line">${esc(x.description||"")}</div>
+          <div class="sub" style="white-space:pre-line">${descHtml(x.description||"")}</div>
           ${x.coach_note?`<div class="sub" style="color:#8A5510"><b>Nota:</b> ${esc(x.coach_note)}</div>`:""}
           <button class="link" data-cs="${x.id}" style="margin-top:4px">Modifica</button>
           <div>${msgBtn(CUR.D, x.session_date, CUR.a.id)}</div></div></div>`; }).join("")}</div>`; }).join("")}`;
@@ -2301,7 +2301,7 @@ async function renderCoachPlan(){
 }
 function sheetCoachSession(x){
   const isNew = !x; x = x || { session_date: TODAY, type:"lento", title:"", description:"", target_km:"" };
-  const [purpose, ...rest] = (x.description||"").split("\n");
+  const purpose = "", rest = [x.description||""];
   openSheet(`<h3>${isNew?"Nuova seduta":"Modifica seduta"}</h3>
     <div class="g2"><div class="field"><label for="cs-d">Data</label><input id="cs-d" type="date" value="${x.session_date}"></div>
     <div class="field"><label for="cs-t">Tipo</label><select id="cs-t">${Object.entries(TYPES).map(([k,v])=>`<option value="${k}" ${x.type===k?"selected":""}>${v}</option>`).join("")}</select></div></div>
