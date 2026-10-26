@@ -2270,7 +2270,7 @@ async function renderCoachPlan(){
       <div class="card" style="margin-top:0">${groups[m].map(x => { const d = dayParts(x.session_date);
         return `<div class="pday"><div class="d">${d.n}<span>${d.w}</span></div><div>
           <div class="t">${esc(x.title)} ${QUALITY.includes(x.type)?'<span class="tag q">Qualità</span>':""} ${x.edited_by_coach?'<span class="tag">modificata</span>':""}</div>
-          <div class="sub" style="white-space:pre-line">${esc((x.description||"").split("\n").slice(1).join("\n"))}</div>
+          <div class="sub" style="white-space:pre-line">${esc(x.description||"")}</div>
           ${x.coach_note?`<div class="sub" style="color:#8A5510"><b>Nota:</b> ${esc(x.coach_note)}</div>`:""}
           <button class="link" data-cs="${x.id}" style="margin-top:4px">Modifica</button>
           <div>${msgBtn(CUR.D, x.session_date, CUR.a.id)}</div></div></div>`; }).join("")}</div>`; }).join("")}`;
