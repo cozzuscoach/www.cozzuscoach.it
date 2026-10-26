@@ -702,7 +702,7 @@ function renderHome(){
     html = `<div class="card session">
       <div class="head"><div><div class="sub">Oggi</div><h3>${esc(ses.title)}</h3></div>
       <span class="tag ${done?"done":saltata||rest?"rest":isQ?"q":""}">${done?"Fatto":saltata?"Non fatta":TYPES[ses.type]}</span></div>
-      ${ses.description?(()=>{const [pp,...rr]=ses.description.split("\n");return `${rr.length?`<div class="desc">${esc(rr.join("\n"))}</div>`:""}<div class="purpose">${esc(pp)}</div>`;})():""}
+      ${ses.description?`<div class="desc" style="white-space:pre-line">${descHtml(ses.description)}</div>`:""}
       ${zoneChips(ses)}
       ${ses.strength_note?`<p class="sub" style="margin-top:10px">Forza: ${esc(ses.strength_note)}</p>`:""}
       ${ses.coach_note?`<div class="coachnote" style="margin-top:10px"><b>Nota del coach</b><p>${esc(ses.coach_note)}</p></div>`:""}
