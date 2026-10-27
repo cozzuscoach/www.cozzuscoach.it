@@ -734,7 +734,7 @@ function renderMorning(){
 
 function zoneChips(ses){
   const codes = new Set();
-  (ses.structure||[]).forEach(b => b.zone && codes.add(b.zone));
+  (Array.isArray(ses.structure) ? ses.structure : []).forEach(b => b.zone && codes.add(b.zone));
   if (!codes.size) return "";
   return `<div class="zones">${[...codes].map(c => { const z=S.zones?.[c];
     return `<div class="zone"><b>${ZNAMES[c]||c}</b>${z?`${pace(z.pace_min_s)}–${pace(z.pace_max_s)}/km${z.hr_min?` · FC ${z.hr_min}-${z.hr_max}`:""}`:""}</div>`; }).join("")}</div>`;
