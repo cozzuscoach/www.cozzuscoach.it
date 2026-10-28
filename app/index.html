@@ -3474,7 +3474,7 @@ function wodRiga(w, coach){
       ${coach ? `<button class="link" data-wedit="${w.id}">Modifica</button>` : ""}</div></div>`;
 }
 function sheetWodEdit(w){
-  const nuovo = !w; w = w || { title:"", district:"core", duration_min:15, intensity:"medio", equipment:["corpo libero"], youtube_url:"", exercises:"", active:true };
+  const nuovo = !w; w = w || { title:"", district:"core", duration_min:15, intensity:"medio", caricoecc:"medio", equipment:["corpo libero"], youtube_url:"", exercises:"", active:true };
   let attr = [...(w.equipment || [])];
   openSheet(`<h3>${nuovo ? "Nuovo WOD" : "Modifica WOD"}</h3>
     <div class="field"><label for="wd-u">Link YouTube</label><input id="wd-u" type="url" value="${esc(w.youtube_url)}" placeholder="https://youtu.be/…">
@@ -3484,6 +3484,7 @@ function sheetWodEdit(w){
       <div class="field"><label for="wd-m">Durata (minuti)</label><input id="wd-m" type="number" inputmode="numeric" value="${w.duration_min}"></div></div>
     <div class="field"><label for="wd-i">Intensità</label><select id="wd-i">${INTENS_WOD.map(([v,l]) => `<option value="${v}" ${w.intensity===v?"selected":""}>${l}</option>`).join("")}</select>
       <div class="hint">Leggero: si può fare anche il giorno prima di una qualità. Intenso: solo nei giorni duri o lontano dalle sedute importanti. La pliometria segue le regole delle gambe; lo stretching viene proposto solo se leggero quando l'atleta ha segnalato un dolore.</div></div>
+    <div class="field"><label for="wd-c">Carico eccentrico</label><select id="wd-c">${[["alto","Alto: bulgarian, stacchi rumeni, affondi in camminata, nordic, step-down"],["medio","Medio: squat, affondi statici, hip thrust, circuiti con manubri"],["basso","Basso: pliometria, salti, sprint, isometrici, core, upper, mobilità"]].map(([v,l]) => `<option value="${v}" ${(w.caricoecc||"medio")===v?"selected":""}>${l}</option>`).join("")}</select></div>
     <div class="field"><label>Attrezzatura</label><div class="chips sm" id="wd-a">${ATTR_WOD.map(([v,l]) => `<button type="button" class="chip" data-v="${v}" aria-pressed="${attr.includes(v)}">${l}</button>`).join("")}</div></div>
     <div class="field"><label for="wd-e">Esercizi (facoltativo)</label><textarea id="wd-e" rows="4" placeholder="Per chi preferisce leggere: un esercizio per riga">${esc(w.exercises)}</textarea></div>
     <label class="check field"><input id="wd-on" type="checkbox" ${w.active?"checked":""}> Attivo: può essere proposto agli atleti</label>
@@ -3497,7 +3498,7 @@ function sheetWodEdit(w){
       attr = attr.includes(v) ? attr.filter(x => x !== v) : [...attr, v]; c.setAttribute("aria-pressed", String(attr.includes(v))); });
     $("wd-save").onclick = async () => {
       const row = { title: $("wd-t").value.trim(), district: $("wd-d").value, duration_min: Math.max(1, +$("wd-m").value || 0),
-        intensity: $("wd-i").value, equipment: attr.length ? attr : ["corpo libero"], youtube_url: $("wd-u").value.trim(),
+        intensity: $("wd-i").value, caricoecc: $("wd-c").value, equipment: attr.length ? attr : ["corpo libero"], youtube_url: $("wd-u").value.trim(),
         exercises: $("wd-e").value.trim() || null, active: $("wd-on").checked };
       if (!row.title || !ytId(row.youtube_url)){ $("f-msg").className = "msg err"; $("f-msg").textContent = "Servono un titolo e un link YouTube valido."; return; }
       $("wd-save").disabled = true;
@@ -3512,56 +3513,86 @@ function sheetWodEdit(w){
 }
 
 /* ---------- atleta: proposta in base al programma ---------- */
+/* regola di assegnazione WOD v2: vedi contestoWod e sheetWod */
+const REC_ECC = { alto: 48, medio: 36, basso: 24 };   // ore di recupero dopo un carico eccentrico
+const GAMBE_WOD = ["leg","total","pliometria"];
+const duroT = t => t && (QUALITY.includes(t) || t.startsWith("lungo"));
+// ore fino alla prossima seduta dura (giorni interi, 24 per giorno); null se non c'è entro 7 giorni
+function oreProssimaDura(){
+  for (let n = 1; n <= 7; n++){
+    const s = S.sessions.find(x => x.session_date === addDays(TODAY, n));
+    if (duroT(s?.type)) return n * 24;
+  }
+  return null;
+}
+// WOD svolti negli ultimi 7 giorni (inclusi oggi), dalla libreria W
+function wodUltimi7(W){
+  const ids = S.workouts.filter(w => w.day >= addDays(TODAY, -6) && w.details?.wod_id).map(w => w.details.wod_id);
+  return ids.map(id => W.find(x => x.id === id)).filter(Boolean);
+}
 function contestoWod(){
-  const oggi = S.sessions.find(x => x.session_date === TODAY), dom = S.sessions.find(x => x.session_date === addDays(TODAY, 1));
+  const oggi = S.sessions.find(x => x.session_date === TODAY), dom = S.sessions.find(x => x.session_date === addDays(TODAY, 1)), dopo = S.sessions.find(x => x.session_date === addDays(TODAY, 2));
   const r = nextRace(S.races), giorniGara = r ? daysBetween(TODAY, r.race_date) : null;
+  const passata = (S.races.filter(x => x.race_date <= TODAY).map(x => daysBetween(x.race_date, TODAY)).sort((a, b) => a - b))[0] ?? null;
   const sett = (S.plan?.params?.weeks || []).find(w => w.mon === mondayOf(TODAY));
+  // dolore segnalato: il check-in non distingue ancora tra localizzato e diffuso
   const dolore = S.workouts.some(w => w.day >= addDays(TODAY, -3) && w.feedback?.caso === "dolore");
-  const duro = t => t && (QUALITY.includes(t) || t.startsWith("lungo"));
-  // intensità massima per le gambe e per il resto
-  let maxLeg = "intenso", maxAltro = "intenso", perche = "";
-  if (dolore){ maxLeg = null; maxAltro = "leggero"; perche = "Hai segnalato un fastidio negli ultimi giorni: niente gambe, solo lavori leggeri finché non ne parliamo."; }
+  // ecc: carichi eccentrici consentiti per i WOD di gambe; maxLeg/maxAltro: tetti di intensità
+  let maxLeg = "intenso", maxAltro = "intenso", ecc = ["alto","medio","basso"], perche = "";
+  if (dolore){ maxLeg = null; maxAltro = "leggero"; ecc = []; perche = "Hai segnalato un fastidio negli ultimi giorni: niente gambe, solo lavori leggeri finché non ne parliamo."; }
+  else if (passata !== null && passata <= 3){ maxLeg = null; maxAltro = "leggero"; ecc = []; perche = `Hai corso una gara ${passata === 0 ? "oggi" : passata === 1 ? "ieri" : `${passata} giorni fa`}: niente gambe, solo lavori leggeri.`; }
+  else if (passata !== null && passata <= 7){ maxLeg = "leggero"; maxAltro = "medio"; ecc = ["medio","basso"]; perche = `Gara di ${passata} giorni fa: gambe solo leggere, resto medio, niente carichi eccentrici alti.`; }
   else if (giorniGara !== null && giorniGara <= 7){ maxLeg = "leggero"; maxAltro = "leggero"; perche = `Mancano ${giorniGara} giorni alla gara: solo lavori leggeri, per arrivare freschi.`; }
   else if (sett?.phase === "taper"){ maxLeg = "leggero"; maxAltro = "medio"; perche = "Sei in settimana di scarico: forza leggera, il carico lo togliamo apposta."; }
-  else if (duro(dom?.type)){ maxLeg = "leggero"; perche = `Domani c'è ${esc((dom.title || "").toLowerCase())}: gambe solo leggere, per non arrivarci stanco.`; }
-  else if (duro(oggi?.type)){ perche = "Oggi è un giorno duro: puoi fare anche gambe intense, ma dopo la corsa. I giorni facili restano facili."; }
+  else if (duroT(dom?.type)){ maxLeg = "leggero"; perche = `Domani c'è ${esc((dom.title || "").toLowerCase())}: gambe solo leggere, per non arrivarci stanco.`; }
+  else if (duroT(dopo?.type)){ maxLeg = "medio"; ecc = ["basso","medio"]; perche = "Tra due giorni hai una seduta dura: gambe medie solo con carichi eccentrici bassi o medi."; }
+  else if (duroT(oggi?.type)){ maxLeg = "medio"; ecc = ["basso"]; perche = "Oggi è un giorno duro: gambe medie solo dopo la corsa, con carichi eccentrici bassi. Resto intenso."; }
   else if (sett?.recovery){ maxLeg = "medio"; maxAltro = "medio"; perche = "Settimana di recupero: forza senza esagerare."; }
-  else perche = "Nessuna seduta impegnativa vicina: puoi scegliere anche un lavoro intenso.";
-  return { maxLeg, maxAltro, perche };
+  else perche = "Nessuna seduta impegnativa entro 48 ore: puoi scegliere anche un lavoro intenso.";
+  return { maxLeg, maxAltro, ecc, perche, dolore, passata, oreDura: oreProssimaDura() };
 }
-async function caricaWods(){
-  if (S.wods) return S.wods;
-  const { data } = await sb.from("wods").select("*").eq("active", true);
-  S.wods = data || []; return S.wods;
-}
+
 async function sheetWod(){
   if (!subOk()) return;
   const W = await caricaWods(), C = contestoWod();
-  let distr = C.maxLeg ? "core" : "stretching", tempo = 30, attr = "casa", giro = 0;
+  let distr = "core", tempo = 30, attr = "casa", quando = "mattina", giro = 0;
   const ordine = ["leggero","medio","intenso"];
   const ok = (w, max) => max && ordine.indexOf(w.intensity) <= ordine.indexOf(max);
-  const fatti = new Set(S.workouts.filter(w => w.day >= addDays(TODAY, -14) && w.details?.wod_id).map(w => w.details.wod_id));
+  const recenti = wodUltimi7(W);
+  const gambeSett = recenti.filter(w => GAMBE_WOD.includes(w.district) && w.intensity !== "leggero").length;
+  const altoSett = recenti.filter(w => GAMBE_WOD.includes(w.district) && (w.caricoecc || "medio") === "alto").length;
+  // tetto settimanale: massimo 2 WOD gambe medi o intensi in 7 giorni; massimo 1 con carico eccentrico alto
+  const capSett = gambeSett >= 2;
+  const fatti = new Set(recenti.map(w => w.id));
   const paint = () => {
-    const max = ["leg","total","pliometria"].includes(distr) ? C.maxLeg
-      : distr === "tecnica" ? (C.maxLeg ? (C.maxAltro === "intenso" ? "medio" : C.maxAltro) : null)
-      : distr === "stretching" ? (C.maxLeg ? "intenso" : "leggero")
+    let maxLeg = capSett && C.maxLeg ? "leggero" : C.maxLeg;
+    const max = GAMBE_WOD.includes(distr) ? maxLeg
+      : distr === "tecnica" ? (maxLeg ? (C.maxAltro === "intenso" ? "medio" : C.maxAltro) : null)
+      : distr === "stretching" ? (maxLeg ? "intenso" : "leggero")
       : C.maxAltro;
+    const eccOk = w => GAMBE_WOD.includes(w.district) ? C.ecc.includes(w.caricoecc || "medio") : true;
+    const recOk = w => C.oreDura === null || C.oreDura >= REC_ECC[w.caricoecc || "medio"];
+    const altoOk = w => !(GAMBE_WOD.includes(w.district) && (w.caricoecc || "medio") === "alto" && altoSett >= 1);
     const base = W.filter(w => w.district === distr && w.duration_min <= tempo
       && (attr === "palestra" || (w.equipment||[]).every(e => attr === "libero" ? e === "corpo libero" : e !== "palestra")));
-    let L = base.filter(w => ok(w, max));
+    const sera = w => quando === "sera" && w.intensity === "intenso" && w.duration_min > 20;
+    let L = base.filter(w => ok(w, max) && eccOk(w) && recOk(w) && altoOk(w) && !sera(w));
     const nuovi = L.filter(w => !fatti.has(w.id)); if (nuovi.length) L = nuovi;
-    // a rotazione, prima i più intensi consentiti
     L.sort((a,b) => ordine.indexOf(b.intensity) - ordine.indexOf(a.intensity) || a.id - b.id);
     const scelti = L.length ? [L[giro % L.length], ...(L.length > 1 ? [L[(giro + 1) % L.length]] : [])] : [];
-    const bloccati = base.length && !L.length;
-    $("wo-out").innerHTML = !W.length ? `<div class="empty">Il coach sta preparando la libreria dei WOD: torna presto.</div>`
-      : !max ? `<div class="note-box">Oggi meglio evitarlo: scegli core, upper o stretching.</div>`
-      : !scelti.length ? `<div class="empty">${bloccati ? "Ci sono WOD per questi filtri, ma oggi sarebbero troppo intensi." : "Nessun WOD con questi filtri: prova più tempo o un'altra attrezzatura."}</div>`
+    const motivo = !W.length ? "" : !max ? "Oggi meglio evitarlo: scegli core, upper o stretching."
+      : capSett && GAMBE_WOD.includes(distr) ? "Hai già svolto 2 WOD gambe questa settimana: scegli upper, core o mobilità."
+      : GAMBE_WOD.includes(distr) && C.oreDura !== null && base.some(w => !recOk(w)) && !L.length ? "Il prossimo allenamento di qualità è troppo vicino per questi carichi: scegli un carico più leggero o core, upper o stretching."
+      : base.length && !L.length ? "Ci sono WOD per questi filtri, ma oggi sarebbero troppo intensi." : "";
+    $("wo-out").innerHTML = (quando === "sera" ? `<div class="note-box">Se ti alleni la sera, termina almeno 3 ore prima di coricarti.</div>` : "")
+      + (!W.length ? `<div class="empty">Il coach sta preparando la libreria dei WOD: torna presto.</div>`
+      : !max ? `<div class="note-box">${motivo}</div>`
+      : !scelti.length ? `<div class="empty">${motivo || (base.length ? "Ci sono WOD per questi filtri, ma oggi sarebbero troppo intensi." : "Nessun WOD con questi filtri: prova più tempo o un'altra attrezzatura.")}</div>`
       : scelti.map(w => `<div class="card" style="margin-top:10px">${wodRiga(w, false)}
           ${w.exercises ? `<details style="margin-top:8px"><summary class="link">Esercizi</summary><p style="white-space:pre-line;margin-top:6px">${esc(w.exercises)}</p></details>` : ""}
           <div class="actions"><a class="btn soft" href="${esc(w.youtube_url)}" target="_blank" rel="noopener" style="text-decoration:none">Guarda il video</a>
           <button class="btn primary" data-open="workout" data-wod="${w.id}">L'ho fatto</button></div></div>`).join("")
-        + (L.length > 2 ? `<button class="btn soft full" id="wo-altro">Proponimene altri</button>` : "");
+        + (L.length > 2 ? `<button class="btn soft full" id="wo-altro">Proponimene altri</button>` : ""));
     if ($("wo-altro")) $("wo-altro").onclick = () => { giro += 2; paint(); };
   };
   const chips = (id, opts, cur) => `<div class="chips sm" id="${id}">${opts.map(([v,l]) => `<button type="button" class="chip" data-v="${v}" aria-pressed="${cur == v}">${l}</button>`).join("")}</div>`;
@@ -3570,10 +3601,11 @@ async function sheetWod(){
     <div class="field"><label>Cosa vuoi allenare</label>${chips("wo-d", DISTR_WOD, distr)}</div>
     <div class="field"><label>Quanto tempo hai</label>${chips("wo-t", [[15,"15'"],[30,"30'"],[60,"Anche di più"]], tempo)}</div>
     <div class="field"><label>Dove</label>${chips("wo-a", [["libero","Senza attrezzi"],["casa","Casa con attrezzi"],["palestra","Palestra"]], attr)}</div>
+    <div class="field"><label>Quando</label>${chips("wo-q", [["mattina","Mattina"],["sera","Sera"]], quando)}</div>
     <div id="wo-out"></div>`, () => {
     const lega = (id, set) => $(id).querySelectorAll(".chip").forEach(c => c.onclick = () => { set(c.dataset.v); giro = 0;
       $(id).querySelectorAll(".chip").forEach(x => x.setAttribute("aria-pressed", String(x === c))); paint(); });
-    lega("wo-d", v => distr = v); lega("wo-t", v => tempo = +v); lega("wo-a", v => attr = v);
+    lega("wo-d", v => distr = v); lega("wo-t", v => tempo = +v); lega("wo-a", v => attr = v); lega("wo-q", v => quando = v);
     paint();
   });
 }
