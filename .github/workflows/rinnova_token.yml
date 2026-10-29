@@ -1,0 +1,21 @@
+name: Rinnova token Instagram
+on:
+  schedule:
+    - cron: "0 6 1 * *"      # primo di ogni mese: il token dura 60 giorni
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  rinnova:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Rinnova il token e aggiorna il secret
+        env:
+          IG_TOKEN: ${{ secrets.IG_TOKEN }}
+          GH_PAT: ${{ secrets.GH_PAT }}
+          GH_REPO: ${{ github.repository }}
+        run: python scripts/pubblica_ig.py --rinnova-token
