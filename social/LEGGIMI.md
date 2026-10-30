@@ -3,7 +3,7 @@
 Questa cartella è gestita dalla chat "social cozzus coach" (progetto claude.ai). Il resto del sito non si tocca da qui.
 
 ## Come funziona
-- **Calendario:** `calendario.json` contiene tutte le uscite. Il workflow `.github/workflows/pubblica.yml` gira ogni ora al minuto 7 e pubblica su Instagram (e sulla Pagina Facebook, tranne le storie) le voci `programmato` con orario passato. Lo script è `scripts/pubblica_ig.py`.
+- **Calendario:** `calendario.json` contiene tutte le uscite. Il workflow `.github/workflows/pubblica.yml` gira ogni mezz'ora (minuti 2 e 32) e pubblica su Instagram (e sulla Pagina Facebook, tranne le storie) le voci `programmato` con orario passato. Lo script è `scripts/pubblica_ig.py`.
 - **Media:** stanno in `media/` e sono serviti da `https://cozzuscoach.it/social/media/<file>`. Le immagini sono JPEG, i video MP4.
 - **Libreria:** `libreria/foto/NN.jpg` (62 foto Pexels) e `libreria/video/NN.mp4` (12 clip Pexels). Le fonti sono in `fonti-*.txt`.
 - **Grafiche:** `strumenti/render.py`, con le storie a 1080×1920 e i caroselli a 1080×1350. I reel si fanno con `strumenti/reel.py`, con musica sintetizzata originale. Le funzioni comuni sono in `strumenti/comune.py`.
