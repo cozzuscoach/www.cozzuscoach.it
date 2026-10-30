@@ -220,12 +220,15 @@ def pronto(post):
 
 def verifica():
     ig, page = os.environ["IG_ID"], os.environ.get("FB_PAGE_ID")
+    print("::notice::verifica Instagram (IG_ID lungo", len(ig), "cifre)")
     print("Instagram:", call("GET", ig, fields="username,name,followers_count,media_count"))
+    print("::notice::Instagram ok")
     print("Limite pubblicazioni:", call("GET", f"{ig}/content_publishing_limit", fields="quota_usage,config")["data"])
     if page:
+        print("::notice::verifica Pagina (FB_PAGE_ID lungo", len(page), "cifre)")
         print("Pagina:", call("GET", page, fields="name,followers_count"))
         page_token(page)
-        print("Token della Pagina: ok")
+        print("::notice::Pagina Facebook ok")
 
 
 def main():
