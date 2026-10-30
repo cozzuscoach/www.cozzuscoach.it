@@ -1,7 +1,7 @@
 name: Pubblica su Instagram e Facebook
 on:
   schedule:
-    - cron: "7 * * * *"      # ogni ora; lo script confronta con l'ora di Roma
+    - cron: "2,32 * * * *"   # ogni mezz'ora; lo script confronta con l'ora di Roma
   workflow_dispatch:
     inputs:
       modalita:
