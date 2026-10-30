@@ -1,10 +1,14 @@
-name: Pubblica su Instagram
+name: Pubblica su Instagram e Facebook
 on:
   schedule:
-    - cron: "7 * * * *"      # ogni ora; lo script controlla l'ora italiana
+    - cron: "7 * * * *"      # ogni ora; lo script confronta con l'ora di Roma
   workflow_dispatch:
+    inputs:
+      modalita:
+        description: "pubblica | verifica | dry-run"
+        default: pubblica
 concurrency:
-  group: pubblica-ig
+  group: pubblica-social
   cancel-in-progress: false
 permissions:
   contents: write
@@ -13,6 +17,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: main
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -20,10 +26,13 @@ jobs:
         env:
           IG_TOKEN: ${{ secrets.IG_TOKEN }}
           IG_ID: ${{ secrets.IG_ID }}
-        run: python scripts/pubblica_ig.py
-      - name: Salva lo stato del calendario
+          FB_PAGE_ID: ${{ secrets.FB_PAGE_ID }}
+          SALVA_GIT: "1"
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add social/calendario.json
-          git diff --cached --quiet || (git commit -m "social: stato calendario" && git push)
+          case "${{ github.event.inputs.modalita }}" in
+            verifica) python scripts/pubblica_ig.py --verifica ;;
+            dry-run)  python scripts/pubblica_ig.py --dry-run ;;
+            *)        python scripts/pubblica_ig.py ;;
+          esac
