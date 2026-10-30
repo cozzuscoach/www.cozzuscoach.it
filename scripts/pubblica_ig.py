@@ -290,12 +290,22 @@ def main():
                 print(f"Facebook: pubblicato {post['id']} ({post['fb_id']})")
             except Exception as e:
                 post["fb_errore"] = str(e)[:300]
-                print(f"Facebook: errore {post['id']}: {e}", file=sys.stderr)
+                print(f"::warning::Facebook non pubblicato {post['id']}: {str(e)[:300]}")
         salva(cal, f"{post['stato']} {post['id']}", post)
         if post["stato"] == "errore":
-            print(f"errore {post['id']}: {post['errore']}", file=sys.stderr)
+            print(f"::error::{post['id']}: {post['errore']}")
     return rc
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    for k in ("IG_TOKEN", "IG_ID", "FB_PAGE_ID"):  # spazi o a capo incollati per sbaglio nei secret
+        if k in os.environ:
+            os.environ[k] = "".join(os.environ[k].split())
+    try:
+        rc = main()
+    except Exception as e:
+        print(f"::error::{type(e).__name__}: {str(e)[:500]}")  # visibile nel riepilogo del workflow
+        raise
+    if rc == 2:
+        print("::error::Token Meta non valido: rigenerarlo e aggiornare il secret IG_TOKEN")
+    sys.exit(rc)
