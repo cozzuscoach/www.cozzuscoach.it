@@ -228,7 +228,12 @@ def verifica():
         print("::notice::verifica Pagina (FB_PAGE_ID lungo", len(page), "cifre)")
         print("Pagina:", call("GET", page, fields="name,followers_count"))
         page_token(page)
-        print("::notice::Pagina Facebook ok")
+        tok = os.environ["IG_TOKEN"]
+        scopes = call("GET", "debug_token", input_token=tok)["data"].get("scopes", [])
+        if "pages_manage_posts" in scopes:
+            print("::notice::Pagina Facebook ok (pubblicazione abilitata)")
+        else:
+            print("::warning::Il token non ha pages_manage_posts: su Facebook non si può pubblicare")
 
 
 def main():
