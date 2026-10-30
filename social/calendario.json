@@ -32,8 +32,10 @@
       "media": [
         "https://cozzuscoach.it/social/media/2026-10-30-2100-domani.jpg"
       ],
-      "stato": "in_corso",
-      "tentativi": 1
+      "stato": "pubblicato",
+      "tentativi": 1,
+      "ig_id": "18036985751889957",
+      "pubblicato_il": "2026-10-30T23:34+01:00"
     },
     {
       "id": "2026-10-31-0700-consiglio",
