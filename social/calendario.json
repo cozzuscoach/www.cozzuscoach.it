@@ -1,4 +1,354 @@
 {
   "fuso": "Europe/Rome",
-  "post": []
+  "post": [
+    {
+      "id": "2026-11-02-0700-consiglio",
+      "quando": "2026-11-02T07:00",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-11-02-0700-consiglio.jpg"
+      ],
+      "stato": "bozza"
+    },
+    {
+      "id": "2026-11-02-freddo",
+      "quando": "2026-11-02T13:00",
+      "tipo": "carousel",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-11-02-freddo-1.jpg",
+        "https://cozzuscoach.it/social/media/2026-11-02-freddo-2.jpg",
+        "https://cozzuscoach.it/social/media/2026-11-02-freddo-3.jpg",
+        "https://cozzuscoach.it/social/media/2026-11-02-freddo-4.jpg",
+        "https://cozzuscoach.it/social/media/2026-11-02-freddo-5.jpg",
+        "https://cozzuscoach.it/social/media/2026-11-02-freddo-6.jpg",
+        "https://cozzuscoach.it/social/media/2026-11-02-freddo-7.jpg"
+      ],
+      "stato": "bozza",
+      "didascalia": "Correre col freddo: 5 regole da salvare 🥶🏃\n\n1️⃣ Vestiti a strati: esci con un po’ di freddo addosso\n2️⃣ Copri mani, orecchie e collo\n3️⃣ Riscaldamento più lungo: 10–15 minuti\n4️⃣ Bevi anche se non hai sete\n5️⃣ Fatti vedere: colori chiari e una luce se corri al buio\n\nQuale dimentichi più spesso? Scrivilo nei commenti 👇\n\n👉 Richiedi il tuo programma: link in bio o scrivici in DM.\n\n#cozzuscoach #corsa #running #runningitalia #salento #salentorunning #puglia #runner #allenamento #inverno #correreconilfreddo"
+    },
+    {
+      "id": "2026-11-02-1530-lo-sapevi",
+      "quando": "2026-11-02T15:30",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-11-02-1530-lo-sapevi.jpg"
+      ],
+      "stato": "bozza"
+    },
+    {
+      "id": "2026-11-02-1830-allenamento",
+      "quando": "2026-11-02T18:30",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-11-02-1830-allenamento.jpg"
+      ],
+      "stato": "bozza"
+    },
+    {
+      "id": "2026-11-02-2100-domani",
+      "quando": "2026-11-02T21:00",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-11-02-2100-domani.jpg"
+      ],
+      "stato": "bozza"
+    },
+    {
+      "id": "2026-11-03-0700-consiglio",
+      "quando": "2026-11-03T07:00",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-11-03-0700-consiglio.jpg"
+      ],
+      "stato": "bozza"
+    },
+    {
+      "id": "2026-11-03-cadenza",
+      "quando": "2026-11-03T13:00",
+      "tipo": "reel",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-11-03-cadenza.mp4"
+      ],
+      "stato": "bozza",
+      "didascalia": "Più passi, meno frenate 👣\n\nSe fai passi molto lunghi, il piede atterra davanti al corpo e a ogni appoggio frena un po’. Prova così:\n\n⏱️ conta i passi di un piede in 30 secondi e moltiplica per 4 (oppure tutti i passi e moltiplica per 2)\n➕ aumenta la cadenza di circa il 5%, non di più\n🎧 un metronomo nelle cuffie aiuta per le prime uscite\n\nNon serve inseguire un numero magico: serve un passo più leggero.\n\n👉 Richiedi il tuo programma: link in bio o scrivici in DM.\n\n#cozzuscoach #corsa #running #runningitalia #salento #salentorunning #puglia #runner #allenamento #tecnicadicorsa #cadenza",
+      "copertina": "https://cozzuscoach.it/social/media/2026-11-03-cadenza-copertina.jpg"
+    },
+    {
+      "id": "2026-11-03-1530-lo-sapevi",
+      "quando": "2026-11-03T15:30",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-11-03-1530-lo-sapevi.jpg"
+      ],
+      "stato": "bozza"
+    },
+    {
+      "id": "2026-11-03-1830-allenamento",
+      "quando": "2026-11-03T18:30",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-11-03-1830-allenamento.jpg"
+      ],
+      "stato": "bozza"
+    },
+    {
+      "id": "2026-11-03-2100-domani",
+      "quando": "2026-11-03T21:00",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-11-03-2100-domani.jpg"
+      ],
+      "stato": "bozza"
+    },
+    {
+      "id": "2026-11-04-0700-consiglio",
+      "quando": "2026-11-04T07:00",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-11-04-0700-consiglio.jpg"
+      ],
+      "stato": "bozza"
+    },
+    {
+      "id": "2026-11-04-achille",
+      "quando": "2026-11-04T13:00",
+      "tipo": "carousel",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-11-04-achille-1.jpg",
+        "https://cozzuscoach.it/social/media/2026-11-04-achille-2.jpg",
+        "https://cozzuscoach.it/social/media/2026-11-04-achille-3.jpg",
+        "https://cozzuscoach.it/social/media/2026-11-04-achille-4.jpg",
+        "https://cozzuscoach.it/social/media/2026-11-04-achille-5.jpg",
+        "https://cozzuscoach.it/social/media/2026-11-04-achille-6.jpg",
+        "https://cozzuscoach.it/social/media/2026-11-04-achille-7.jpg"
+      ],
+      "stato": "bozza",
+      "didascalia": "Infortuni del runner · Ep. 3 — Il tendine d’Achille 🦶\n\nRigidità dietro la caviglia al mattino o nei primi minuti di corsa? Nelle slide:\n📍 dove fa male\n❓ perché succede\n✅ cosa fare senza fermarti del tutto\n🏋️ l’esercizio base per i polpacci\n🚩 quando farti vedere\n\nSalvalo e giralo a chi corre con te.\n\nIndicazioni di orientamento: non sostituiscono il parere di un medico o di un fisioterapista.\n\n👉 Richiedi il tuo programma: link in bio o scrivici in DM.\n\n#cozzuscoach #corsa #running #runningitalia #salento #salentorunning #puglia #runner #allenamento #infortuni #tendinedachille #prevenzione"
+    },
+    {
+      "id": "2026-11-04-1530-lo-sapevi",
+      "quando": "2026-11-04T15:30",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-11-04-1530-lo-sapevi.jpg"
+      ],
+      "stato": "bozza"
+    },
+    {
+      "id": "2026-11-04-1830-allenamento",
+      "quando": "2026-11-04T18:30",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-11-04-1830-allenamento.jpg"
+      ],
+      "stato": "bozza"
+    },
+    {
+      "id": "2026-11-04-2100-domani",
+      "quando": "2026-11-04T21:00",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-11-04-2100-domani.jpg"
+      ],
+      "stato": "bozza"
+    },
+    {
+      "id": "2026-11-05-0700-consiglio",
+      "quando": "2026-11-05T07:00",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-11-05-0700-consiglio.jpg"
+      ],
+      "stato": "bozza"
+    },
+    {
+      "id": "2026-11-05-metodo",
+      "quando": "2026-11-05T13:00",
+      "tipo": "reel",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-11-05-metodo.mp4"
+      ],
+      "stato": "bozza",
+      "didascalia": "Come funziona Cozzu’s Coach 📱🏃\n\n1️⃣ Scegli la tua gara: 5 km, 10 km, mezza o maratona\n2️⃣ Inserisci tempi recenti, chilometri a settimana e giorni disponibili\n3️⃣ Il programma viene costruito sui tuoi dati, diviso in fasi fino al giorno della gara\n4️⃣ Il coach lo rivede, lo sistema se serve e lo segue con te\n5️⃣ Ogni mattina alle 7 ricevi la seduta del giorno, con il perché\n\nPer chi ha lavoro, famiglia e vuole allenarsi con metodo, senza farsi male.\n\n👉 Richiedi il tuo programma: link in bio o scrivici in DM.\n\n#cozzuscoach #corsa #running #runningitalia #salento #salentorunning #puglia #runner #allenamento #pianodiallenamento #coachdicorsa",
+      "copertina": "https://cozzuscoach.it/social/media/2026-11-05-metodo-copertina.jpg"
+    },
+    {
+      "id": "2026-11-05-1530-lo-sapevi",
+      "quando": "2026-11-05T15:30",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-11-05-1530-lo-sapevi.jpg"
+      ],
+      "stato": "bozza"
+    },
+    {
+      "id": "2026-11-05-1830-allenamento",
+      "quando": "2026-11-05T18:30",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-11-05-1830-allenamento.jpg"
+      ],
+      "stato": "bozza"
+    },
+    {
+      "id": "2026-11-05-2100-domani",
+      "quando": "2026-11-05T21:00",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-11-05-2100-domani.jpg"
+      ],
+      "stato": "bozza"
+    },
+    {
+      "id": "2026-11-06-0700-consiglio",
+      "quando": "2026-11-06T07:00",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-11-06-0700-consiglio.jpg"
+      ],
+      "stato": "bozza"
+    },
+    {
+      "id": "2026-11-06-cena-gara",
+      "quando": "2026-11-06T13:00",
+      "tipo": "carousel",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-11-06-cena-gara-1.jpg",
+        "https://cozzuscoach.it/social/media/2026-11-06-cena-gara-2.jpg",
+        "https://cozzuscoach.it/social/media/2026-11-06-cena-gara-3.jpg",
+        "https://cozzuscoach.it/social/media/2026-11-06-cena-gara-4.jpg",
+        "https://cozzuscoach.it/social/media/2026-11-06-cena-gara-5.jpg",
+        "https://cozzuscoach.it/social/media/2026-11-06-cena-gara-6.jpg",
+        "https://cozzuscoach.it/social/media/2026-11-06-cena-gara-7.jpg"
+      ],
+      "stato": "bozza",
+      "didascalia": "Gara nel weekend? La cena della sera prima 🍝🏁\n\n1️⃣ Niente esperimenti: solo cose già provate\n2️⃣ Carboidrati in porzione normale, condimento semplice\n3️⃣ Pochi grassi e poche fibre: legumi e fritti dopo la gara\n4️⃣ Bevi durante la giornata, senza riempirti la sera\n5️⃣ Colazione semplice circa 3 ore prima del via\n\nChi corre questo weekend? Scrivi la tua gara nei commenti 👇\n\n👉 Richiedi il tuo programma: link in bio o scrivici in DM.\n\n#cozzuscoach #corsa #running #runningitalia #salento #salentorunning #puglia #runner #allenamento #pregara #alimentazionerunner #mezzamaratona"
+    },
+    {
+      "id": "2026-11-06-1530-lo-sapevi",
+      "quando": "2026-11-06T15:30",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-11-06-1530-lo-sapevi.jpg"
+      ],
+      "stato": "bozza"
+    },
+    {
+      "id": "2026-11-06-1830-allenamento",
+      "quando": "2026-11-06T18:30",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-11-06-1830-allenamento.jpg"
+      ],
+      "stato": "bozza"
+    },
+    {
+      "id": "2026-11-06-2100-domani",
+      "quando": "2026-11-06T21:00",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-11-06-2100-domani.jpg"
+      ],
+      "stato": "bozza"
+    },
+    {
+      "id": "2026-11-07-0700-consiglio",
+      "quando": "2026-11-07T07:00",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-11-07-0700-consiglio.jpg"
+      ],
+      "stato": "bozza"
+    },
+    {
+      "id": "2026-11-07-motivazione",
+      "quando": "2026-11-07T13:00",
+      "tipo": "reel",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-11-07-motivazione.mp4"
+      ],
+      "stato": "bozza",
+      "didascalia": "Nessuno vede le uscite col freddo. Si vede solo il traguardo. 🏁\n\nMa il traguardo è fatto proprio di quelle mattine: della sveglia presto, del lento quando non avevi voglia, della costanza.\n\nBuona gara a chi corre domani, e in bocca al lupo al Cozzu’s Team 💙\n\n👉 Richiedi il tuo programma: link in bio o scrivici in DM.\n\n#cozzuscoach #corsa #running #runningitalia #salento #salentorunning #puglia #runner #allenamento #motivazione #costanza",
+      "copertina": "https://cozzuscoach.it/social/media/2026-11-07-motivazione-copertina.jpg"
+    },
+    {
+      "id": "2026-11-07-1530-lo-sapevi",
+      "quando": "2026-11-07T15:30",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-11-07-1530-lo-sapevi.jpg"
+      ],
+      "stato": "bozza"
+    },
+    {
+      "id": "2026-11-07-1830-allenamento",
+      "quando": "2026-11-07T18:30",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-11-07-1830-allenamento.jpg"
+      ],
+      "stato": "bozza"
+    },
+    {
+      "id": "2026-11-07-2100-domani",
+      "quando": "2026-11-07T21:00",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-11-07-2100-domani.jpg"
+      ],
+      "stato": "bozza"
+    },
+    {
+      "id": "2026-11-08-0700-consiglio",
+      "quando": "2026-11-08T07:00",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-11-08-0700-consiglio.jpg"
+      ],
+      "stato": "bozza"
+    },
+    {
+      "id": "2026-11-08-settimana",
+      "quando": "2026-11-08T13:00",
+      "tipo": "carousel",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-11-08-settimana-1.jpg",
+        "https://cozzuscoach.it/social/media/2026-11-08-settimana-2.jpg",
+        "https://cozzuscoach.it/social/media/2026-11-08-settimana-3.jpg",
+        "https://cozzuscoach.it/social/media/2026-11-08-settimana-4.jpg",
+        "https://cozzuscoach.it/social/media/2026-11-08-settimana-5.jpg",
+        "https://cozzuscoach.it/social/media/2026-11-08-settimana-6.jpg",
+        "https://cozzuscoach.it/social/media/2026-11-08-settimana-7.jpg"
+      ],
+      "stato": "bozza",
+      "didascalia": "La settimana in 5 consigli 📌\n\n🥶 Col freddo: strati e riscaldamento più lungo\n👣 Cadenza: +5%, passi più leggeri\n🦶 Tendine d’Achille: carico con calma e polpacci forti\n🍝 Pre-gara: niente esperimenti\n🐢 Il lento deve essere lento\n\nSalvalo per ripassarlo prima della prossima uscita.\n\n👉 Richiedi il tuo programma: link in bio o scrivici in DM.\n\n#cozzuscoach #corsa #running #runningitalia #salento #salentorunning #puglia #runner #allenamento"
+    },
+    {
+      "id": "2026-11-08-1530-lo-sapevi",
+      "quando": "2026-11-08T15:30",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-11-08-1530-lo-sapevi.jpg"
+      ],
+      "stato": "bozza"
+    },
+    {
+      "id": "2026-11-08-1830-allenamento",
+      "quando": "2026-11-08T18:30",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-11-08-1830-allenamento.jpg"
+      ],
+      "stato": "bozza"
+    },
+    {
+      "id": "2026-11-08-2100-domani",
+      "quando": "2026-11-08T21:00",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-11-08-2100-domani.jpg"
+      ],
+      "stato": "bozza"
+    }
+  ]
 }
