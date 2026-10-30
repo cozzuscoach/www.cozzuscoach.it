@@ -3552,6 +3552,11 @@ function contestoWod(){
   return { maxLeg, maxAltro, ecc, perche, dolore, passata, oreDura: oreProssimaDura() };
 }
 
+async function caricaWods(){
+  if (S.wods) return S.wods;
+  const { data } = await sb.from("wods").select("*").eq("active", true);
+  S.wods = data || []; return S.wods;
+}
 async function sheetWod(){
   if (!subOk()) return;
   const W = await caricaWods(), C = contestoWod();
