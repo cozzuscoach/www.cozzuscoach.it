@@ -3570,7 +3570,7 @@ async function sheetWod(){
       : distr === "stretching" ? (maxLeg ? "intenso" : "leggero")
       : C.maxAltro;
     const eccOk = w => GAMBE_WOD.includes(w.district) ? C.ecc.includes(w.caricoecc || "medio") : true;
-    const recOk = w => C.oreDura === null || C.oreDura >= REC_ECC[w.caricoecc || "medio"];
+    const recOk = w => !GAMBE_WOD.includes(w.district) || C.oreDura === null || C.oreDura >= REC_ECC[w.caricoecc || "medio"];
     const base = W.filter(w => w.district === distr && w.duration_min <= tempo
       && (attr === "palestra" || (w.equipment||[]).every(e => attr === "libero" ? e === "corpo libero" : e !== "palestra")));
     const sera = w => quando === "sera" && w.intensity === "intenso" && w.duration_min > 20;
