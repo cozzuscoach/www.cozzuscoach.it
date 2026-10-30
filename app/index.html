@@ -3539,14 +3539,12 @@ function contestoWod(){
   const dolore = S.workouts.some(w => w.day >= addDays(TODAY, -3) && w.feedback?.caso === "dolore");
   // ecc: carichi eccentrici consentiti per i WOD di gambe; maxLeg/maxAltro: tetti di intensità
   let maxLeg = "intenso", maxAltro = "intenso", ecc = ["alto","medio","basso"], perche = "";
-  if (dolore){ maxLeg = null; maxAltro = "leggero"; ecc = []; perche = "Hai segnalato un fastidio negli ultimi giorni: niente gambe, solo lavori leggeri finché non ne parliamo."; }
+  if (dolore){ maxLeg = "leggero"; maxAltro = "leggero"; perche = "Hai segnalato un fastidio negli ultimi giorni: solo gambe leggere e lavori leggeri finché non ne parliamo."; }
   else if (passata !== null && passata <= 3){ maxLeg = null; maxAltro = "leggero"; ecc = []; perche = `Hai corso una gara ${passata === 0 ? "oggi" : passata === 1 ? "ieri" : `${passata} giorni fa`}: niente gambe, solo lavori leggeri.`; }
   else if (passata !== null && passata <= 7){ maxLeg = "leggero"; maxAltro = "medio"; ecc = ["medio","basso"]; perche = `Gara di ${passata} giorni fa: gambe solo leggere, resto medio, niente carichi eccentrici alti.`; }
   else if (giorniGara !== null && giorniGara <= 7){ maxLeg = "leggero"; maxAltro = "leggero"; perche = `Mancano ${giorniGara} giorni alla gara: solo lavori leggeri, per arrivare freschi.`; }
   else if (sett?.phase === "taper"){ maxLeg = "leggero"; maxAltro = "medio"; perche = "Sei in settimana di scarico: forza leggera, il carico lo togliamo apposta."; }
   else if (duroT(dom?.type)){ maxLeg = "leggero"; perche = `Domani c'è ${esc((dom.title || "").toLowerCase())}: gambe solo leggere, per non arrivarci stanco.`; }
-  else if (duroT(dopo?.type)){ maxLeg = "medio"; ecc = ["basso","medio"]; perche = "Tra due giorni hai una seduta dura: gambe medie solo con carichi eccentrici bassi o medi."; }
-  else if (duroT(oggi?.type)){ maxLeg = "medio"; ecc = ["basso"]; perche = "Oggi è un giorno duro: gambe medie solo dopo la corsa, con carichi eccentrici bassi. Resto intenso."; }
   else if (sett?.recovery){ maxLeg = "medio"; maxAltro = "medio"; perche = "Settimana di recupero: forza senza esagerare."; }
   else perche = "Nessuna seduta impegnativa entro 48 ore: puoi scegliere anche un lavoro intenso.";
   return { maxLeg, maxAltro, ecc, perche, dolore, passata, oreDura: oreProssimaDura() };
@@ -3564,29 +3562,23 @@ async function sheetWod(){
   const ordine = ["leggero","medio","intenso"];
   const ok = (w, max) => max && ordine.indexOf(w.intensity) <= ordine.indexOf(max);
   const recenti = wodUltimi7(W);
-  const gambeSett = recenti.filter(w => GAMBE_WOD.includes(w.district) && w.intensity !== "leggero").length;
-  const altoSett = recenti.filter(w => GAMBE_WOD.includes(w.district) && (w.caricoecc || "medio") === "alto").length;
-  // tetto settimanale: massimo 2 WOD gambe medi o intensi in 7 giorni; massimo 1 con carico eccentrico alto
-  const capSett = gambeSett >= 2;
   const fatti = new Set(recenti.map(w => w.id));
   const paint = () => {
-    let maxLeg = capSett && C.maxLeg ? "leggero" : C.maxLeg;
+    const maxLeg = C.maxLeg;
     const max = GAMBE_WOD.includes(distr) ? maxLeg
       : distr === "tecnica" ? (maxLeg ? (C.maxAltro === "intenso" ? "medio" : C.maxAltro) : null)
       : distr === "stretching" ? (maxLeg ? "intenso" : "leggero")
       : C.maxAltro;
     const eccOk = w => GAMBE_WOD.includes(w.district) ? C.ecc.includes(w.caricoecc || "medio") : true;
     const recOk = w => C.oreDura === null || C.oreDura >= REC_ECC[w.caricoecc || "medio"];
-    const altoOk = w => !(GAMBE_WOD.includes(w.district) && (w.caricoecc || "medio") === "alto" && altoSett >= 1);
     const base = W.filter(w => w.district === distr && w.duration_min <= tempo
       && (attr === "palestra" || (w.equipment||[]).every(e => attr === "libero" ? e === "corpo libero" : e !== "palestra")));
     const sera = w => quando === "sera" && w.intensity === "intenso" && w.duration_min > 20;
-    let L = base.filter(w => ok(w, max) && eccOk(w) && recOk(w) && altoOk(w) && !sera(w));
+    let L = base.filter(w => ok(w, max) && eccOk(w) && recOk(w) && !sera(w));
     const nuovi = L.filter(w => !fatti.has(w.id)); if (nuovi.length) L = nuovi;
     L.sort((a,b) => ordine.indexOf(b.intensity) - ordine.indexOf(a.intensity) || a.id - b.id);
     const scelti = L.length ? [L[giro % L.length], ...(L.length > 1 ? [L[(giro + 1) % L.length]] : [])] : [];
     const motivo = !W.length ? "" : !max ? "Oggi meglio evitarlo: scegli core, upper o stretching."
-      : capSett && GAMBE_WOD.includes(distr) ? "Hai già svolto 2 WOD gambe questa settimana: scegli upper, core o mobilità."
       : GAMBE_WOD.includes(distr) && C.oreDura !== null && base.some(w => !recOk(w)) && !L.length ? "Il prossimo allenamento di qualità è troppo vicino per questi carichi: scegli un carico più leggero o core, upper o stretching."
       : base.length && !L.length ? "Ci sono WOD per questi filtri, ma oggi sarebbero troppo intensi." : "";
     $("wo-out").innerHTML = (quando === "sera" ? `<div class="note-box">Se ti alleni la sera, termina almeno 3 ore prima di coricarti.</div>` : "")
