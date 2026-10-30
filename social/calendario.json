@@ -8,8 +8,10 @@
       "media": [
         "https://cozzuscoach.it/social/media/2026-10-30-1530-gare.jpg"
       ],
-      "stato": "in_corso",
-      "tentativi": 1
+      "stato": "pubblicato",
+      "tentativi": 1,
+      "ig_id": "18132872557746775",
+      "pubblicato_il": "2026-10-30T15:42+01:00"
     },
     {
       "id": "2026-10-30-1830-allenamento",
