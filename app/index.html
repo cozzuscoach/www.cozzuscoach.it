@@ -3572,7 +3572,7 @@ async function sheetWod(){
     const eccOk = w => GAMBE_WOD.includes(w.district) ? C.ecc.includes(w.caricoecc || "medio") : true;
     const recOk = w => !GAMBE_WOD.includes(w.district) || C.oreDura === null || C.oreDura >= REC_ECC[w.caricoecc || "medio"];
     const base = W.filter(w => w.district === distr && w.duration_min <= tempo
-      && (attr === "palestra" || (w.equipment||[]).every(e => attr === "libero" ? e === "corpo libero" : e !== "palestra")));
+      && (attr === "palestra" || (w.equipment||[]).every(e => attr === "libero" ? (e === "corpo libero" || e === "manubri") : e !== "palestra")));
     const sera = w => quando === "sera" && w.intensity === "intenso" && w.duration_min > 20;
     let L = base.filter(w => ok(w, max) && eccOk(w) && recOk(w) && !sera(w));
     const nuovi = L.filter(w => !fatti.has(w.id)); if (nuovi.length) L = nuovi;
