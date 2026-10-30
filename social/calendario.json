@@ -2,6 +2,128 @@
   "fuso": "Europe/Rome",
   "post": [
     {
+      "id": "2026-10-30-1830-allenamento",
+      "quando": "2026-10-30T18:30",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-10-30-1830-allenamento.jpg"
+      ],
+      "stato": "bozza"
+    },
+    {
+      "id": "2026-10-30-2100-domani",
+      "quando": "2026-10-30T21:00",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-10-30-2100-domani.jpg"
+      ],
+      "stato": "bozza"
+    },
+    {
+      "id": "2026-10-31-0700-consiglio",
+      "quando": "2026-10-31T07:00",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-10-31-0700-consiglio.jpg"
+      ],
+      "stato": "bozza"
+    },
+    {
+      "id": "2026-10-31-lungo",
+      "quando": "2026-10-31T13:00",
+      "tipo": "carousel",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-10-31-lungo-1.jpg",
+        "https://cozzuscoach.it/social/media/2026-10-31-lungo-2.jpg",
+        "https://cozzuscoach.it/social/media/2026-10-31-lungo-3.jpg",
+        "https://cozzuscoach.it/social/media/2026-10-31-lungo-4.jpg",
+        "https://cozzuscoach.it/social/media/2026-10-31-lungo-5.jpg",
+        "https://cozzuscoach.it/social/media/2026-10-31-lungo-6.jpg",
+        "https://cozzuscoach.it/social/media/2026-10-31-lungo-7.jpg"
+      ],
+      "stato": "bozza",
+      "didascalia": "Il lungo del weekend: 5 regole 🏃‍♂️🌅\n\n1️⃣ Più lento di quanto pensi: ritmo da conversazione\n2️⃣ Allunga di 10–15 minuti alla volta\n3️⃣ Oltre l’ora e mezza: acqua e qualcosa da mangiare\n4️⃣ Percorso piatto e sicuro, con un punto di appoggio\n5️⃣ Dopo: mangia, bevi e recupera\n\nQuanto dura il tuo lungo di questo weekend? 👇\n\n👉 Richiedi il tuo programma: link in bio o scrivici in DM.\n\n#cozzuscoach #corsa #running #runningitalia #salento #salentorunning #puglia #runner #allenamento #lungo #mezzamaratona #maratona"
+    },
+    {
+      "id": "2026-10-31-1530-lo-sapevi",
+      "quando": "2026-10-31T15:30",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-10-31-1530-lo-sapevi.jpg"
+      ],
+      "stato": "bozza"
+    },
+    {
+      "id": "2026-10-31-1830-allenamento",
+      "quando": "2026-10-31T18:30",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-10-31-1830-allenamento.jpg"
+      ],
+      "stato": "bozza"
+    },
+    {
+      "id": "2026-10-31-2100-domani",
+      "quando": "2026-10-31T21:00",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-10-31-2100-domani.jpg"
+      ],
+      "stato": "bozza"
+    },
+    {
+      "id": "2026-11-01-0700-consiglio",
+      "quando": "2026-11-01T07:00",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-11-01-0700-consiglio.jpg"
+      ],
+      "stato": "bozza"
+    },
+    {
+      "id": "2026-11-01-fatica",
+      "quando": "2026-11-01T13:00",
+      "tipo": "carousel",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-11-01-fatica-1.jpg",
+        "https://cozzuscoach.it/social/media/2026-11-01-fatica-2.jpg",
+        "https://cozzuscoach.it/social/media/2026-11-01-fatica-3.jpg",
+        "https://cozzuscoach.it/social/media/2026-11-01-fatica-4.jpg",
+        "https://cozzuscoach.it/social/media/2026-11-01-fatica-5.jpg",
+        "https://cozzuscoach.it/social/media/2026-11-01-fatica-6.jpg",
+        "https://cozzuscoach.it/social/media/2026-11-01-fatica-7.jpg"
+      ],
+      "stato": "bozza",
+      "didascalia": "La fatica da 1 a 10 💬🏃\n\n1–3 facile: parli senza problemi\n4–6 moderato: frasi brevi\n7–8 impegnativo: poche parole\n9–10 massimo: non parli più\n\nIl ritmo cambia con caldo, vento e salite. La sensazione di sforzo resta il tuo strumento più affidabile.\n\nDi solito a che numero corri il lento? Sii sincero 👇\n\n👉 Richiedi il tuo programma: link in bio o scrivici in DM.\n\n#cozzuscoach #corsa #running #runningitalia #salento #salentorunning #puglia #runner #allenamento #sforzopercepito #rpe"
+    },
+    {
+      "id": "2026-11-01-1530-lo-sapevi",
+      "quando": "2026-11-01T15:30",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-11-01-1530-lo-sapevi.jpg"
+      ],
+      "stato": "bozza"
+    },
+    {
+      "id": "2026-11-01-1830-allenamento",
+      "quando": "2026-11-01T18:30",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-11-01-1830-allenamento.jpg"
+      ],
+      "stato": "bozza"
+    },
+    {
+      "id": "2026-11-01-2100-domani",
+      "quando": "2026-11-01T21:00",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-11-01-2100-domani.jpg"
+      ],
+      "stato": "bozza"
+    },
+    {
       "id": "2026-11-02-0700-consiglio",
       "quando": "2026-11-02T07:00",
       "tipo": "story",
