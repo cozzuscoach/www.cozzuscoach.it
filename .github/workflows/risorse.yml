@@ -1,0 +1,24 @@
+name: Risorse grafiche social
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  font:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Scarica Barlow e Barlow Condensed (Google Fonts, licenza OFL)
+        run: |
+          mkdir -p social/risorse/fonts
+          B=https://raw.githubusercontent.com/google/fonts/main/ofl
+          for w in Regular Medium SemiBold Bold; do curl -fsSL -o social/risorse/fonts/Barlow-$w.ttf $B/barlow/Barlow-$w.ttf; done
+          for w in Medium SemiBold Bold ExtraBold Black; do curl -fsSL -o social/risorse/fonts/BarlowCondensed-$w.ttf $B/barlowcondensed/BarlowCondensed-$w.ttf; done
+          curl -fsSL -o social/risorse/fonts/OFL.txt $B/barlow/OFL.txt
+          ls -la social/risorse/fonts
+      - name: Salva
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add social/risorse
+          git diff --cached --quiet || (git commit -m "social: font Barlow per le grafiche" && git push)
