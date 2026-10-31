@@ -76,8 +76,10 @@
       "media": [
         "https://cozzuscoach.it/social/media/2026-10-31-1530-lo-sapevi.jpg"
       ],
-      "stato": "in_corso",
-      "tentativi": 1
+      "stato": "pubblicato",
+      "tentativi": 1,
+      "ig_id": "18104152379040632",
+      "pubblicato_il": "2026-10-31T16:05+01:00"
     },
     {
       "id": "2026-10-31-1830-allenamento",
