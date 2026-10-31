@@ -88,8 +88,10 @@
       "media": [
         "https://cozzuscoach.it/social/media/2026-10-31-1830-allenamento.jpg"
       ],
-      "stato": "in_corso",
-      "tentativi": 1
+      "stato": "pubblicato",
+      "tentativi": 1,
+      "ig_id": "18113283968582905",
+      "pubblicato_il": "2026-10-31T20:27+01:00"
     },
     {
       "id": "2026-10-31-2100-domani",
