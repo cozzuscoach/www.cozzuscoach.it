@@ -168,7 +168,8 @@
       "media": [
         "https://cozzuscoach.it/social/media/2026-11-01-2100-domani.jpg"
       ],
-      "stato": "programmato"
+      "stato": "in_corso",
+      "tentativi": 1
     },
     {
       "id": "2026-11-02-0700-consiglio",
