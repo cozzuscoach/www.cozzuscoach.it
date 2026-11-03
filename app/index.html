@@ -1481,8 +1481,9 @@ async function openAthlete(a){
   $("detail-name").textContent = a.full_name;
   const D = await fetchAthlete(a.id);
   $("detail-race").innerHTML = raceHero(nextRace(D.races), false);
+  CUR = { a, D };
   renderDiary(D, $("detail-diary"), false);
-  CUR = { a, D }; renderDolore(); renderMsgCoach(); renderSubCoach(); await renderCoachZones(); await renderPlanRequests(); await renderAdjustments(); await renderCoachPlan();
+  renderDolore(); renderMsgCoach(); renderSubCoach(); await renderCoachZones(); await renderPlanRequests(); await renderAdjustments(); await renderCoachPlan();
 }
 $("back").onclick = loadCoach;
 $("ex-tog").onclick = () => { EX_OPEN = !EX_OPEN; renderEx(); };
