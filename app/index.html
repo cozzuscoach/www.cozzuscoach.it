@@ -322,6 +322,7 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid #
 .servizi{margin:12px 0 0 18px;font-size:15px}
 .servizi li{margin-top:4px}
 </style>
+<script type="importmap">{"imports":{"onnxruntime-web":"./ort-shim.js"}}</script>
 </head>
 <body>
 
@@ -687,25 +688,57 @@ function renderProgresso(){
       <div style="display:flex;gap:6px;margin-top:10px">${barre}</div>
       ${storico}${risultati}</div>`;
 }
-const ASC = {};
 const TTS = "speechSynthesis" in window;
-function testoSeduta(s){
-  return [s.title, s.description, s.explanation ? "Perché: " + s.explanation : ""].filter(Boolean).join(". ").replace(/\s+/g, " ");
+const U_IT = ["zero","uno","due","tre","quattro","cinque","sei","sette","otto","nove","dieci","undici","dodici","tredici","quattordici","quindici","sedici","diciassette","diciotto","diciannove"];
+const D_IT = ["","","venti","trenta","quaranta","cinquanta","sessanta","settanta","ottanta","novanta"];
+function numIt(n){
+  if (n < 20) return U_IT[n];
+  if (n < 100){ const d = Math.floor(n/10), u = n % 10; if (!u) return D_IT[d];
+    return ((u === 1 || u === 8) ? D_IT[d].slice(0,-1) : D_IT[d]) + (u === 3 ? "tré" : U_IT[u]); }
+  if (n < 1000){ const h = Math.floor(n/100), r = n % 100; return (h === 1 ? "cento" : U_IT[h] + "cento") + (r ? numIt(r) : ""); }
+  return String(n);
 }
-function bottoneAscolta(s){
-  if (!TTS) return "";
-  ASC[s.id] = testoSeduta(s);
-  return `<button type="button" class="btn soft ascolta" data-ascolta="${s.id}">🔊 Ascolta</button>`;
+function prepara(t){
+  return t
+    .replace(/(\d+)'(\d+)"/g, (_, a, b) => numIt(+a) + (+a === 1 ? " minuto e " : " minuti e ") + numIt(+b) + " secondi")
+    .replace(/(\d+)'/g, (_, a) => numIt(+a) + (+a === 1 ? " minuto" : " minuti"))
+    .replace(/(\d+)"/g, (_, a) => numIt(+a) + " secondi")
+    .replace(/(\d+)\s*x\s*(\d+)\s*m\b/gi, (_, a, b) => numIt(+a) + " per " + numIt(+b) + " metri")
+    .replace(/(\d+)\s*x\s*(\d+)/gi, (_, a, b) => numIt(+a) + " per " + numIt(+b))
+    .replace(/(\d+)\s*km\b/gi, (_, a) => numIt(+a) + " chilometri")
+    .replace(/(\d+)\s*m\b/g, (_, a) => numIt(+a) + " metri")
+    .replace(/\d+/g, m => numIt(+m))
+    .replace(/\s+/g, " ").trim();
+}
+let VOCE = null;
+async function caricaVoce(){
+  if (VOCE) return VOCE;
+  if (!window.ort) await new Promise((ok, ko) => { const sc = document.createElement("script"); sc.src = "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.18.0/dist/ort.all.min.js"; sc.onload = ok; sc.onerror = ko; document.head.appendChild(sc); });
+  const t = await import("https://cdn.jsdelivr.net/npm/@diffusionstudio/vits-web@1.0.3/dist/vits-web.js");
+  t.PATH_MAP["it_IT-paola-medium"] = "it/it_IT/paola/medium/it_IT-paola-medium.onnx";
+  VOCE = t; return t;
+}
+let AUDIO = null;
+function leggiAd(txt, btn){
+  if (AUDIO && !AUDIO.paused){ AUDIO.pause(); btn.classList.remove("on"); return; }
+  document.querySelectorAll(".ascolta.on").forEach(x => x.classList.remove("on"));
+  btn.classList.add("on");
+  const fine = () => btn.classList.remove("on");
+  const fallback = () => { if (!TTS) return fine(); const u = new SpeechSynthesisUtterance(txt); u.lang = "it-IT"; u.onend = fine; window.speechSynthesis.speak(u); };
+  caricaVoce().then(t => t.predict({ text: prepara(txt), voiceId: "it_IT-paola-medium" }))
+    .then(blob => { AUDIO = new Audio(URL.createObjectURL(blob)); AUDIO.onended = fine; return AUDIO.play(); })
+    .catch(fallback);
+}
+function bottoneAscolta(txt){
+  if (!txt || !TTS) return "";
+  return `<button type="button" class="btn soft ascolta" data-txt="${esc(txt)}">🔊 Ascolta</button>`;
+}
+function testoSeduta(s){
+  return [s.title, s.description, s.explanation ? "Perché: " + s.explanation : "", s.coach_note ? "Nota del coach: " + s.coach_note : ""].filter(Boolean).join(". ");
 }
 document.addEventListener("click", e => {
-  const b = e.target.closest("[data-ascolta]"); if (!b || !TTS) return;
-  const ss = window.speechSynthesis;
-  document.querySelectorAll(".ascolta.on").forEach(x => x.classList.remove("on"));
-  if (ss.speaking){ ss.cancel(); return; }
-  const u = new SpeechSynthesisUtterance(ASC[b.dataset.ascolta] || "");
-  u.lang = "it-IT"; u.rate = 0.95;
-  u.onend = () => b.classList.remove("on");
-  b.classList.add("on"); ss.speak(u);
+  const b = e.target.closest("[data-txt]"); if (!b) return;
+  e.preventDefault(); leggiAd(b.dataset.txt, b);
 });
 function spiegazioneHtml(s){
   return s.explanation ? `<div class="coachnote"><b>Perché questa seduta</b><p>${esc(s.explanation)}</p></div>` : "";
@@ -759,7 +792,7 @@ function renderHome(){
       <span class="tag ${done?"done":saltata||rest?"rest":isQ?"q":""}">${done?"Fatto":saltata?"Non fatta":TYPES[ses.type]}</span></div>
       ${ses.description?`<div class="desc" style="white-space:pre-line">${descHtml(ses.description)}</div>`:""}
       ${spiegazioneHtml(ses)}
-      ${bottoneAscolta(ses)}
+      ${bottoneAscolta(testoSeduta(ses))}
       ${zoneChips(ses)}
       ${ses.strength_note?`<p class="sub" style="margin-top:10px">Forza: ${esc(ses.strength_note)}</p>`:""}
       ${ses.coach_note?`<div class="coachnote" style="margin-top:10px"><b>Nota del coach</b><p>${esc(ses.coach_note)}</p></div>`:""}
@@ -827,7 +860,7 @@ function renderPlan(){
           <div class="pb">
           ${s.description?`<div class="sub" style="white-space:pre-line">${descHtml(s.description)}</div>`:""}
           ${spiegazioneHtml(s)}
-          ${bottoneAscolta(s)}
+          ${bottoneAscolta(testoSeduta(s))}
           ${s.coach_note?`<div class="sub" style="margin-top:6px;color:#8A5510"><b>Coach:</b> ${esc(s.coach_note)}</div>`:""}
           ${s.edited_by_coach?`<span class="tag" style="margin-top:6px">aggiornata dal coach</span>`:""}
           ${aperta ? `<div class="hint" style="margin-top:4px">Non registrata: <button class="link" data-open="workout" data-session="${s.id}">l'ho fatta</button> · <button class="link" data-skip="${s.session_date}">non l'ho fatta</button></div>` : ""}
@@ -910,7 +943,7 @@ function wMetrics(w, own){
     ? [d.wod ? esc(d.wod) : "", d.result ? "Risultato: " + esc(d.result) : ""].filter(Boolean).join("\n")
     : (d.exercises||[]).map(e => `${esc(e.name)}${e.sets&&e.reps?` ${e.sets}×${e.reps}`:""}${e.kg?` · ${String(e.kg).replace(".",",")} kg`:""}`).join("\n");
   const infoTxt = info.filter(Boolean).join(" · ");
-  const fbHtml = w.feedback ? `<div class="coachnote fb"><b>Il commento del coach</b><p>${esc(w.feedback.body)}</p><span class="fbnote">Commento automatico secondo le indicazioni del coach</span></div>` : "";
+  const fbHtml = w.feedback ? `<div class="coachnote fb"><b>Il commento del coach</b><p>${esc(w.feedback.body)}</p><span class="fbnote">Commento automatico secondo le indicazioni del coach</span>${bottoneAscolta(w.feedback.body)}</div>` : "";
   return `<div class="metrics" ${own?`data-open="workout" data-edit="${w.id}" style="cursor:pointer"`:""}>${cells.join("")}</div>
     ${fasi}${infoTxt?`<div class="exlist">${infoTxt}</div>`:""}${body?`<div class="exlist" style="white-space:pre-line;color:var(--ink)">${body}</div>`:""}${fbHtml}`;
 }
@@ -3420,7 +3453,7 @@ function recapHtml(R){
       <div class="metric"><div class="v">${R.tempo ? dur(R.tempo) : "–"}</div><div class="k">tempo totale</div></div>
       <div class="metric"><div class="v">${R.altri ? dur(R.altri) : "–"}</div><div class="k">altri sport</div></div></div>
     ${R.best ? `<p style="margin-top:12px"><b>La seduta migliore:</b> ${esc(titoloSeduta(R.best))} · ${esc(descSeduta(R.best))}</p>` : ""}
-    ${R.best?.feedback ? `<div class="coachnote fb"><b>Il commento del coach</b><p>${esc(R.best.feedback.body)}</p><span class="fbnote">Commento automatico secondo le indicazioni del coach</span></div>` : ""}`;
+    ${R.best?.feedback ? `<div class="coachnote fb"><b>Il commento del coach</b><p>${esc(R.best.feedback.body)}</p><span class="fbnote">Commento automatico secondo le indicazioni del coach</span>${bottoneAscolta(R.best.feedback.body)}</div>` : ""}`;
 }
 function recapMonDefault(){ const dow = dt(TODAY).getDay(); return (dow === 1 || dow === 2) ? addDays(mondayOf(TODAY), -7) : mondayOf(TODAY); }
 function renderRecapHome(){
