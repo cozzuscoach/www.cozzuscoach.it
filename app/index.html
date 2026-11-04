@@ -736,9 +736,63 @@ let VOCE = null;
 async function caricaVoce(){
   if (VOCE) return VOCE;
   if (!window.ort) await new Promise((ok, ko) => { const sc = document.createElement("script"); sc.src = "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.18.0/dist/ort.all.min.js"; sc.onload = ok; sc.onerror = ko; document.head.appendChild(sc); });
+  window.ort.env.wasm.wasmPaths = "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.18.0/dist/";
+  window.ort.env.wasm.numThreads = navigator.hardwareConcurrency || 1;
   const t = await import("https://cdn.jsdelivr.net/npm/@diffusionstudio/vits-web@1.0.3/dist/vits-web.js");
   t.PATH_MAP["it_IT-paola-medium"] = "it/it_IT/paola/medium/it_IT-paola-medium.onnx";
   VOCE = t; return t;
+}
+// motore riusato: la sessione ONNX (il modello) si crea una sola volta
+const MOTORE = new Map();
+const PIPER_JS = "https://cdn.jsdelivr.net/npm/@diffusionstudio/vits-web@1.0.3/dist/piper-DeOu3H9E.js";
+const PIPER_WASM = "https://cdn.jsdelivr.net/npm/@diffusionstudio/piper-wasm@1.0.0/build/piper_phonemize";
+async function fileOpfs(nome){
+  const dir = await (await navigator.storage.getDirectory()).getDirectoryHandle("piper");
+  return (await dir.getFileHandle(nome)).getFile();
+}
+async function preparaMotore(voiceId, T){
+  const nome = T.PATH_MAP[voiceId].split("/").at(-1);
+  const cfg = JSON.parse(await (await fileOpfs(nome + ".json")).text());
+  const session = await window.ort.InferenceSession.create(await (await fileOpfs(nome)).arrayBuffer());
+  MOTORE.set(voiceId, { cfg, session });
+}
+function wavDa(campioni, sr){
+  const o = campioni.length, dv = new DataView(new ArrayBuffer(o * 2 + 44));
+  dv.setUint32(0, 1179011410, true); dv.setUint32(4, dv.buffer.byteLength - 8, true);
+  dv.setUint32(8, 1163280727, true); dv.setUint32(12, 544501094, true);
+  dv.setUint32(16, 16, true); dv.setUint16(20, 1, true); dv.setUint16(22, 1, true);
+  dv.setUint32(24, sr, true); dv.setUint32(28, sr * 2, true); dv.setUint16(32, 2, true); dv.setUint16(34, 16, true);
+  dv.setUint32(36, 1635017060, true); dv.setUint32(40, 2 * o, true);
+  let p = 44;
+  for (let i = 0; i < o; i++){ const v = campioni[i]; dv.setInt16(p, v >= 1 ? 32767 : v <= -1 ? -32768 : (v * 32768) | 0, true); p += 2; }
+  return new Blob([dv.buffer], { type: "audio/x-wav" });
+}
+async function sintetizzaVeloce(text, voiceId){
+  const { cfg, session } = MOTORE.get(voiceId);
+  const PH = await import(PIPER_JS);
+  const ids = await new Promise(async (ok, ko) => {
+    (await PH.createPiperPhonemize({
+      print: l => ok(JSON.parse(l).phoneme_ids),
+      printErr: l => ko(new Error(l)),
+      locateFile: l => l.endsWith(".wasm") ? PIPER_WASM + ".wasm" : l.endsWith(".data") ? PIPER_WASM + ".data" : l
+    })).callMain(["-l", cfg.espeak.voice, "--input", JSON.stringify([{ text: text.trim() }]), "--espeak_data", "/espeak-ng-data"]);
+  });
+  const inf = cfg.inference, ort = window.ort;
+  const { output: { data } } = await session.run({
+    input: new ort.Tensor("int64", ids, [1, ids.length]),
+    input_lengths: new ort.Tensor("int64", [ids.length]),
+    scales: new ort.Tensor("float32", [inf.noise_scale, inf.length_scale, inf.noise_w])
+  });
+  return wavDa(data, cfg.audio.sample_rate);
+}
+async function sintetizza(text, voiceId){
+  const T = await caricaVoce();
+  if (MOTORE.has(voiceId)){
+    try { return await sintetizzaVeloce(text, voiceId); } catch (_) { /* ripiega sulla libreria */ }
+  }
+  const blob = await T.predict({ text, voiceId });
+  try { await preparaMotore(voiceId, T); } catch (_) { /* il prossimo ascolto ripartirà dalla libreria */ }
+  return blob;
 }
 let AUDIO = null;
 const AUDIO_CACHE = new Map();   // testo già generato -> URL audio (riascolto immediato)
@@ -754,7 +808,7 @@ function leggiAd(txt, btn){
   const etichetta = btn.textContent;
   btn.textContent = "⏳ Preparo la voce...";
   const ripristina = () => { btn.textContent = etichetta; };
-  caricaVoce().then(t => t.predict({ text: key, voiceId: "it_IT-paola-medium" }))
+  sintetizza(key, "it_IT-paola-medium")
     .then(blob => { const url = URL.createObjectURL(blob); AUDIO_CACHE.set(key, url); ripristina(); return play(url); })
     .catch(() => { ripristina(); fallback(); });
 }
