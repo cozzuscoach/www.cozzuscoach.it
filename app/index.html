@@ -741,15 +741,22 @@ async function caricaVoce(){
   VOCE = t; return t;
 }
 let AUDIO = null;
+const AUDIO_CACHE = new Map();   // testo già generato -> URL audio (riascolto immediato)
 function leggiAd(txt, btn){
   if (AUDIO && !AUDIO.paused){ AUDIO.pause(); btn.classList.remove("on"); return; }
   document.querySelectorAll(".ascolta.on").forEach(x => x.classList.remove("on"));
   btn.classList.add("on");
   const fine = () => btn.classList.remove("on");
   const fallback = () => { if (!TTS) return fine(); const u = new SpeechSynthesisUtterance(txt); u.lang = "it-IT"; u.rate = 0.9; u.onend = fine; window.speechSynthesis.speak(u); };
-  caricaVoce().then(t => t.predict({ text: prepara(txt), voiceId: "it_IT-paola-medium" }))
-    .then(blob => { AUDIO = new Audio(URL.createObjectURL(blob)); AUDIO.playbackRate = 0.88; AUDIO.preservesPitch = true; AUDIO.onended = fine; return AUDIO.play(); })
-    .catch(fallback);
+  const play = url => { AUDIO = new Audio(url); AUDIO.playbackRate = 0.88; AUDIO.preservesPitch = true; AUDIO.onended = fine; return AUDIO.play(); };
+  const key = prepara(txt);
+  if (AUDIO_CACHE.has(key)) return play(AUDIO_CACHE.get(key)).catch(fallback);
+  const etichetta = btn.textContent;
+  btn.textContent = "⏳ Preparo la voce...";
+  const ripristina = () => { btn.textContent = etichetta; };
+  caricaVoce().then(t => t.predict({ text: key, voiceId: "it_IT-paola-medium" }))
+    .then(blob => { const url = URL.createObjectURL(blob); AUDIO_CACHE.set(key, url); ripristina(); return play(url); })
+    .catch(() => { ripristina(); fallback(); });
 }
 function bottoneAscolta(txt){
   if (!txt || !TTS) return "";
