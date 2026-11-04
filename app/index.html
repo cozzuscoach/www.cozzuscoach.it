@@ -90,6 +90,31 @@ h2{font:700 22px var(--cond);margin:24px 0 8px}
 .pday .d span{display:block;font:500 13px var(--body);color:var(--muted);text-transform:capitalize}
 .pday.past{opacity:.6}
 .pday.is-today .d{color:var(--sun)}
+.pd{border-top:1px solid var(--line);padding-left:0}
+.pd:first-child{border-top:0}
+.pd summary{list-style:none;cursor:pointer;display:grid;grid-template-columns:54px 1fr 20px;gap:12px;align-items:center;padding:12px 0}
+.pd summary::-webkit-details-marker{display:none}
+.pd .d{font:700 22px/1 var(--cond);color:var(--sea);text-align:center}
+.pd .d span{display:block;font:500 13px var(--body);color:var(--muted);text-transform:capitalize}
+.pd .t{font-weight:600}
+.pd .chev{color:var(--muted);text-align:center;transition:transform .2s}
+.pd[open] .chev{transform:rotate(180deg)}
+.pd .pb{padding:0 0 14px 66px}
+.pd.past{opacity:.6}
+.pd.is-today .d{color:var(--sun)}
+.pd.k-lento{border-left:4px solid #5FA779;padding-left:10px}
+.pd.k-q{border-left:4px solid #E08A2E;padding-left:10px}
+.pd.k-altro{border-left:4px solid #6B7FD7;padding-left:10px}
+.pd.k-riposo{border-left:4px solid #C5CCD0;padding-left:10px}
+.card.session.k-lento{border-left:4px solid #5FA779}
+.card.session.k-q{border-left:4px solid #E08A2E}
+.card.session.k-altro{border-left:4px solid #6B7FD7}
+.card.session.k-riposo{border-left:4px solid #C5CCD0}
+details.coachnote summary{list-style:none;cursor:pointer}
+details.coachnote summary::-webkit-details-marker{display:none}
+details.coachnote summary .cprev:after{content:" Leggi tutto ▾";color:#8A5510;font-weight:600}
+details.coachnote[open] summary .cprev:after{content:" Riduci ▴"}
+details.coachnote .cfull{white-space:pre-line;margin-top:6px}
 .pday .t{font-weight:600}
 
 /* DIARIO */
@@ -661,6 +686,12 @@ function renderProgresso(){
       <div style="display:flex;gap:6px;margin-top:10px">${barre}</div>
       ${storico}${risultati}</div>`;
 }
+function kTipo(t){ return t==="riposo" ? "k-riposo" : t==="altro" ? "k-altro" : QUALITY.includes(t) ? "k-q" : "k-lento"; }
+function riassuntoCoach(txt){
+  const cut = txt.length > 110 ? txt.slice(0,110).trimEnd()+"…" : null;
+  if (!cut) return `<div class="coachnote"><b>Dal tuo coach</b><p>${esc(txt)}</p></div>`;
+  return `<details class="coachnote"><summary><b>Dal tuo coach</b><span class="cprev">${esc(cut)}</span></summary><p class="cfull">${esc(txt)}</p></details>`;
+}
 function renderHome(){
   renderPillola();
   renderProgresso();
@@ -687,7 +718,7 @@ function renderHome(){
       <p class="sub" style="margin-top:8px">Nel frattempo puoi già compilare il check-in del mattino e registrare i tuoi allenamenti nel diario.</p></div>`;
     renderMorning(); return;
   }
-  const noteHtml = S.plan?.coach_note ? `<div class="coachnote"><b>Dal tuo coach</b><p>${esc(S.plan.coach_note)}</p></div>` : "";
+  const noteHtml = S.plan?.coach_note ? riassuntoCoach(S.plan.coach_note) : "";
   // seduta di oggi
   const ses = S.sessions.find(s => s.session_date===TODAY);
   const done = S.workouts.find(x => x.day===TODAY && (x.sport||"corsa")==="corsa");
@@ -699,7 +730,7 @@ function renderHome(){
       <button class="btn primary full" data-open="workout">Registra un allenamento</button></div>`;
   } else {
     const isQ = QUALITY.includes(ses.type), rest = ses.type==="riposo";
-    html = `<div class="card session">
+    html = `<div class="card session ${kTipo(ses.type)}">
       <div class="head"><div><div class="sub">Oggi</div><h3>${esc(ses.title)}</h3></div>
       <span class="tag ${done?"done":saltata||rest?"rest":isQ?"q":""}">${done?"Fatto":saltata?"Non fatta":TYPES[ses.type]}</span></div>
       ${ses.description?`<div class="desc" style="white-space:pre-line">${descHtml(ses.description)}</div>`:""}
@@ -755,7 +786,8 @@ function renderPlan(){
   const weeks = (S.plan?.params?.weeks)||[];
   const groups = {};
   list.forEach(s => { const m = mondayOf(s.session_date); (groups[m] = groups[m] || []).push(s); });
-  $("plan-list").innerHTML = (S.plan?.coach_note ? `<div class="coachnote" style="margin-top:0"><b>Dal tuo coach</b><p>${esc(S.plan.coach_note)}</p></div>` : "") + Object.keys(groups).sort().map(m => {
+  const prossima = list.find(s => s.session_date >= TODAY)?.id;
+  $("plan-list").innerHTML = (S.plan?.coach_note ? riassuntoCoach(S.plan.coach_note) : "") + Object.keys(groups).sort().map(m => {
     const info = weeks.find(w => w.mon===m);
     const p = dayParts(m), e = dayParts(addDays(m,6));
     const km = info?.km ?? groups[m].reduce((t,x) => t + (+x.target_km||0), 0);
@@ -763,15 +795,15 @@ function renderPlan(){
       <div class="card" style="margin-top:0">${groups[m].map(s => {
         const d = dayParts(s.session_date), done = S.workouts.some(w => w.day===s.session_date && (w.sport||"corsa")==="corsa");
         const sk = !done && skipDi(S, s.session_date), aperta = !done && !sk && s.type !== "riposo" && s.session_date < TODAY && s.session_date >= addDays(TODAY,-7);
-        const purpose = "";
-        return `<div class="pday ${s.session_date<TODAY?"past":""} ${s.session_date===TODAY?"is-today":""}">
-          <div class="d">${d.n}<span>${d.w}</span></div>
-          <div><div class="t">${esc(s.title)} ${done?'<span class="tag done">Fatto</span>':sk?'<span class="tag rest">Non fatta</span>':QUALITY.includes(s.type)?'<span class="tag q">Qualità</span>':""}</div>
+        const tag = done ? '<span class="tag done">Fatto</span>' : sk ? '<span class="tag rest">Non fatta</span>' : QUALITY.includes(s.type) ? '<span class="tag q">Qualità</span>' : "";
+        return `<details class="pd ${kTipo(s.type)} ${s.session_date<TODAY?"past":""} ${s.session_date===TODAY?"is-today":""}" ${s.id===prossima?"open":""}>
+          <summary><div class="d">${d.n}<span>${d.w}</span></div><div class="t">${esc(s.title)} ${tag}</div><span class="chev">▾</span></summary>
+          <div class="pb">
           ${s.description?`<div class="sub" style="white-space:pre-line">${descHtml(s.description)}</div>`:""}
           ${s.coach_note?`<div class="sub" style="margin-top:6px;color:#8A5510"><b>Coach:</b> ${esc(s.coach_note)}</div>`:""}
           ${s.edited_by_coach?`<span class="tag" style="margin-top:6px">aggiornata dal coach</span>`:""}
           ${aperta ? `<div class="hint" style="margin-top:4px">Non registrata: <button class="link" data-open="workout" data-session="${s.id}">l'ho fatta</button> · <button class="link" data-skip="${s.session_date}">non l'ho fatta</button></div>` : ""}
-          <div>${msgBtn(S, s.session_date, me.id)}</div></div></div>`;
+          <div>${msgBtn(S, s.session_date, me.id)}</div></div></details>`;
       }).join("")}</div>`;
   }).join("");
 }
