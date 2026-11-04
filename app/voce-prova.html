@@ -52,6 +52,7 @@ function prepara(t){
     .replace(/(\d+)'(\d+)"/g, (_, a, b) => numIt(+a) + (+a === 1 ? " minuto e " : " minuti e ") + numIt(+b) + " secondi")
     .replace(/(\d+)'/g, (_, a) => numIt(+a) + (+a === 1 ? " minuto" : " minuti"))
     .replace(/(\d+)"/g, (_, a) => numIt(+a) + " secondi")
+    .replace(/(\d+)\s*x\s*(\d+)\s*m\b/gi, (_, a, b) => numIt(+a) + " per " + numIt(+b) + " metri")
     .replace(/(\d+)\s*x\s*(\d+)/gi, (_, a, b) => numIt(+a) + " per " + numIt(+b))
     .replace(/(\d+)\s*km\b/gi, (_, a) => numIt(+a) + " chilometri")
     .replace(/(\d+)\s*m\b/g, (_, a) => numIt(+a) + " metri")
