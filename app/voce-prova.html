@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Prova voce</title>
+<style>
+body{font-family:system-ui,sans-serif;margin:0;padding:16px;background:#f4f6f7;color:#1d2b30}
+h3{margin:8px 0 12px}
+textarea{width:100%;min-height:140px;font:16px system-ui,sans-serif;padding:10px;box-sizing:border-box;border:1px solid #c9d2d6;border-radius:10px}
+button{font:600 16px system-ui,sans-serif;padding:12px 18px;border:0;border-radius:12px;background:#0b5a6b;color:#fff;margin-top:10px;width:100%}
+#st{margin-top:10px;color:#555;font-size:14px;min-height:20px}
+</style>
+<script type="importmap">
+{"imports":{"onnxruntime-web":"https://cdn.jsdelivr.net/npm/onnxruntime-web@1.18.0/dist/ort.all.mjs"}}
+</script>
+</head>
+<body>
+<h3>Prova voce</h3>
+<textarea id="t">Oggi fai ripetute da 400 metri. Riscaldamento di 15 minuti facili, poi sei ripetute a ritmo gara con recupero di un minuto e mezzo.</textarea>
+<button id="go">Ascolta</button>
+<div id="st"></div>
+<script type="module">
+import * as tts from "https://cdn.jsdelivr.net/npm/@diffusionstudio/vits-web@1.0.3/dist/vits-web.js";
+const st = document.getElementById("st");
+let audio;
+document.getElementById("go").onclick = async () => {
+  try {
+    st.textContent = "Preparo la voce (la prima volta può richiedere un minuto)...";
+    const blob = await tts.predict({ text: document.getElementById("t").value, voiceId: "it_IT-riccardo-x_low" });
+    st.textContent = "";
+    if (audio) audio.pause();
+    audio = new Audio(URL.createObjectURL(blob));
+    await audio.play();
+  } catch (e) {
+    st.textContent = "Errore: " + (e?.message || e);
+  }
+};
+</script>
+</body>
+</html>
