@@ -102,6 +102,7 @@ h2{font:700 22px var(--cond);margin:24px 0 8px}
 .pd .pb{padding:0 0 14px 66px}
 .pd.past{opacity:.6}
 .pd.is-today .d{color:var(--sun)}
+.ascolta.on{background:var(--sea);color:#fff}
 .pd.k-lento{border-left:4px solid #5FA779;padding-left:10px}
 .pd.k-q{border-left:4px solid #E08A2E;padding-left:10px}
 .pd.k-altro{border-left:4px solid #6B7FD7;padding-left:10px}
@@ -686,6 +687,29 @@ function renderProgresso(){
       <div style="display:flex;gap:6px;margin-top:10px">${barre}</div>
       ${storico}${risultati}</div>`;
 }
+const ASC = {};
+const TTS = "speechSynthesis" in window;
+function testoSeduta(s){
+  return [s.title, s.description, s.explanation ? "Perché: " + s.explanation : ""].filter(Boolean).join(". ").replace(/\s+/g, " ");
+}
+function bottoneAscolta(s){
+  if (!TTS) return "";
+  ASC[s.id] = testoSeduta(s);
+  return `<button type="button" class="btn soft ascolta" data-ascolta="${s.id}">🔊 Ascolta</button>`;
+}
+document.addEventListener("click", e => {
+  const b = e.target.closest("[data-ascolta]"); if (!b || !TTS) return;
+  const ss = window.speechSynthesis;
+  document.querySelectorAll(".ascolta.on").forEach(x => x.classList.remove("on"));
+  if (ss.speaking){ ss.cancel(); return; }
+  const u = new SpeechSynthesisUtterance(ASC[b.dataset.ascolta] || "");
+  u.lang = "it-IT"; u.rate = 0.95;
+  u.onend = () => b.classList.remove("on");
+  b.classList.add("on"); ss.speak(u);
+});
+function spiegazioneHtml(s){
+  return s.explanation ? `<div class="coachnote"><b>Perché questa seduta</b><p>${esc(s.explanation)}</p></div>` : "";
+}
 function kTipo(t){ return t==="riposo" ? "k-riposo" : t==="altro" ? "k-altro" : QUALITY.includes(t) ? "k-q" : "k-lento"; }
 function riassuntoCoach(txt){
   const cut = txt.length > 110 ? txt.slice(0,110).trimEnd()+"…" : null;
@@ -734,6 +758,8 @@ function renderHome(){
       <div class="head"><div><div class="sub">Oggi</div><h3>${esc(ses.title)}</h3></div>
       <span class="tag ${done?"done":saltata||rest?"rest":isQ?"q":""}">${done?"Fatto":saltata?"Non fatta":TYPES[ses.type]}</span></div>
       ${ses.description?`<div class="desc" style="white-space:pre-line">${descHtml(ses.description)}</div>`:""}
+      ${spiegazioneHtml(ses)}
+      ${bottoneAscolta(ses)}
       ${zoneChips(ses)}
       ${ses.strength_note?`<p class="sub" style="margin-top:10px">Forza: ${esc(ses.strength_note)}</p>`:""}
       ${ses.coach_note?`<div class="coachnote" style="margin-top:10px"><b>Nota del coach</b><p>${esc(ses.coach_note)}</p></div>`:""}
@@ -800,6 +826,8 @@ function renderPlan(){
           <summary><div class="d">${d.n}<span>${d.w}</span></div><div class="t">${esc(s.title)} ${tag}</div><span class="chev">▾</span></summary>
           <div class="pb">
           ${s.description?`<div class="sub" style="white-space:pre-line">${descHtml(s.description)}</div>`:""}
+          ${spiegazioneHtml(s)}
+          ${bottoneAscolta(s)}
           ${s.coach_note?`<div class="sub" style="margin-top:6px;color:#8A5510"><b>Coach:</b> ${esc(s.coach_note)}</div>`:""}
           ${s.edited_by_coach?`<span class="tag" style="margin-top:6px">aggiornata dal coach</span>`:""}
           ${aperta ? `<div class="hint" style="margin-top:4px">Non registrata: <button class="link" data-open="workout" data-session="${s.id}">l'ho fatta</button> · <button class="link" data-skip="${s.session_date}">non l'ho fatta</button></div>` : ""}
@@ -2342,6 +2370,7 @@ function sheetCoachSession(x){
     <div class="field"><label for="cs-p">Obiettivo della seduta</label><input id="cs-p" value="${esc(isNew?"":purpose)}" placeholder="es. Alza la soglia anaerobica"></div>
     <div class="field"><label for="cs-de">Svolgimento (riscaldamento, parte centrale, ritmi, recuperi)</label><textarea id="cs-de" rows="6">${esc(isNew?"":rest.join("\n"))}</textarea></div>
     <div class="g2"><div class="field"><label for="cs-km">Km previsti</label><input id="cs-km" type="number" step="0.5" value="${x.target_km??""}"></div><div></div></div>
+    <div class="field"><label for="cs-e">Perché questa seduta (l'atleta la può ascoltare)</label><textarea id="cs-e" rows="3" placeholder="es. Servono a far abituare le gambe al ritmo veloce senza accumulare fatica.">${esc(isNew?"":x.explanation)}</textarea></div>
     <div class="field"><label for="cs-n">Nota per l'atleta</label><textarea id="cs-n" rows="2" placeholder="es. Se hai dormito poco, chiudi a 3 ripetute">${esc(x.coach_note)}</textarea></div>
     <label class="check field"><input id="cs-avvisa" type="checkbox" checked> Avvisa l'atleta con una notifica</label>
     <button class="btn primary full" id="cs-save">Salva</button>
@@ -2352,7 +2381,7 @@ function sheetCoachSession(x){
       const title = $("cs-ti").value.trim(); if (!title){ $("f-msg").className="msg err"; $("f-msg").textContent="Serve un titolo."; return; }
       const row = { session_date:$("cs-d").value, type:$("cs-t").value, title,
         description: [$("cs-p").value.trim(), $("cs-de").value.trim()].filter(Boolean).join("\n") || null,
-        target_km: $("cs-km").value ? +$("cs-km").value : null, coach_note: $("cs-n").value.trim() || null, edited_by_coach: true };
+        target_km: $("cs-km").value ? +$("cs-km").value : null, explanation: $("cs-e").value.trim() || null, coach_note: $("cs-n").value.trim() || null, edited_by_coach: true };
       const res = isNew ? await sb.from("planned_sessions").insert({ ...row, plan_id: CUR.plan.id, athlete_id: CUR.a.id, is_current: true, priority: 3 })
                         : await sb.from("planned_sessions").update(row).eq("id", x.id);
       if (!res.error && $("cs-avvisa").checked && CUR.plan?.status === "pubblicato")
