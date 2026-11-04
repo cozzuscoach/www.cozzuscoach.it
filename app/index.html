@@ -698,8 +698,30 @@ function numIt(n){
   if (n < 1000){ const h = Math.floor(n/100), r = n % 100; return (h === 1 ? "cento" : U_IT[h] + "cento") + (r ? numIt(r) : ""); }
   return String(n);
 }
+function pulisciTesto(t){
+  return String(t)
+    .replace(/[*_#`>|~]+/g, " ")
+    .replace(/^\s*(?:[-•]|\d+\.)\s+/gm, "")
+    .replace(/\p{Extended_Pictographic}/gu, " ")
+    .replace(/\n+/g, ". ")
+    .replace(/(\d+):(\d{2})(?=\s*\/?\s*km)/gi, (_, a, b) => numIt(+a) + " e " + numIt(+b))
+    .replace(/(\d+)\s*h\s*(\d+)\s*m(?:in)?\b/gi, (_, a, b) => (+a === 1 ? "un'ora" : numIt(+a) + " ore") + " e " + numIt(+b) + (+b === 1 ? " minuto" : " minuti"))
+    .replace(/(\d+)\s*h\b/gi, (_, a) => (+a === 1 ? "un'ora" : numIt(+a) + " ore"))
+    .replace(/(\d+)\s*min\b/gi, (_, a) => numIt(+a) + " minuti")
+    .replace(/(\d+),(\d+)/g, (_, a, b) => numIt(+a) + " virgola " + numIt(+b))
+    .replace(/(\d+)\.(\d+)/g, (_, a, b) => numIt(+a) + " virgola " + numIt(+b))
+    .replace(/\/\s*min\/km|min\/km|\/\s*km/gi, " al chilometro")
+    .replace(/\bFC\b/g, "frequenza cardiaca")
+    .replace(/\bHRV\b/g, "variabilità cardiaca")
+    .replace(/\bRPE\b/g, "sforzo percepito")
+    .replace(/\bbpm\b/gi, "battiti al minuto")
+    .replace(/km\/h/gi, "chilometri all'ora")
+    .replace(/(\d+)\s*%/g, (_, a) => numIt(+a) + " per cento")
+    .replace(/\.\s*\./g, ".")
+    .replace(/\s+/g, " ").trim();
+}
 function prepara(t){
-  return t
+  return pulisciTesto(t)
     .replace(/(\d+)'(\d+)"/g, (_, a, b) => numIt(+a) + (+a === 1 ? " minuto e " : " minuti e ") + numIt(+b) + " secondi")
     .replace(/(\d+)'/g, (_, a) => numIt(+a) + (+a === 1 ? " minuto" : " minuti"))
     .replace(/(\d+)"/g, (_, a) => numIt(+a) + " secondi")
@@ -724,9 +746,9 @@ function leggiAd(txt, btn){
   document.querySelectorAll(".ascolta.on").forEach(x => x.classList.remove("on"));
   btn.classList.add("on");
   const fine = () => btn.classList.remove("on");
-  const fallback = () => { if (!TTS) return fine(); const u = new SpeechSynthesisUtterance(txt); u.lang = "it-IT"; u.onend = fine; window.speechSynthesis.speak(u); };
+  const fallback = () => { if (!TTS) return fine(); const u = new SpeechSynthesisUtterance(txt); u.lang = "it-IT"; u.rate = 0.9; u.onend = fine; window.speechSynthesis.speak(u); };
   caricaVoce().then(t => t.predict({ text: prepara(txt), voiceId: "it_IT-paola-medium" }))
-    .then(blob => { AUDIO = new Audio(URL.createObjectURL(blob)); AUDIO.onended = fine; return AUDIO.play(); })
+    .then(blob => { AUDIO = new Audio(URL.createObjectURL(blob)); AUDIO.playbackRate = 0.88; AUDIO.preservesPitch = true; AUDIO.onended = fine; return AUDIO.play(); })
     .catch(fallback);
 }
 function bottoneAscolta(txt){
