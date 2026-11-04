@@ -20,16 +20,51 @@ button{font:600 16px system-ui,sans-serif;padding:12px 18px;border:0;border-radi
 <body>
 <h3>Prova voce</h3>
 <textarea id="t">Oggi fai ripetute da 400 metri. Riscaldamento di 15 minuti facili, poi sei ripetute a ritmo gara con recupero di un minuto e mezzo.</textarea>
+<select id="v" style="width:100%;margin-top:10px;padding:10px;font:16px system-ui,sans-serif;border-radius:10px;border:1px solid #c9d2d6">
+  <option value="it_IT-riccardo-x_low">Riccardo (leggera, scarica subito)</option>
+  <option value="it_IT-paola-medium">Paola (più naturale, prima volta più lenta)</option>
+</select>
 <button id="go">Ascolta</button>
 <div id="st"></div>
 <script type="module">
 import * as tts from "https://cdn.jsdelivr.net/npm/@diffusionstudio/vits-web@1.0.3/dist/vits-web.js";
+// voce media, non presente nell'elenco della libreria: va aggiunta a mano
+tts.PATH_MAP["it_IT-paola-medium"] = "it/it_IT/paola/medium/it_IT-paola-medium.onnx";
+
+const U = ["zero","uno","due","tre","quattro","cinque","sei","sette","otto","nove","dieci","undici","dodici","tredici","quattordici","quindici","sedici","diciassette","diciotto","diciannove"];
+const D = ["","","venti","trenta","quaranta","cinquanta","sessanta","settanta","ottanta","novanta"];
+function numIt(n){
+  if (n < 20) return U[n].replace("tre", "tre");
+  if (n < 100){
+    const d = Math.floor(n/10), u = n % 10;
+    if (!u) return D[d];
+    const base = (u === 1 || u === 8) ? D[d].slice(0,-1) : D[d];
+    return base + (u === 3 ? "tré" : U[u]);
+  }
+  if (n < 1000){
+    const h = Math.floor(n/100), r = n % 100;
+    return (h === 1 ? "cento" : U[h] + "cento") + (r ? numIt(r) : "");
+  }
+  return String(n);
+}
+function prepara(t){
+  return t
+    .replace(/(\d+)'(\d+)"/g, (_, a, b) => numIt(+a) + " minuti e " + numIt(+b) + " secondi")
+    .replace(/(\d+)'/g, (_, a) => numIt(+a) + " minuti")
+    .replace(/(\d+)"/g, (_, a) => numIt(+a) + " secondi")
+    .replace(/(\d+)\s*km\b/gi, (_, a) => numIt(+a) + " chilometri")
+    .replace(/(\d+)\s*m\b/g, (_, a) => numIt(+a) + " metri")
+    .replace(/(\d+)\s*x\s*(\d+)/gi, (_, a, b) => numIt(+a) + " per " + numIt(+b))
+    .replace(/\d+/g, m => numIt(+m))
+    .replace(/\s+/g, " ")
+    .trim();
+}
 const st = document.getElementById("st");
 let audio;
 document.getElementById("go").onclick = async () => {
   try {
     st.textContent = "Preparo la voce (la prima volta può richiedere un minuto)...";
-    const blob = await tts.predict({ text: document.getElementById("t").value, voiceId: "it_IT-riccardo-x_low" });
+    const blob = await tts.predict({ text: prepara(document.getElementById("t").value), voiceId: document.getElementById("v").value });
     st.textContent = "";
     if (audio) audio.pause();
     audio = new Audio(URL.createObjectURL(blob));
