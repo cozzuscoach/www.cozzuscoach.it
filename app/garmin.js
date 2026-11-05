@@ -28,8 +28,9 @@ async function renderGarmin(){
   const box = $("garmin-box");
   if (!box) return;
   const q = new URLSearchParams(location.search).get("garmin");
+  const passoUrl = new URLSearchParams(location.search).get("passo");
   if (q) history.replaceState(null, "", location.pathname);
-  const esito = q && GARMIN_ESITI[q] ? `<div class="msg ${q === "ok" ? "ok" : "err"}" style="margin-bottom:10px">${GARMIN_ESITI[q]}</div>` : "";
+  const esito = q && GARMIN_ESITI[q] ? `<div class="msg ${q === "ok" ? "ok" : "err"}" style="margin-bottom:10px">${GARMIN_ESITI[q]}${passoUrl ? " (" + esc(passoUrl) + ")" : ""}</div>` : "";
 
   const s = await garminCall({ action: "status" });
   if (s.error) { box.innerHTML = esito + `<p class="sub">Sezione non disponibile: ${esc(s.error)}</p>`; return; }

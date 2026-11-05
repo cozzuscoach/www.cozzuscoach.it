@@ -8,7 +8,8 @@ const SEC = Deno.env.get("GARMIN_CLIENT_SECRET")!;
 const REDIR = Deno.env.get("GARMIN_REDIRECT_URI")!;
 const APP = "https://www.cozzuscoach.it/app/";
 
-const back = (esito: string) => Response.redirect(`${APP}?garmin=${esito}`, 302);
+const back = (esito: string, passo = "") =>
+  Response.redirect(`${APP}?garmin=${esito}${passo ? "&passo=" + passo : ""}`, 302);
 
 Deno.serve(async (req) => {
   const url = new URL(req.url);
@@ -18,7 +19,7 @@ Deno.serve(async (req) => {
   if (!code || !state) return back("err");
 
   const { data: st } = await sb.from("garmin_oauth_states").select("*").eq("state", state).maybeSingle();
-  if (!st) return back("err");
+  if (!st) return back("err", "stato");
   await sb.from("garmin_oauth_states").delete().eq("state", state); // uso singolo
   if (Date.now() - new Date(st.created_at).getTime() > 15 * 60e3) return back("scaduto");
 
@@ -36,13 +37,19 @@ Deno.serve(async (req) => {
       client_id: CID,
     }),
   });
-  if (!tr.ok) return back("err");
+  if (!tr.ok) {
+    console.error("token", tr.status, await tr.text());
+    return back("err", "token" + tr.status);
+  }
   const t = await tr.json();
 
   const ur = await fetch("https://apis.garmin.com/wellness-api/rest/user/id", {
     headers: { Authorization: "Bearer " + t.access_token },
   });
-  if (!ur.ok) return back("err");
+  if (!ur.ok) {
+    console.error("userid", ur.status, await ur.text());
+    return back("err", "utente" + ur.status);
+  }
   const { userId } = await ur.json();
 
   // Un account Garmin collegato a un solo atleta
@@ -59,5 +66,6 @@ Deno.serve(async (req) => {
     consent_at: now.toISOString(),
     connected_at: now.toISOString(),
   });
-  return back(error ? "err" : "ok");
+  if (error) console.error("upsert", error.message);
+  return back(error ? "err" : "ok", error ? "salvataggio" : "");
 });
