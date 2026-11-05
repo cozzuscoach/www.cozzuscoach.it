@@ -1,6 +1,6 @@
 // Cozzu's Coach - service worker
 // La pagina viene sempre richiesta alla rete: la copia salvata serve solo offline.
-const CACHE = "cc-v2";
+const CACHE = "cc-v3";
 
 self.addEventListener("install", () => self.skipWaiting());
 self.addEventListener("activate", e => e.waitUntil((async () => {
