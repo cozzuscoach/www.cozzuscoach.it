@@ -41,3 +41,6 @@ alter table garmin_activities enable row level security;
 -- L'atleta legge solo le proprie attività
 create policy "garmin_activities_own_select" on garmin_activities
   for select using (auth.uid() = user_id);
+
+-- Collegamento tra attività Garmin e allenamento registrato
+alter table garmin_activities add column if not exists workout_id bigint;
