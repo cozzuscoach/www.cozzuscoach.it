@@ -16,7 +16,10 @@ Deno.serve(async (req) => {
   if (url.searchParams.get("error")) return back("annullato");
   const code = url.searchParams.get("code");
   const state = url.searchParams.get("state");
-  if (!code || !state) return back("err");
+  if (!code || !state) {
+    console.error("parametri", url.search);
+    return back("err", "parametri");
+  }
 
   const { data: st } = await sb.from("garmin_oauth_states").select("*").eq("state", state).maybeSingle();
   if (!st) return back("err", "stato");
