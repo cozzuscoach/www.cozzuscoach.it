@@ -432,6 +432,8 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid #
       <h2>Le tue scarpe</h2>
       <div class="card" id="shoes-list"></div>
       <button class="btn soft full" id="btn-shoe">+ Aggiungi scarpe</button>
+      <h2>Garmin Connect</h2>
+      <div class="card" id="garmin-box"></div>
       <h2>Notifiche</h2>
       <div class="card" id="push-box"></div>
       <h2>Privacy</h2>
@@ -505,6 +507,7 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid #
 
 <div id="sheet-root"></div>
 
+<script src="garmin.js"></script>
 <script>
 const APP_VERSION = "2026-10-17 · 44";
 const PRIVACY_VERSION = "2026-10-02";          // da cambiare quando cambia l'informativa: il consenso viene richiesto di nuovo
@@ -616,7 +619,7 @@ async function loadAthlete(){
   $("hello").textContent = "Ciao " + (me.full_name||"").split(" ")[0];
   $("me-name").textContent = me.full_name;
   S = await fetchAthlete(me.id);
-  renderHome(); renderPlan(); renderDiary(S, $("diary-list"), true); renderRaces(); renderMe(); renderStats(); renderPush(); renderMeActions(); renderNutri(); renderPrivacy(); renderShoes(); renderRecapHome(); renderSub();
+  renderHome(); renderPlan(); renderDiary(S, $("diary-list"), true); renderRaces(); renderMe(); renderStats(); renderPush(); renderMeActions(); renderNutri(); renderPrivacy(); renderShoes(); renderRecapHome(); renderSub(); renderGarmin();
   if (!$("sheet-root").innerHTML) mostraAnnuncio();
   // arriva dal calendario con una gara scelta: diventa una richiesta al coach
   const g = pendingGara();
