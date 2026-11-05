@@ -11,8 +11,10 @@ async function garminCall(body){
       headers: { "Content-Type": "application/json", apikey: GARMIN_KEY, Authorization: "Bearer " + data.session.access_token },
       body: JSON.stringify(body),
     });
-    return await r.json();
-  } catch (e) { return { error: "connessione assente" }; }
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok && !j.error) j.error = "HTTP " + r.status;
+    return j;
+  } catch (e) { return { error: "connessione: " + (e && e.message ? e.message : e) }; }
 }
 
 const GARMIN_ESITI = {
@@ -30,7 +32,7 @@ async function renderGarmin(){
   const esito = q && GARMIN_ESITI[q] ? `<div class="msg ${q === "ok" ? "ok" : "err"}" style="margin-bottom:10px">${GARMIN_ESITI[q]}</div>` : "";
 
   const s = await garminCall({ action: "status" });
-  if (s.error) { box.innerHTML = esito + `<p class="sub">Sezione non disponibile in questo momento.</p>`; return; }
+  if (s.error) { box.innerHTML = esito + `<p class="sub">Sezione non disponibile: ${esc(s.error)}</p>`; return; }
 
   if (!s.connected) {
     box.innerHTML = esito + `
