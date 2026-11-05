@@ -3,20 +3,26 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-const CORS = {
-  "Access-Control-Allow-Origin": "https://www.cozzuscoach.it",
+// Origini ammesse: l'app può essere aperta con o senza "www"
+const ORIGINI = ["https://www.cozzuscoach.it", "https://cozzuscoach.it"];
+let ORIGIN = ORIGINI[0];
+const corsDi = () => ({
+  "Access-Control-Allow-Origin": ORIGIN,
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
+  "Vary": "Origin",
+});
 const json = (b: unknown, s = 200) =>
-  new Response(JSON.stringify(b), { status: s, headers: { ...CORS, "Content-Type": "application/json" } });
+  new Response(JSON.stringify(b), { status: s, headers: { ...corsDi(), "Content-Type": "application/json" } });
 
 const b64u = (buf: ArrayBuffer) =>
   btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 const rnd = (n: number) => b64u(crypto.getRandomValues(new Uint8Array(n)).buffer);
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
+  const o = req.headers.get("Origin") || "";
+  ORIGIN = ORIGINI.includes(o) ? o : ORIGINI[0];
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsDi() });
   if (req.method !== "POST") return json({ error: "metodo non valido" }, 405);
 
   const jwt = (req.headers.get("Authorization") || "").replace("Bearer ", "");
