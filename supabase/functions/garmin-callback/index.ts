@@ -38,6 +38,7 @@ Deno.serve(async (req) => {
       code_verifier: st.code_verifier,
       redirect_uri: REDIR,
       client_id: CID,
+      client_secret: SEC,
     }),
   });
   if (!tr.ok) {
