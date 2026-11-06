@@ -115,8 +115,14 @@ Deno.serve(async (req) => {
   }
   for (const s of p.stressDetails ?? []) {
     const u = await utentePerGarmin(s.userId);
-    // Solo Body Battery del risveglio
-    if (u) await aggiornaCheckin(u, s.calendarDate, { body_battery: s.bodyBatteryAtWakeTime ?? null });
+    // Body Battery del risveglio: massimo tra le 00:00 e le 08:00 (ora locale)
+    const offLocale = s.startTimeOffsetInSeconds ?? 0;
+    let massimo: number | null = null;
+    for (const [off, val] of Object.entries(s.timeOffsetBodyBatteryValues ?? {})) {
+      const ora = (((s.startTimeInSeconds + Number(off) + offLocale) % 86400) + 86400) % 86400;
+      if (ora < 8 * 3600 && typeof val === "number" && (massimo === null || val > massimo)) massimo = val;
+    }
+    if (u) await aggiornaCheckin(u, s.calendarDate, { body_battery: massimo });
   }
   for (const s of p.sleeps ?? []) {
     const u = await utentePerGarmin(s.userId);
