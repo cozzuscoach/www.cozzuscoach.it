@@ -115,7 +115,11 @@ Deno.serve(async (req) => {
   }
   for (const s of p.stressDetails ?? []) {
     const u = await utentePerGarmin(s.userId);
-    if (u) await aggiornaCheckin(u, s.calendarDate, { body_battery: s.bodyBatteryChargedValueInPercent ?? null });
+    // Body Battery del risveglio; se manca, ultimo valore della giornata
+    const ultimo = Object.entries(s.timeOffsetBodyBatteryValues ?? {})
+      .sort((a: any, b: any) => Number(a[0]) - Number(b[0])).pop()?.[1] ?? null;
+    const bb = s.bodyBatteryAtWakeTime ?? ultimo;
+    if (u) await aggiornaCheckin(u, s.calendarDate, { body_battery: bb as number | null });
   }
   for (const s of p.sleeps ?? []) {
     const u = await utentePerGarmin(s.userId);
