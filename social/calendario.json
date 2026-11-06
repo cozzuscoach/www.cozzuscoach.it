@@ -474,7 +474,8 @@
       "media": [
         "https://cozzuscoach.it/social/media/2026-11-06-1530-gare.jpg"
       ],
-      "stato": "programmato"
+      "stato": "in_corso",
+      "tentativi": 1
     },
     {
       "id": "2026-11-06-1830-allenamento",
