@@ -56,6 +56,20 @@ async function collegaAllenamento(a: any, userId: string) {
   await sb.from("garmin_activities").update({ workout_id: w.id }).eq("summary_id", String(a.summaryId));
 }
 
+// Utente collegato dal suo ID Garmin
+async function utentePerGarmin(garminUserId: string): Promise<string | null> {
+  const { data } = await sb.from("garmin_connections").select("user_id").eq("garmin_user_id", garminUserId).maybeSingle();
+  return data?.user_id ?? null;
+}
+
+// Aggiorna solo i campi che arrivano da Garmin: gli altri (gambe, umore, peso, note) restano invariati
+async function aggiornaCheckin(userId: string, day: string, campi: Record<string, number | null>) {
+  const v = Object.fromEntries(Object.entries(campi).filter(([, x]) => x !== null && x !== undefined));
+  if (!Object.keys(v).length || !day) return;
+  const { error } = await sb.from("daily_checkins").upsert({ athlete_id: userId, day, ...v }, { onConflict: "athlete_id,day" });
+  if (error) console.error("checkin upsert", error.message);
+}
+
 Deno.serve(async (req) => {
   if (req.method !== "POST") return new Response("ok");
   const p = await req.json().catch(() => ({}));
@@ -86,6 +100,27 @@ Deno.serve(async (req) => {
       raw: a,
     });
     await collegaAllenamento(a, c.user_id);
+  }
+
+  // Dati di salute: frequenza a riposo, Body Battery, sonno, HRV
+  for (const d of p.dailies ?? []) {
+    const u = await utentePerGarmin(d.userId);
+    if (u) await aggiornaCheckin(u, d.calendarDate, { rhr_bpm: d.restingHeartRateInBeatsPerMinute ?? null });
+  }
+  for (const s of p.stressDetails ?? []) {
+    const u = await utentePerGarmin(s.userId);
+    if (u) await aggiornaCheckin(u, s.calendarDate, { body_battery: s.bodyBatteryChargedValueInPercent ?? null });
+  }
+  for (const s of p.sleeps ?? []) {
+    const u = await utentePerGarmin(s.userId);
+    if (u) await aggiornaCheckin(u, s.calendarDate, {
+      sleep_min: s.durationInSeconds != null ? Math.round(s.durationInSeconds / 60) : null,
+      sleep_score: s.sleepScores?.overall?.value ?? s.overallSleepScore?.value ?? null,
+    });
+  }
+  for (const h of p.hrv ?? []) {
+    const u = await utentePerGarmin(h.userId);
+    if (u) await aggiornaCheckin(u, h.calendarDate, { hrv_ms: h.lastNightAvg ?? null });
   }
 
   for (const d of p.deregistrations ?? []) {
