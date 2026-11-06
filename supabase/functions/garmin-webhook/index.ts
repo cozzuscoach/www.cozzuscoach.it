@@ -59,6 +59,8 @@ async function collegaAllenamento(a: any, userId: string) {
 Deno.serve(async (req) => {
   if (req.method !== "POST") return new Response("ok");
   const p = await req.json().catch(() => ({}));
+  // Registra i tipi di notifica ricevuti (per verificare quali dati di salute arrivano)
+  console.info("tipi", Object.keys(p).join(","), "conteggi", JSON.stringify(Object.fromEntries(Object.entries(p).map(([k, v]: [string, any]) => [k, Array.isArray(v) ? v.length : typeof v]))));
 
   for (const a of p.activities ?? []) {
     const { data: c } = await sb.from("garmin_connections")
