@@ -102,6 +102,12 @@ Deno.serve(async (req) => {
     await collegaAllenamento(a, c.user_id);
   }
 
+  // Diagnostica: nomi dei campi del primo elemento di ogni tipo di dato
+  for (const k of ["dailies", "stressDetails", "sleeps", "hrv"]) {
+    const primo = (p as any)[k]?.[0];
+    if (primo) console.info("campi", k, Object.keys(primo).join(","));
+  }
+
   // Dati di salute: frequenza a riposo, Body Battery, sonno, HRV
   for (const d of p.dailies ?? []) {
     const u = await utentePerGarmin(d.userId);
