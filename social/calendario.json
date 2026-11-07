@@ -510,8 +510,10 @@
       "media": [
         "https://cozzuscoach.it/social/media/2026-11-07-0700-consiglio.jpg"
       ],
-      "stato": "in_corso",
-      "tentativi": 1
+      "stato": "pubblicato",
+      "tentativi": 1,
+      "ig_id": "18230260993334066",
+      "pubblicato_il": "2026-11-07T07:01+01:00"
     },
     {
       "id": "2026-11-07-motivazione",
