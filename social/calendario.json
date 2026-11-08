@@ -573,8 +573,10 @@
       "media": [
         "https://cozzuscoach.it/social/media/2026-11-08-0700-consiglio.jpg"
       ],
-      "stato": "in_corso",
-      "tentativi": 1
+      "stato": "pubblicato",
+      "tentativi": 1,
+      "ig_id": "18110754416259926",
+      "pubblicato_il": "2026-11-08T07:01+01:00"
     },
     {
       "id": "2026-11-08-settimana",
