@@ -772,8 +772,10 @@
       "media": [
         "https://cozzuscoach.it/social/media/2026-11-11-0700-consiglio.jpg"
       ],
-      "stato": "in_corso",
-      "tentativi": 1
+      "stato": "pubblicato",
+      "tentativi": 1,
+      "ig_id": "17999191527107579",
+      "pubblicato_il": "2026-11-11T07:01+01:00"
     },
     {
       "id": "2026-11-11-tibia",
