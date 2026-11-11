@@ -828,8 +828,10 @@
       "media": [
         "https://cozzuscoach.it/social/media/2026-11-11-2100-domani.jpg"
       ],
-      "stato": "in_corso",
-      "tentativi": 1
+      "stato": "pubblicato",
+      "tentativi": 1,
+      "ig_id": "17964567470998548",
+      "pubblicato_il": "2026-11-11T21:03+01:00"
     },
     {
       "id": "2026-11-12-0700-consiglio",
