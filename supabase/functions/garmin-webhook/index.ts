@@ -110,7 +110,7 @@ async function ricalcolaGiorno(userId: string, day: string, sport: string) {
       workout_id: wid,
       athlete_id: userId,
       ord: i + 1,
-      phase: n === 1 ? "lavoro" : i === 0 ? "riscaldamento" : i === n - 1 ? "defaticamento" : "lavoro",
+      phase: n === 1 ? "lavoro" : i === 0 ? "riscaldamento" : (n >= 3 && i === n - 1) ? "defaticamento" : "lavoro",
       label: `${a.raw?.activityName ?? "Attività"} (${i + 1}/${n})`,
       distance_km: a.distance_m ? +(a.distance_m / 1000).toFixed(2) : null,
       duration_s: a.duration_s ?? null,
