@@ -6,7 +6,7 @@ const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SE
 
 // Tipi Garmin -> sport dell'app
 const SPORT: Record<string, string> = {
-  RUNNING: "corsa", TRAIL_RUNNING: "corsa", TREADMILL_RUNNING: "corsa",
+  RUNNING: "corsa", TRAIL_RUNNING: "corsa", TREADMILL_RUNNING: "corsa", TRACK_RUNNING: "corsa",
   CYCLING: "bici", INDOOR_CYCLING: "bici", LAP_SWIMMING: "nuoto", OPEN_WATER_SWIMMING: "nuoto",
   STRENGTH_TRAINING: "palestra",
 };
