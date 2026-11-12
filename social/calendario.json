@@ -865,9 +865,10 @@
       "media": [
         "https://cozzuscoach.it/social/media/2026-11-12-check-in.mp4"
       ],
-      "stato": "programmato",
+      "stato": "in_corso",
       "didascalia": "Dormito male? Il programma se ne accorge 😴➡️🏃\n\nCon Cozzu’s Coach ogni mattina fai un check-in veloce: sonno, frequenza a riposo, HRV, sensazioni.\n\n1️⃣ La sera i tuoi dati vengono confrontati con la tua media\n2️⃣ Se qualcosa non torna, al coach arriva una proposta per la seduta di domani\n3️⃣ Decide sempre il coach: spostare le ripetute, accorciare, oppure lasciare tutto com’è\n\nPerché il piano è importante, ma conta anche la settimana che stai vivendo.\n\n👉 Richiedi il tuo programma: link in bio o scrivici in DM.\n\n#cozzuscoach #corsa #running #runningitalia #salento #salentorunning #puglia #runner #allenamento #pianodiallenamento #coachdicorsa #recupero",
-      "copertina": "https://cozzuscoach.it/social/media/2026-11-12-check-in-copertina.jpg"
+      "copertina": "https://cozzuscoach.it/social/media/2026-11-12-check-in-copertina.jpg",
+      "tentativi": 1
     },
     {
       "id": "2026-11-12-1530-lo-sapevi",
