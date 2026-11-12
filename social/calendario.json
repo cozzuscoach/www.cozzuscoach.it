@@ -880,8 +880,10 @@
       "media": [
         "https://cozzuscoach.it/social/media/2026-11-12-1530-lo-sapevi.jpg"
       ],
-      "stato": "in_corso",
-      "tentativi": 1
+      "stato": "pubblicato",
+      "tentativi": 1,
+      "ig_id": "18134573017791329",
+      "pubblicato_il": "2026-11-12T15:31+01:00"
     },
     {
       "id": "2026-11-12-1830-allenamento",
