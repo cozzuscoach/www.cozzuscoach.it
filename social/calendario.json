@@ -11,7 +11,8 @@
       "stato": "pubblicato",
       "tentativi": 1,
       "ig_id": "18132872557746775",
-      "pubblicato_il": "2026-10-30T15:42+01:00"
+      "pubblicato_il": "2026-10-30T15:42+01:00",
+      "media_rimossi": true
     },
     {
       "id": "2026-10-30-1830-allenamento",
@@ -23,7 +24,8 @@
       "stato": "pubblicato",
       "tentativi": 1,
       "ig_id": "17914887132286289",
-      "pubblicato_il": "2026-10-30T18:34+01:00"
+      "pubblicato_il": "2026-10-30T18:34+01:00",
+      "media_rimossi": true
     },
     {
       "id": "2026-10-30-2100-domani",
@@ -35,7 +37,8 @@
       "stato": "pubblicato",
       "tentativi": 1,
       "ig_id": "18036985751889957",
-      "pubblicato_il": "2026-10-30T23:34+01:00"
+      "pubblicato_il": "2026-10-30T23:34+01:00",
+      "media_rimossi": true
     },
     {
       "id": "2026-10-31-0700-consiglio",
@@ -47,7 +50,8 @@
       "stato": "pubblicato",
       "tentativi": 1,
       "ig_id": "17946374832360267",
-      "pubblicato_il": "2026-10-31T09:40+01:00"
+      "pubblicato_il": "2026-10-31T09:40+01:00",
+      "media_rimossi": true
     },
     {
       "id": "2026-10-31-lungo",
@@ -67,7 +71,8 @@
       "tentativi": 1,
       "ig_id": "18440368777178316",
       "pubblicato_il": "2026-10-31T16:05+01:00",
-      "fb_id": "1413341981858220_122099494215533413"
+      "fb_id": "1413341981858220_122099494215533413",
+      "media_rimossi": true
     },
     {
       "id": "2026-10-31-1530-lo-sapevi",
@@ -79,7 +84,8 @@
       "stato": "pubblicato",
       "tentativi": 1,
       "ig_id": "18104152379040632",
-      "pubblicato_il": "2026-10-31T16:05+01:00"
+      "pubblicato_il": "2026-10-31T16:05+01:00",
+      "media_rimossi": true
     },
     {
       "id": "2026-10-31-1830-allenamento",
@@ -91,7 +97,8 @@
       "stato": "pubblicato",
       "tentativi": 1,
       "ig_id": "18113283968582905",
-      "pubblicato_il": "2026-10-31T20:27+01:00"
+      "pubblicato_il": "2026-10-31T20:27+01:00",
+      "media_rimossi": true
     },
     {
       "id": "2026-10-31-2100-domani",
@@ -103,7 +110,8 @@
       "stato": "pubblicato",
       "tentativi": 1,
       "ig_id": "17916137502542980",
-      "pubblicato_il": "2026-10-31T23:41+01:00"
+      "pubblicato_il": "2026-10-31T23:41+01:00",
+      "media_rimossi": true
     },
     {
       "id": "2026-11-01-0700-consiglio",
@@ -115,7 +123,8 @@
       "stato": "pubblicato",
       "tentativi": 1,
       "ig_id": "18081252920383625",
-      "pubblicato_il": "2026-11-01T09:44+01:00"
+      "pubblicato_il": "2026-11-01T09:44+01:00",
+      "media_rimossi": true
     },
     {
       "id": "2026-11-01-fatica",
@@ -135,7 +144,8 @@
       "tentativi": 1,
       "ig_id": "18377099956243222",
       "pubblicato_il": "2026-11-01T16:47+01:00",
-      "fb_id": "1413341981858220_122100443907533413"
+      "fb_id": "1413341981858220_122100443907533413",
+      "media_rimossi": true
     },
     {
       "id": "2026-11-01-1530-lo-sapevi",
@@ -147,7 +157,8 @@
       "stato": "pubblicato",
       "tentativi": 1,
       "ig_id": "18120620230766243",
-      "pubblicato_il": "2026-11-01T16:48+01:00"
+      "pubblicato_il": "2026-11-01T16:48+01:00",
+      "media_rimossi": true
     },
     {
       "id": "2026-11-01-1830-allenamento",
@@ -159,7 +170,8 @@
       "stato": "pubblicato",
       "tentativi": 1,
       "ig_id": "18004243295800770",
-      "pubblicato_il": "2026-11-01T21:12+01:00"
+      "pubblicato_il": "2026-11-01T21:12+01:00",
+      "media_rimossi": true
     },
     {
       "id": "2026-11-01-2100-domani",
@@ -171,7 +183,8 @@
       "stato": "pubblicato",
       "tentativi": 1,
       "ig_id": "18192211255406888",
-      "pubblicato_il": "2026-11-01T21:12+01:00"
+      "pubblicato_il": "2026-11-01T21:12+01:00",
+      "media_rimossi": true
     },
     {
       "id": "2026-11-02-0700-consiglio",
@@ -1030,6 +1043,353 @@
       "tipo": "story",
       "media": [
         "https://cozzuscoach.it/social/media/2026-11-15-2100-domani.jpg"
+      ],
+      "stato": "programmato"
+    },
+    {
+      "id": "2026-11-16-0700-consiglio",
+      "quando": "2026-11-16T07:00",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-11-16-0700-consiglio.jpg"
+      ],
+      "stato": "programmato"
+    },
+    {
+      "id": "2026-11-16-zone-fc",
+      "quando": "2026-11-16T13:00",
+      "tipo": "carousel",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-11-16-zone-fc-1.jpg",
+        "https://cozzuscoach.it/social/media/2026-11-16-zone-fc-2.jpg",
+        "https://cozzuscoach.it/social/media/2026-11-16-zone-fc-3.jpg",
+        "https://cozzuscoach.it/social/media/2026-11-16-zone-fc-4.jpg",
+        "https://cozzuscoach.it/social/media/2026-11-16-zone-fc-5.jpg",
+        "https://cozzuscoach.it/social/media/2026-11-16-zone-fc-6.jpg",
+        "https://cozzuscoach.it/social/media/2026-11-16-zone-fc-7.jpg"
+      ],
+      "stato": "programmato",
+      "didascalia": "Le zone di frequenza cardiaca, spiegate semplici ❤️🏃\n\n1️⃣ Ti servono due numeri: FC a riposo (al mattino, appena sveglio) e FC massima (meglio da un test o da una gara che da una formula)\n2️⃣ Riserva cardiaca = FC massima − FC a riposo\n3️⃣ Metodo Karvonen: FC di lavoro = FC a riposo + % della riserva\n4️⃣ Esempio: riposo 55, massima 185 → il lento si corre tra 136 e 149 battiti\n5️⃣ La FC va letta insieme al ritmo e alle sensazioni\n\nConosci la tua FC a riposo? Scrivila nei commenti 👇\n\nIndicazioni di orientamento: se hai problemi di cuore o prendi farmaci che modificano la frequenza, chiedi prima al tuo medico.\n\n👉 Richiedi il tuo programma: link in bio o scrivici in DM.\n\n#cozzuscoach #corsa #running #runningitalia #salento #salentorunning #puglia #runner #allenamento #frequenzacardiaca #zonecardio #karvonen"
+    },
+    {
+      "id": "2026-11-16-1530-lo-sapevi",
+      "quando": "2026-11-16T15:30",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-11-16-1530-lo-sapevi.jpg"
+      ],
+      "stato": "programmato"
+    },
+    {
+      "id": "2026-11-16-1830-allenamento",
+      "quando": "2026-11-16T18:30",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-11-16-1830-allenamento.jpg"
+      ],
+      "stato": "programmato"
+    },
+    {
+      "id": "2026-11-16-2100-domani",
+      "quando": "2026-11-16T21:00",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-11-16-2100-domani.jpg"
+      ],
+      "stato": "programmato"
+    },
+    {
+      "id": "2026-11-17-0700-consiglio",
+      "quando": "2026-11-17T07:00",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-11-17-0700-consiglio.jpg"
+      ],
+      "stato": "programmato"
+    },
+    {
+      "id": "2026-11-17-salita",
+      "quando": "2026-11-17T13:00",
+      "tipo": "reel",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-11-17-salita.mp4"
+      ],
+      "stato": "programmato",
+      "didascalia": "Le salite si corrono con la testa ⛰️🏃\n\nIl Salento è quasi tutto piatto, ma quando la salita arriva (in gara o sulla strada di casa) sono questi i dettagli che contano:\n\n⏱️ sforzo costante, non ritmo costante: il cronometro rallenta ed è giusto così\n👣 passi più corti e frequenti\n📐 busto leggermente in avanti dalle caviglie, senza piegarti in vita\n👀 sguardo una decina di metri avanti, braccia che lavorano\n🔁 in cima non fermarti: riprendi il tuo ritmo dopo qualche passo\n\nQual è la salita che temi di più? 👇\n\n👉 Richiedi il tuo programma: link in bio o scrivici in DM.\n\n#cozzuscoach #corsa #running #runningitalia #salento #salentorunning #puglia #runner #allenamento #tecnicadicorsa #salita",
+      "copertina": "https://cozzuscoach.it/social/media/2026-11-17-salita-copertina.jpg"
+    },
+    {
+      "id": "2026-11-17-1530-lo-sapevi",
+      "quando": "2026-11-17T15:30",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-11-17-1530-lo-sapevi.jpg"
+      ],
+      "stato": "programmato"
+    },
+    {
+      "id": "2026-11-17-1830-allenamento",
+      "quando": "2026-11-17T18:30",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-11-17-1830-allenamento.jpg"
+      ],
+      "stato": "programmato"
+    },
+    {
+      "id": "2026-11-17-2100-domani",
+      "quando": "2026-11-17T21:00",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-11-17-2100-domani.jpg"
+      ],
+      "stato": "programmato"
+    },
+    {
+      "id": "2026-11-18-0700-consiglio",
+      "quando": "2026-11-18T07:00",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-11-18-0700-consiglio.jpg"
+      ],
+      "stato": "programmato"
+    },
+    {
+      "id": "2026-11-18-bandelletta",
+      "quando": "2026-11-18T13:00",
+      "tipo": "carousel",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-11-18-bandelletta-1.jpg",
+        "https://cozzuscoach.it/social/media/2026-11-18-bandelletta-2.jpg",
+        "https://cozzuscoach.it/social/media/2026-11-18-bandelletta-3.jpg",
+        "https://cozzuscoach.it/social/media/2026-11-18-bandelletta-4.jpg",
+        "https://cozzuscoach.it/social/media/2026-11-18-bandelletta-5.jpg",
+        "https://cozzuscoach.it/social/media/2026-11-18-bandelletta-6.jpg",
+        "https://cozzuscoach.it/social/media/2026-11-18-bandelletta-7.jpg"
+      ],
+      "stato": "programmato",
+      "didascalia": "Infortuni del runner · Ep. 5 — La bandelletta ileotibiale 🦵\n\nDolore all’esterno del ginocchio che arriva sempre allo stesso chilometro? Nelle slide:\n📍 dove fa male\n❓ perché succede\n✅ cosa fare senza fermarti del tutto\n🏋️ gli esercizi per le anche\n🚩 quando farti vedere\n\nSalvalo e giralo a chi si ferma sempre a metà lungo.\n\nIndicazioni di orientamento: non sostituiscono il parere di un medico o di un fisioterapista.\n\n👉 Richiedi il tuo programma: link in bio o scrivici in DM.\n\n#cozzuscoach #corsa #running #runningitalia #salento #salentorunning #puglia #runner #allenamento #infortuni #bandellettaileotibiale #ginocchio #prevenzione"
+    },
+    {
+      "id": "2026-11-18-1530-lo-sapevi",
+      "quando": "2026-11-18T15:30",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-11-18-1530-lo-sapevi.jpg"
+      ],
+      "stato": "programmato"
+    },
+    {
+      "id": "2026-11-18-1830-allenamento",
+      "quando": "2026-11-18T18:30",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-11-18-1830-allenamento.jpg"
+      ],
+      "stato": "programmato"
+    },
+    {
+      "id": "2026-11-18-2100-domani",
+      "quando": "2026-11-18T21:00",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-11-18-2100-domani.jpg"
+      ],
+      "stato": "programmato"
+    },
+    {
+      "id": "2026-11-19-0700-consiglio",
+      "quando": "2026-11-19T07:00",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-11-19-0700-consiglio.jpg"
+      ],
+      "stato": "programmato"
+    },
+    {
+      "id": "2026-11-19-fasi",
+      "quando": "2026-11-19T13:00",
+      "tipo": "reel",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-11-19-fasi.mp4"
+      ],
+      "stato": "programmato",
+      "didascalia": "Base, costruzione, specifica, scarico: le 4 fasi di un programma 🗓️🏃\n\n1️⃣ Base: tanta corsa facile, per costruire resistenza e abitudine\n2️⃣ Costruzione: entrano soglia, ripetute e un po’ di forza\n3️⃣ Specifica: gli allenamenti somigliano sempre di più alla gara che hai scelto\n4️⃣ Scarico: meno volume nelle ultime settimane, per arrivare al via con le gambe fresche\n\nLa durata di ogni fase dipende dalla gara e dal tuo punto di partenza. Con Cozzu’s Coach il programma è costruito sui tuoi dati, rivisto e seguito dal coach, e ogni mattina ti dice anche perché fai quella seduta.\n\n👉 Richiedi il tuo programma: link in bio o scrivici in DM.\n\n#cozzuscoach #corsa #running #runningitalia #salento #salentorunning #puglia #runner #allenamento #pianodiallenamento #coachdicorsa #periodizzazione",
+      "copertina": "https://cozzuscoach.it/social/media/2026-11-19-fasi-copertina.jpg"
+    },
+    {
+      "id": "2026-11-19-1530-lo-sapevi",
+      "quando": "2026-11-19T15:30",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-11-19-1530-lo-sapevi.jpg"
+      ],
+      "stato": "programmato"
+    },
+    {
+      "id": "2026-11-19-1830-allenamento",
+      "quando": "2026-11-19T18:30",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-11-19-1830-allenamento.jpg"
+      ],
+      "stato": "programmato"
+    },
+    {
+      "id": "2026-11-19-2100-domani",
+      "quando": "2026-11-19T21:00",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-11-19-2100-domani.jpg"
+      ],
+      "stato": "programmato"
+    },
+    {
+      "id": "2026-11-20-0700-consiglio",
+      "quando": "2026-11-20T07:00",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-11-20-0700-consiglio.jpg"
+      ],
+      "stato": "programmato"
+    },
+    {
+      "id": "2026-11-20-gare",
+      "quando": "2026-11-20T13:00",
+      "tipo": "carousel",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-11-20-gare-1.jpg",
+        "https://cozzuscoach.it/social/media/2026-11-20-gare-2.jpg",
+        "https://cozzuscoach.it/social/media/2026-11-20-gare-3.jpg",
+        "https://cozzuscoach.it/social/media/2026-11-20-gare-4.jpg",
+        "https://cozzuscoach.it/social/media/2026-11-20-gare-5.jpg"
+      ],
+      "stato": "programmato",
+      "didascalia": "Gare del weekend: domenica 22 novembre 🏁\n\n📍 Taranto nel Cuore · Taranto · 10 km\n📍 Mezza Reggia-Reggia · Caserta · 21,1 km\n📍 La 10 km della Perla dello Jonio · Soverato (CZ)\n📍 StraFloridia · Floridia (SR) · 10 km\n✈️ Nel resto d’Italia: Milano21 (mezza e 10 km) e San Francesco Marathon ad Assisi (maratona, mezza e 10 km)\n\nControlla sempre orari e iscrizioni sui siti degli organizzatori. Calendario completo su cozzuscoach.it/calendario\n\nChi corre? Scrivi la tua gara nei commenti e tagga chi viene con te 👇\n\n👉 Richiedi il tuo programma: link in bio o scrivici in DM.\n\n#cozzuscoach #corsa #running #runningitalia #salento #salentorunning #puglia #runner #allenamento #taranto #tarantonelcuore #10km #mezzamaratona #maratona"
+    },
+    {
+      "id": "2026-11-20-1530-gare",
+      "quando": "2026-11-20T15:30",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-11-20-1530-gare.jpg"
+      ],
+      "stato": "programmato"
+    },
+    {
+      "id": "2026-11-20-1830-allenamento",
+      "quando": "2026-11-20T18:30",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-11-20-1830-allenamento.jpg"
+      ],
+      "stato": "programmato"
+    },
+    {
+      "id": "2026-11-20-2100-domani",
+      "quando": "2026-11-20T21:00",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-11-20-2100-domani.jpg"
+      ],
+      "stato": "programmato"
+    },
+    {
+      "id": "2026-11-21-0700-consiglio",
+      "quando": "2026-11-21T07:00",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-11-21-0700-consiglio.jpg"
+      ],
+      "stato": "programmato"
+    },
+    {
+      "id": "2026-11-21-voglia",
+      "quando": "2026-11-21T13:00",
+      "tipo": "reel",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-11-21-voglia.mp4"
+      ],
+      "stato": "programmato",
+      "didascalia": "Non serve avere voglia. Serve iniziare. 👟\n\nLa motivazione va e viene, soprattutto con le giornate corte e il freddo. L’abitudine invece resta. Il trucco è semplice: scarpe ai piedi e 10 minuti di corsa facile. Se dopo 10 minuti vuoi tornare a casa, torni. Quasi sempre, però, continui.\n\nBuona gara a chi corre domani a Taranto, Caserta, Milano e Assisi 💙\n\n👉 Richiedi il tuo programma: link in bio o scrivici in DM.\n\n#cozzuscoach #corsa #running #runningitalia #salento #salentorunning #puglia #runner #allenamento #motivazione #costanza #abitudine",
+      "copertina": "https://cozzuscoach.it/social/media/2026-11-21-voglia-copertina.jpg"
+    },
+    {
+      "id": "2026-11-21-1530-lo-sapevi",
+      "quando": "2026-11-21T15:30",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-11-21-1530-lo-sapevi.jpg"
+      ],
+      "stato": "programmato"
+    },
+    {
+      "id": "2026-11-21-1830-allenamento",
+      "quando": "2026-11-21T18:30",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-11-21-1830-allenamento.jpg"
+      ],
+      "stato": "programmato"
+    },
+    {
+      "id": "2026-11-21-2100-domani",
+      "quando": "2026-11-21T21:00",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-11-21-2100-domani.jpg"
+      ],
+      "stato": "programmato"
+    },
+    {
+      "id": "2026-11-22-0700-consiglio",
+      "quando": "2026-11-22T07:00",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-11-22-0700-consiglio.jpg"
+      ],
+      "stato": "programmato"
+    },
+    {
+      "id": "2026-11-22-settimana",
+      "quando": "2026-11-22T13:00",
+      "tipo": "carousel",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-11-22-settimana-1.jpg",
+        "https://cozzuscoach.it/social/media/2026-11-22-settimana-2.jpg",
+        "https://cozzuscoach.it/social/media/2026-11-22-settimana-3.jpg",
+        "https://cozzuscoach.it/social/media/2026-11-22-settimana-4.jpg",
+        "https://cozzuscoach.it/social/media/2026-11-22-settimana-5.jpg",
+        "https://cozzuscoach.it/social/media/2026-11-22-settimana-6.jpg",
+        "https://cozzuscoach.it/social/media/2026-11-22-settimana-7.jpg"
+      ],
+      "stato": "programmato",
+      "didascalia": "La settimana in 5 consigli 📌\n\n❤️ Zone cardio: calcolale sulla riserva cardiaca\n⛰️ Salita: sforzo costante e passi corti\n🦵 Bandelletta: meno discese, glutei più forti\n🗓️ Le 4 fasi: base, costruzione, specifica, scarico\n👟 Senza voglia? Dieci minuti, poi decidi\n\nHai corso oggi? Raccontaci com’è andata nei commenti 👇\n\n👉 Richiedi il tuo programma: link in bio o scrivici in DM.\n\n#cozzuscoach #corsa #running #runningitalia #salento #salentorunning #puglia #runner #allenamento"
+    },
+    {
+      "id": "2026-11-22-1530-lo-sapevi",
+      "quando": "2026-11-22T15:30",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-11-22-1530-lo-sapevi.jpg"
+      ],
+      "stato": "programmato"
+    },
+    {
+      "id": "2026-11-22-1830-allenamento",
+      "quando": "2026-11-22T18:30",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-11-22-1830-allenamento.jpg"
+      ],
+      "stato": "programmato"
+    },
+    {
+      "id": "2026-11-22-2100-domani",
+      "quando": "2026-11-22T21:00",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-11-22-2100-domani.jpg"
       ],
       "stato": "programmato"
     }
