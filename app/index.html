@@ -1273,7 +1273,7 @@ function sheetWorkout(ds){
       blocks[i] = { ...blocks[i], label: g("label").trim() || null,
         distance_km: sport === "nuoto" ? (dm === "" ? null : +dm/1000) : (dk === "" ? null : +dk),
         avg_hr: g("avg_hr") === "" ? null : +g("avg_hr"),
-        power_w: g("power_w") === "" ? null : +g("power_w"), duration_s: secs || null };
+        power_w: g("power_w") === "" ? null : +g("power_w"), duration_s: secs ? Math.round(secs) : null };
     });
   };
 
@@ -1389,7 +1389,7 @@ function sheetWorkout(ds){
       const F = b.reps.flatMap((r,k) => [r, ...(k < b.reps.length-1 && r.rec ? [r.rec] : [])]);
       const km = F.reduce((t,x) => t + (+x.dist_m||0), 0)/1000, sec = F.reduce((t,x) => t + (+x.time_s||0), 0);
       blocks[i] = { phase:"lavoro", zone: b.zone || null, label: same ? `${b.reps.length} × ${dm[0]} m` : null,
-        distance_km: km || null, duration_s: sec || null, avg_hr: null };
+        distance_km: km || null, duration_s: sec ? Math.round(sec) : null, avg_hr: null };
     } };
   let toccato = false;
   let delBound = false;
@@ -1488,7 +1488,7 @@ function sheetWorkout(ds){
         type: sport === "corsa" ? D.type : "altro",
         shoe_id: sport === "corsa" ? D.shoe_id : null,
         planned_session_id: sport === "corsa" ? (ps?.id ?? null) : null,
-        distance_km: t.km || null, duration_s: t.sec || null,
+        distance_km: t.km || null, duration_s: t.sec ? Math.round(t.sec) : null,
         avg_pace_s: sport === "corsa" && t.pace ? Math.round(t.pace) : null,
         work_pace_s: sport === "corsa" && t.work ? Math.round(t.work) : null,
         avg_hr: conFasi() ? (hrB.length ? Math.round(hrB.reduce((s,b) => s + b.avg_hr*b.duration_s, 0) / hrB.reduce((s,b) => s + b.duration_s, 0)) : null)
@@ -1507,13 +1507,13 @@ function sheetWorkout(ds){
           if (b.phase === "ripetute"){ g++; const n = b.reps.length, zone = zonaDi(b);
             b.reps.forEach((r,k) => {
               if (r.dist_m || r.time_s) righe.push({ phase:"lavoro", label:`Ripetuta ${k+1} di ${n}`, distance_km: r.dist_m ? r.dist_m/1000 : null,
-                duration_s: r.time_s || null, avg_hr: r.hr || null, details: { group: g, rep: k+1, of: n, zone } });
+                duration_s: r.time_s ? Math.round(r.time_s) : null, avg_hr: r.hr || null, details: { group: g, rep: k+1, of: n, zone } });
               if (k < n-1 && r.rec && (r.rec.dist_m || r.rec.time_s)) righe.push({ phase:"recupero", label:null,
-                distance_km: r.rec.dist_m ? r.rec.dist_m/1000 : null, duration_s: r.rec.time_s || null, avg_hr: null,
+                distance_km: r.rec.dist_m ? r.rec.dist_m/1000 : null, duration_s: r.rec.time_s ? Math.round(r.rec.time_s) : null, avg_hr: null,
                 details: { group: g, rep: k+1, how: r.rec.how || "lenta" } });
             });
           } else if (b.distance_km || b.duration_s || b.label) righe.push({ phase: b.phase, label: b.label || null,
-            distance_km: b.distance_km ?? null, duration_s: b.duration_s ?? null, avg_hr: b.avg_hr ?? null,
+            distance_km: b.distance_km ?? null, duration_s: b.duration_s != null ? Math.round(b.duration_s) : null, avg_hr: b.avg_hr ?? null,
             details: sport === "bici" && b.power_w ? { power_w: b.power_w } : (b.zone ? { zone: b.zone } : null) });
         });
         const rows = righe.map((r,i) => ({ ...r, workout_id: wid, athlete_id: me.id, ord: i+1 }));
