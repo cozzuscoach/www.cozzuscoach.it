@@ -1132,9 +1132,12 @@
         "https://cozzuscoach.it/social/media/2026-11-16-zone-fc-6.jpg",
         "https://cozzuscoach.it/social/media/2026-11-16-zone-fc-7.jpg"
       ],
-      "stato": "in_corso",
+      "stato": "pubblicato",
       "didascalia": "Le zone di frequenza cardiaca, spiegate semplici ❤️🏃\n\n1️⃣ Ti servono due numeri: FC a riposo (al mattino, appena sveglio) e FC massima (meglio da un test o da una gara che da una formula)\n2️⃣ Riserva cardiaca = FC massima − FC a riposo\n3️⃣ Metodo Karvonen: FC di lavoro = FC a riposo + % della riserva\n4️⃣ Esempio: riposo 55, massima 185 → il lento si corre tra 136 e 149 battiti\n5️⃣ La FC va letta insieme al ritmo e alle sensazioni\n\nConosci la tua FC a riposo? Scrivila nei commenti 👇\n\nIndicazioni di orientamento: se hai problemi di cuore o prendi farmaci che modificano la frequenza, chiedi prima al tuo medico.\n\n👉 Richiedi il tuo programma: link in bio o scrivici in DM.\n\n#cozzuscoach #corsa #running #runningitalia #salento #salentorunning #puglia #runner #allenamento #frequenzacardiaca #zonecardio #karvonen",
-      "tentativi": 1
+      "tentativi": 1,
+      "ig_id": "18174330979481149",
+      "pubblicato_il": "2026-11-16T13:02+01:00",
+      "fb_errore": "HTTP 500 su 1413341981858220/photos: {\"error\":{\"message\":\"An unknown error has occurred.\",\"type\":\"OAuthException\",\"code\":1,\"fbtrace_id\":\"AXzYQjJ1DZBvcD1SlDbGazf\"}}"
     },
     {
       "id": "2026-11-16-1530-lo-sapevi",
