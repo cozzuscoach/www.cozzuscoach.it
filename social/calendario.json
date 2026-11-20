@@ -1453,7 +1453,8 @@
       "media": [
         "https://cozzuscoach.it/social/media/2026-11-20-1830-allenamento.jpg"
       ],
-      "stato": "programmato"
+      "stato": "in_corso",
+      "tentativi": 1
     },
     {
       "id": "2026-11-20-2100-domani",
