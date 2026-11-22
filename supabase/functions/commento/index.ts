@@ -195,6 +195,7 @@ async function commentoSeduta(userId: string, workoutId: number, key: string | u
   const note = [w.notes, ck?.notes].filter(Boolean).join(" ").slice(0, 300);
   const dolore = DOLORE.test(note.replace(NEGAZIONE, ""));
   if (note) fatti.push(`Note dell'atleta: "${note}"`);
+  const libero = sp === "corsa" && !!ps && ps.type !== "riposo" && !dolore;
 
   if (sp !== "corsa") {
     caso = "altro_sport";
@@ -209,11 +210,11 @@ async function commentoSeduta(userId: string, workoutId: number, key: string | u
 
     // ► il giudizio guarda la sola fase di lavoro
     const L = faseLavoro(B, w);
-    if (L.distinta) {
+    if (L.distinta && !libero) {
       fatti.push(`LAVORO, è questo che va commentato: ${TIPI[tipo] || tipo}, ${L.km} km in ${fmtT(L.sec)}${L.pace ? `, passo ${pace(L.pace)}/km` : ""}${L.hr ? `, FC media ${L.hr}` : ""}`);
       const cont = [L.risc ? `${L.risc} km di riscaldamento` : "", L.def ? `${L.def} km di defaticamento` : ""].filter(Boolean).join(" e ");
       if (cont) fatti.push(`Contorno da NON giudicare: ${cont}. Totale di giornata ${w.distance_km ?? "?"} km, da non citare come se fosse il lavoro.`);
-    } else {
+    } else if (!libero) {
       fatti.push(`Seduta registrata senza fasi distinte: ${TIPI[tipo] || tipo}, ${w.distance_km ?? "?"} km in ${w.duration_s ? fmtT(w.duration_s) : "?"}${w.avg_pace_s ? `, passo medio ${pace(w.avg_pace_s)}/km` : ""}`);
     }
 
@@ -282,6 +283,15 @@ async function commentoSeduta(userId: string, workoutId: number, key: string | u
   const gara = (gare.data || []).find((g: any) => g.priority === "A") || gare.data?.[0];
   if (gara && caso !== "gara") fatti.push(`Gara obiettivo tra ${daysBetween(w.day, gara.race_date)} giorni: ${gara.name}`);
 
+  // modalità libera: l'AI legge il previsto e tutto lo svolto (esclusi riscaldamento e defaticamento) e giudica liberamente
+  const TESTA_LIBERA = `Hai davanti l'allenamento che il coach aveva previsto e tutto ciò che l'atleta ha svolto. Riscaldamento e defaticamento non si giudicano. Scrivi il commento che Biagio farebbe subito dopo: confronta il previsto con lo svolto, blocco per blocco, leggendo ritmi, ripetizioni, FC e fatica percepita. Ragiona su cosa allena davvero questa seduta, se il piano è stato rispettato e dove, e cosa conta per la prossima seduta o per la gara obiettivo. Non inventare dati che non compaiono (per esempio ritmi di tratti interni che non ci sono nei blocchi).`;
+  if (libero) {
+    const righe = String(ps.description || "").split("\n").map((r: string) => r.trim()).filter(Boolean);
+    fatti.push(`ALLENAMENTO PREVISTO dal coach:\n${righe.map((r: string) => "  " + r).join("\n")}`);
+    const svolto = (B || []).filter((b: any) => !["riscaldamento", "defaticamento"].includes(b.phase));
+    if (svolto.length) fatti.push(`ALLENAMENTO SVOLTO, blocco per blocco (esclusi riscaldamento e defaticamento):\n${svolto.map((b: any) => `  - ${b.label || b.phase}: ${b.distance_km ? b.distance_km + " km" : ""}${b.duration_s ? " in " + fmtT(b.duration_s) : ""}${b.distance_km && b.duration_s ? ", passo " + pace(b.duration_s / b.distance_km) + "/km" : ""}${b.avg_hr ? ", FC " + b.avg_hr : ""}`).join("\n")}`);
+    else fatti.push(`ALLENAMENTO SVOLTO senza blocchi: ${w.distance_km ?? "?"} km in ${w.duration_s ? fmtT(w.duration_s) : "?"}${w.avg_pace_s ? `, passo medio ${pace(w.avg_pace_s)}/km` : ""}${w.avg_hr ? `, FC ${w.avg_hr}` : ""}`);
+  }
   if (dolore) caso = "dolore";
 
   // testo
@@ -292,8 +302,8 @@ async function commentoSeduta(userId: string, workoutId: number, key: string | u
     const precedenti = (vecchi.data || []).map((v: any) => `- ${v.body}`).join("\n");
     const prompt = `Sei la voce di Biagio, allenatore di corsa di Cozzu's Coach, in Salento. Scrivi il commento che Biagio farebbe al suo atleta subito dopo l'allenamento appena registrato.
 
-IL GIUDIZIO È GIÀ DECISO, non cambiarlo e non aggiungerne altri:
-${CASI[caso]}
+${libero ? TESTA_LIBERA : `IL GIUDIZIO È GIÀ DECISO, non cambiarlo e non aggiungerne altri:
+${CASI[caso]}`}
 
 DATI DELLA SEDUTA:
 ${fatti.map((f) => "- " + f).join("\n")}
@@ -301,9 +311,9 @@ ${fatti.map((f) => "- " + f).join("\n")}
 REGOLE:
 - Italiano parlato, del tu, caldo e diretto, da allenatore che conosce bene l'atleta.
 - Se vuoi chiamarlo per nome scrivi esattamente {NOME}.
-- Da 2 a 4 frasi, al massimo 70 parole. Niente elenchi, titoli o firme. Al massimo una emoji.
+- Da 3 a 5 frasi, al massimo 100 parole. Niente elenchi, titoli o firme. Al massimo una emoji.
 - Cita uno o due dati reali tra quelli sopra; non inventare dati.
-- Commenta SOLO la fase di lavoro. Riscaldamento e defaticamento non si giudicano MAI, nemmeno se sono più brevi del previsto (l'atleta può non avere tempo): non nominarli e non citarne i chilometri. Non sommare mai le fasi e non citare il totale di giornata come se fosse il lavoro.
+- Commenta il lavoro svolto: tutti i blocchi tranne riscaldamento e defaticamento. Riscaldamento e defaticamento non si giudicano MAI, nemmeno se sono più brevi del previsto (l'atleta può non avere tempo): non nominarli e non citarne i chilometri. Non sommare mai le fasi e non citare il totale di giornata come se fosse il lavoro.
 - Non giudicare mai un tratto interno alla fase (es. "ultimi 20'", "ultimo km") né il ritmo in un momento preciso: nei dati hai solo il passo medio della fase, non i tratti. Giudica solo quello. Se il ritmo medio è vicino al previsto, dillo così com'è.
 - Quando è indicata una gara obiettivo, lega il giudizio a quella: di' cosa questa fase di lavoro costruisce per quella distanza.
 - Spiega il perché in modo semplice: cosa allena la seduta, cosa comporta per la prossima o per la gara.
