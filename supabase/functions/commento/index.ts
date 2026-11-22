@@ -304,6 +304,7 @@ REGOLE:
 - Da 2 a 4 frasi, al massimo 70 parole. Niente elenchi, titoli o firme. Al massimo una emoji.
 - Cita uno o due dati reali tra quelli sopra; non inventare dati.
 - Commenta SOLO la fase di lavoro. Riscaldamento e defaticamento non si giudicano MAI, nemmeno se sono più brevi del previsto (l'atleta può non avere tempo): non nominarli e non citarne i chilometri. Non sommare mai le fasi e non citare il totale di giornata come se fosse il lavoro.
+- Non giudicare mai un tratto interno alla fase (es. "ultimi 20'", "ultimo km") né il ritmo in un momento preciso: nei dati hai solo il passo medio della fase, non i tratti. Giudica solo quello. Se il ritmo medio è vicino al previsto, dillo così com'è.
 - Quando è indicata una gara obiettivo, lega il giudizio a quella: di' cosa questa fase di lavoro costruisce per quella distanza.
 - Spiega il perché in modo semplice: cosa allena la seduta, cosa comporta per la prossima o per la gara.
 - Non modificare il programma, non prescrivere sedute diverse, non dare indicazioni mediche o diagnosi.
