@@ -137,6 +137,8 @@ Deno.serve(async (req) => {
   if (req.method !== "POST") return new Response("ok");
   const p = await req.json().catch(() => ({}));
   console.info("tipi", Object.keys(p).join(","));
+  // TEMPORANEO: formato reale dei dettagli attività (tratti), da rimuovere dopo la verifica
+  if (p.activityDetails) console.info("dettagli", JSON.stringify(p.activityDetails).slice(0, 3000));
 
   for (const a of p.activities ?? []) {
     const u = await utentePerGarmin(a.userId);
