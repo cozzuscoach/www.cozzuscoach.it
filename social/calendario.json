@@ -1626,9 +1626,10 @@
         "https://cozzuscoach.it/social/media/2026-11-23-respiro-6.jpg",
         "https://cozzuscoach.it/social/media/2026-11-23-respiro-7.jpg"
       ],
-      "stato": "in_corso",
+      "stato": "errore",
       "didascalia": "Respirare quando corri: 5 consigli 🌬️🏃\n\n1️⃣ Naso e bocca insieme: è normale\n2️⃣ Respira con la pancia, non con le spalle\n3️⃣ Il respiro ti dice il ritmo: nel facile parli in frasi intere\n4️⃣ Trova una cadenza, per esempio 3 passi inspiri e 2 espiri\n5️⃣ Col freddo, uno scaldacollo davanti alla bocca nei primi minuti\n\nTu come respiri quando corri? Scrivilo nei commenti 👇\n\nIndicazioni di orientamento: se l’affanno è insolito o hai asma, chiedi al tuo medico.\n\n👉 Richiedi il tuo programma: link in bio o scrivici in DM.\n\n#cozzuscoach #corsa #running #runningitalia #salento #salentorunning #puglia #runner #allenamento #respirazione #corsafacile",
-      "tentativi": 1
+      "tentativi": 1,
+      "errore": "HTTP 400 su 17841415887707547/media: {\"error\":{\"message\":\"Timeout\",\"code\":-2,\"type\":\"OAuthException\",\"error_subcode\":2207003,\"is_transient\":false,\"error_user_msg\":\"Il download del contenuto multimediale ha impiegato troppo tempo.\",\"error_user_title\":\"Timeout\",\"fbtrace_id\":\"AKMVdXmeHwVwqtE8NvDOyek\"}}"
     },
     {
       "id": "2026-11-23-1530-lo-sapevi",
