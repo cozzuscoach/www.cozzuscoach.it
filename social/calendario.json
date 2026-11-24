@@ -1715,8 +1715,10 @@
       "media": [
         "https://cozzuscoach.it/social/media/2026-11-24-1830-allenamento.jpg"
       ],
-      "stato": "in_corso",
-      "tentativi": 1
+      "stato": "pubblicato",
+      "tentativi": 1,
+      "ig_id": "18114189464617545",
+      "pubblicato_il": "2026-11-24T18:30+01:00"
     },
     {
       "id": "2026-11-24-2100-domani",
