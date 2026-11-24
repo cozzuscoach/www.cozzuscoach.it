@@ -1727,8 +1727,10 @@
       "media": [
         "https://cozzuscoach.it/social/media/2026-11-24-2100-domani.jpg"
       ],
-      "stato": "in_corso",
-      "tentativi": 1
+      "stato": "pubblicato",
+      "tentativi": 1,
+      "ig_id": "18001101998828821",
+      "pubblicato_il": "2026-11-24T21:01+01:00"
     },
     {
       "id": "2026-11-25-0700-consiglio",
