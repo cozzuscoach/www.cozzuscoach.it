@@ -863,7 +863,7 @@ function renderHome(){
   }
   const noteHtml = S.plan?.coach_note ? riassuntoCoach(S.plan.coach_note) : "";
   // seduta di oggi
-  const ses = S.sessions.find(s => s.session_date===TODAY);
+  const ses = S.sessions.find(s => s.session_date===TODAY && !sessioneBloccata(s));
   const done = S.workouts.find(x => x.day===TODAY && (x.sport||"corsa")==="corsa");
   const saltata = !done && skipDi(S, TODAY);
   let html;
@@ -919,11 +919,10 @@ function zoneChips(ses){
 /* ---------- PROGRAMMA ---------- */
 const PHASES = {base:"Base aerobica",build:"Costruzione",spec:"Specifica",taper:"Scarico pre-gara"};
 function renderPlan(){
-  if (!subOk()){ $("plan-lead").textContent = "Il programma di allenamento"; $("zones-box").innerHTML = ""; $("plan-list").innerHTML = subBloccoHtml(); return; }
   const r = nextRace(S.races);
   $("plan-lead").textContent = r ? `Verso ${r.name}` : "Il programma di allenamento";
   const zs = S.zones||{};
-  $("zones-box").innerHTML = Object.keys(zs).length ? `<h2>Le tue zone</h2><div class="card"><table class="ztable">${
+  $("zones-box").innerHTML = subOk() && Object.keys(zs).length ? `<h2>Le tue zone</h2><div class="card"><table class="ztable">${
     ["R","E","M","T","RG","I"].filter(c=>zs[c]).map(c=>{const z=zs[c];return `<tr><td>${ZNAMES[c]}</td><td>${pace(z.pace_min_s)}–${pace(z.pace_max_s)}/km</td><td>${z.hr_min?`FC ${z.hr_min}-${z.hr_max}`:""}</td></tr>`}).join("")}</table></div>` : "";
   if (S.plan && S.plan.status === "bozza"){ $("plan-list").innerHTML = `<div class="card"><h3>In preparazione</h3><p style="margin-top:6px">Il tuo allenatore sta rivedendo il programma. Lo trovi qui entro 48 ore.</p></div>`; return; }
   const list = S.sessions.filter(s => s.session_date >= addDays(TODAY,-1));
@@ -932,12 +931,14 @@ function renderPlan(){
   const groups = {};
   list.forEach(s => { const m = mondayOf(s.session_date); (groups[m] = groups[m] || []).push(s); });
   const prossima = list.find(s => s.session_date >= TODAY)?.id;
-  $("plan-list").innerHTML = (S.plan?.coach_note ? riassuntoCoach(S.plan.coach_note) : "") + Object.keys(groups).sort().map(m => {
+  const bloccate = list.some(sessioneBloccata);
+  $("plan-list").innerHTML = (S.plan?.coach_note && !bloccate ? riassuntoCoach(S.plan.coach_note) : "") + Object.keys(groups).sort().map(m => {
     const info = weeks.find(w => w.mon===m);
     const p = dayParts(m), e = dayParts(addDays(m,6));
-    const km = info?.km ?? groups[m].reduce((t,x) => t + (+x.target_km||0), 0);
+    const km = groups[m].some(sessioneBloccata) ? 0 : (info?.km ?? groups[m].reduce((t,x) => t + (+x.target_km||0), 0));
     return `<div class="wk-head"><b>${info?`Settimana ${info.n} · ${PHASES[info.phase]}`:`Settimana dal ${p.n} ${p.m}`}</b><span>${km ? `${Math.round(km)} km${info?.recovery?" · scarico":""}` : `${p.n} ${p.m} – ${e.n} ${e.m}`}</span></div>
       <div class="card" style="margin-top:0">${groups[m].map(s => {
+        if (sessioneBloccata(s)){ const dl = dayParts(s.session_date); return `<details class="pd"><summary><div class="d">${dl.n}<span>${dl.w}</span></div><div class="t" style="color:var(--muted)">🔒 Disponibile con l'abbonamento</div><span class="chev">🔒</span></summary></details>`; }
         const d = dayParts(s.session_date), done = S.workouts.some(w => w.day===s.session_date && (w.sport||"corsa")==="corsa");
         const sk = !done && skipDi(S, s.session_date), aperta = !done && !sk && s.type !== "riposo" && s.session_date < TODAY && s.session_date >= addDays(TODAY,-7);
         const tag = done ? '<span class="tag done">Fatto</span>' : sk ? '<span class="tag rest">Non fatta</span>' : QUALITY.includes(s.type) ? '<span class="tag q">Qualità</span>' : "";
@@ -3845,6 +3846,7 @@ const SERVIZI = ["Programma di allenamento personalizzato verso la tua gara, agg
   "Allenamenti di forza (WOD) proposti in base al programma"];
 const subOk = (p = me) => p?.role === "coach" || (!!p?.sub_until && p.sub_until >= TODAY);
 const subGiorni = (p = me) => p?.sub_until ? daysBetween(TODAY, p.sub_until) : null;
+const sessioneBloccata = s => me?.role !== "coach" && (!me?.sub_until || s.session_date > me.sub_until);
 const dataLunga = s => { const p = dayParts(s); return `${p.n} ${p.m} ${s.slice(0,4)}`; };
 const addMonths = (s, n) => { const d = dt(s); d.setMonth(d.getMonth() + n); return addDays(iso(d), -1); };
 const pkgsHtml = () => `<div class="pkgs">${PACCHETTI.map(([m,l,e]) => `<div><b>${l}</b><span>${e} €</span></div>`).join("")}</div>`;
