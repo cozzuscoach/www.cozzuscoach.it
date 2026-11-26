@@ -692,7 +692,8 @@
       "stato": "pubblicato",
       "tentativi": 1,
       "ig_id": "18101441795411635",
-      "pubblicato_il": "2026-11-09T07:01+01:00"
+      "pubblicato_il": "2026-11-09T07:01+01:00",
+      "media_rimossi": true
     },
     {
       "id": "2026-11-09-forza",
@@ -712,7 +713,8 @@
       "tentativi": 1,
       "ig_id": "18135841897822777",
       "pubblicato_il": "2026-11-09T13:01+01:00",
-      "fb_id": "1413341981858220_122108076891533413"
+      "fb_id": "1413341981858220_122108076891533413",
+      "media_rimossi": true
     },
     {
       "id": "2026-11-09-1530-lo-sapevi",
@@ -724,7 +726,8 @@
       "stato": "pubblicato",
       "tentativi": 1,
       "ig_id": "18081674447383626",
-      "pubblicato_il": "2026-11-09T15:31+01:00"
+      "pubblicato_il": "2026-11-09T15:31+01:00",
+      "media_rimossi": true
     },
     {
       "id": "2026-11-09-1830-allenamento",
@@ -736,7 +739,8 @@
       "stato": "pubblicato",
       "tentativi": 1,
       "ig_id": "18209370919375113",
-      "pubblicato_il": "2026-11-09T18:30+01:00"
+      "pubblicato_il": "2026-11-09T18:30+01:00",
+      "media_rimossi": true
     },
     {
       "id": "2026-11-09-2100-domani",
@@ -748,7 +752,8 @@
       "stato": "pubblicato",
       "tentativi": 1,
       "ig_id": "18133177300894563",
-      "pubblicato_il": "2026-11-09T21:01+01:00"
+      "pubblicato_il": "2026-11-09T21:01+01:00",
+      "media_rimossi": true
     },
     {
       "id": "2026-11-10-0700-consiglio",
@@ -760,7 +765,8 @@
       "stato": "pubblicato",
       "tentativi": 1,
       "ig_id": "18126908833931068",
-      "pubblicato_il": "2026-11-10T07:01+01:00"
+      "pubblicato_il": "2026-11-10T07:01+01:00",
+      "media_rimossi": true
     },
     {
       "id": "2026-11-10-braccia",
@@ -775,7 +781,8 @@
       "tentativi": 1,
       "ig_id": "18152142664616263",
       "pubblicato_il": "2026-11-10T13:01+01:00",
-      "fb_id": "1135701032759013"
+      "fb_id": "1135701032759013",
+      "media_rimossi": true
     },
     {
       "id": "2026-11-10-1530-lo-sapevi",
@@ -787,7 +794,8 @@
       "stato": "pubblicato",
       "tentativi": 1,
       "ig_id": "18114086554888450",
-      "pubblicato_il": "2026-11-10T15:31+01:00"
+      "pubblicato_il": "2026-11-10T15:31+01:00",
+      "media_rimossi": true
     },
     {
       "id": "2026-11-10-1830-allenamento",
@@ -799,7 +807,8 @@
       "stato": "pubblicato",
       "tentativi": 1,
       "ig_id": "18157112620521874",
-      "pubblicato_il": "2026-11-10T18:31+01:00"
+      "pubblicato_il": "2026-11-10T18:31+01:00",
+      "media_rimossi": true
     },
     {
       "id": "2026-11-10-2100-domani",
@@ -811,7 +820,8 @@
       "stato": "pubblicato",
       "tentativi": 1,
       "ig_id": "18069597626786864",
-      "pubblicato_il": "2026-11-10T21:01+01:00"
+      "pubblicato_il": "2026-11-10T21:01+01:00",
+      "media_rimossi": true
     },
     {
       "id": "2026-11-11-0700-consiglio",
@@ -823,7 +833,8 @@
       "stato": "pubblicato",
       "tentativi": 1,
       "ig_id": "17999191527107579",
-      "pubblicato_il": "2026-11-11T07:01+01:00"
+      "pubblicato_il": "2026-11-11T07:01+01:00",
+      "media_rimossi": true
     },
     {
       "id": "2026-11-11-tibia",
@@ -843,7 +854,8 @@
       "tentativi": 1,
       "ig_id": "18139285036656948",
       "pubblicato_il": "2026-11-11T13:01+01:00",
-      "fb_id": "1413341981858220_122109312273533413"
+      "fb_id": "1413341981858220_122109312273533413",
+      "media_rimossi": true
     },
     {
       "id": "2026-11-11-1530-lo-sapevi",
@@ -855,7 +867,8 @@
       "stato": "pubblicato",
       "tentativi": 1,
       "ig_id": "18154134538543694",
-      "pubblicato_il": "2026-11-11T15:30+01:00"
+      "pubblicato_il": "2026-11-11T15:30+01:00",
+      "media_rimossi": true
     },
     {
       "id": "2026-11-11-1830-allenamento",
@@ -867,7 +880,8 @@
       "stato": "pubblicato",
       "tentativi": 1,
       "ig_id": "18094885820194719",
-      "pubblicato_il": "2026-11-11T18:31+01:00"
+      "pubblicato_il": "2026-11-11T18:31+01:00",
+      "media_rimossi": true
     },
     {
       "id": "2026-11-11-2100-domani",
@@ -879,7 +893,8 @@
       "stato": "pubblicato",
       "tentativi": 1,
       "ig_id": "17964567470998548",
-      "pubblicato_il": "2026-11-11T21:03+01:00"
+      "pubblicato_il": "2026-11-11T21:03+01:00",
+      "media_rimossi": true
     },
     {
       "id": "2026-11-12-0700-consiglio",
@@ -891,7 +906,8 @@
       "stato": "pubblicato",
       "tentativi": 1,
       "ig_id": "18451849252124778",
-      "pubblicato_il": "2026-11-12T07:01+01:00"
+      "pubblicato_il": "2026-11-12T07:01+01:00",
+      "media_rimossi": true
     },
     {
       "id": "2026-11-12-check-in",
@@ -906,7 +922,8 @@
       "tentativi": 1,
       "ig_id": "18117921434122645",
       "pubblicato_il": "2026-11-12T13:02+01:00",
-      "fb_id": "29072324355722417"
+      "fb_id": "29072324355722417",
+      "media_rimossi": true
     },
     {
       "id": "2026-11-12-1530-lo-sapevi",
@@ -918,7 +935,8 @@
       "stato": "pubblicato",
       "tentativi": 1,
       "ig_id": "18134573017791329",
-      "pubblicato_il": "2026-11-12T15:31+01:00"
+      "pubblicato_il": "2026-11-12T15:31+01:00",
+      "media_rimossi": true
     },
     {
       "id": "2026-11-12-1830-allenamento",
@@ -930,7 +948,8 @@
       "stato": "pubblicato",
       "tentativi": 1,
       "ig_id": "18132730831833739",
-      "pubblicato_il": "2026-11-12T18:31+01:00"
+      "pubblicato_il": "2026-11-12T18:31+01:00",
+      "media_rimossi": true
     },
     {
       "id": "2026-11-12-2100-domani",
@@ -942,7 +961,8 @@
       "stato": "pubblicato",
       "tentativi": 1,
       "ig_id": "18091818518259778",
-      "pubblicato_il": "2026-11-12T21:01+01:00"
+      "pubblicato_il": "2026-11-12T21:01+01:00",
+      "media_rimossi": true
     },
     {
       "id": "2026-11-13-0700-consiglio",
@@ -954,7 +974,8 @@
       "stato": "pubblicato",
       "tentativi": 1,
       "ig_id": "18433326934155730",
-      "pubblicato_il": "2026-11-13T07:01+01:00"
+      "pubblicato_il": "2026-11-13T07:01+01:00",
+      "media_rimossi": true
     },
     {
       "id": "2026-11-13-gare",
@@ -973,7 +994,8 @@
       "tentativi": 1,
       "ig_id": "17948902920123958",
       "pubblicato_il": "2026-11-13T13:02+01:00",
-      "fb_id": "1413341981858220_122110172631533413"
+      "fb_id": "1413341981858220_122110172631533413",
+      "media_rimossi": true
     },
     {
       "id": "2026-11-13-1530-gare",
@@ -985,7 +1007,8 @@
       "stato": "pubblicato",
       "tentativi": 1,
       "ig_id": "17979569729935523",
-      "pubblicato_il": "2026-11-13T15:31+01:00"
+      "pubblicato_il": "2026-11-13T15:31+01:00",
+      "media_rimossi": true
     },
     {
       "id": "2026-11-13-1830-allenamento",
@@ -997,7 +1020,8 @@
       "stato": "pubblicato",
       "tentativi": 1,
       "ig_id": "18171701032468907",
-      "pubblicato_il": "2026-11-13T18:31+01:00"
+      "pubblicato_il": "2026-11-13T18:31+01:00",
+      "media_rimossi": true
     },
     {
       "id": "2026-11-13-2100-domani",
@@ -1009,7 +1033,8 @@
       "stato": "pubblicato",
       "tentativi": 1,
       "ig_id": "18098537783404703",
-      "pubblicato_il": "2026-11-13T21:01+01:00"
+      "pubblicato_il": "2026-11-13T21:01+01:00",
+      "media_rimossi": true
     },
     {
       "id": "2026-11-14-0700-consiglio",
@@ -1021,7 +1046,8 @@
       "stato": "pubblicato",
       "tentativi": 1,
       "ig_id": "18032476244879191",
-      "pubblicato_il": "2026-11-14T07:01+01:00"
+      "pubblicato_il": "2026-11-14T07:01+01:00",
+      "media_rimossi": true
     },
     {
       "id": "2026-11-14-inizia",
@@ -1036,7 +1062,8 @@
       "tentativi": 1,
       "ig_id": "17954860404338971",
       "pubblicato_il": "2026-11-14T13:02+01:00",
-      "fb_id": "29844646938453697"
+      "fb_id": "29844646938453697",
+      "media_rimossi": true
     },
     {
       "id": "2026-11-14-1530-lo-sapevi",
@@ -1048,7 +1075,8 @@
       "stato": "pubblicato",
       "tentativi": 1,
       "ig_id": "17882962461548879",
-      "pubblicato_il": "2026-11-14T15:31+01:00"
+      "pubblicato_il": "2026-11-14T15:31+01:00",
+      "media_rimossi": true
     },
     {
       "id": "2026-11-14-1830-allenamento",
@@ -1060,7 +1088,8 @@
       "stato": "pubblicato",
       "tentativi": 1,
       "ig_id": "18079122770737550",
-      "pubblicato_il": "2026-11-14T18:31+01:00"
+      "pubblicato_il": "2026-11-14T18:31+01:00",
+      "media_rimossi": true
     },
     {
       "id": "2026-11-14-2100-domani",
@@ -1072,7 +1101,8 @@
       "stato": "pubblicato",
       "tentativi": 1,
       "ig_id": "18224951188355682",
-      "pubblicato_il": "2026-11-14T21:01+01:00"
+      "pubblicato_il": "2026-11-14T21:01+01:00",
+      "media_rimossi": true
     },
     {
       "id": "2026-11-15-0700-consiglio",
@@ -1084,7 +1114,8 @@
       "stato": "pubblicato",
       "tentativi": 1,
       "ig_id": "18146606533578056",
-      "pubblicato_il": "2026-11-15T07:01+01:00"
+      "pubblicato_il": "2026-11-15T07:01+01:00",
+      "media_rimossi": true
     },
     {
       "id": "2026-11-15-settimana",
@@ -1104,7 +1135,8 @@
       "tentativi": 1,
       "ig_id": "18115788494162725",
       "pubblicato_il": "2026-11-15T13:01+01:00",
-      "fb_id": "1413341981858220_122110969221533413"
+      "fb_id": "1413341981858220_122110969221533413",
+      "media_rimossi": true
     },
     {
       "id": "2026-11-15-1530-lo-sapevi",
@@ -1116,7 +1148,8 @@
       "stato": "pubblicato",
       "tentativi": 1,
       "ig_id": "17918970831535580",
-      "pubblicato_il": "2026-11-15T15:31+01:00"
+      "pubblicato_il": "2026-11-15T15:31+01:00",
+      "media_rimossi": true
     },
     {
       "id": "2026-11-15-1830-allenamento",
@@ -1128,7 +1161,8 @@
       "stato": "pubblicato",
       "tentativi": 1,
       "ig_id": "18476872858187105",
-      "pubblicato_il": "2026-11-15T18:31+01:00"
+      "pubblicato_il": "2026-11-15T18:31+01:00",
+      "media_rimossi": true
     },
     {
       "id": "2026-11-15-2100-domani",
@@ -1140,7 +1174,8 @@
       "stato": "pubblicato",
       "tentativi": 1,
       "ig_id": "18114831413240232",
-      "pubblicato_il": "2026-11-15T21:01+01:00"
+      "pubblicato_il": "2026-11-15T21:01+01:00",
+      "media_rimossi": true
     },
     {
       "id": "2026-11-16-0700-consiglio",
@@ -1996,6 +2031,353 @@
       "tipo": "story",
       "media": [
         "https://cozzuscoach.it/social/media/2026-11-29-2100-domani.jpg"
+      ],
+      "stato": "programmato"
+    },
+    {
+      "id": "2026-11-30-0700-consiglio",
+      "quando": "2026-11-30T07:00",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-11-30-0700-consiglio.jpg"
+      ],
+      "stato": "programmato"
+    },
+    {
+      "id": "2026-11-30-buio",
+      "quando": "2026-11-30T13:00",
+      "tipo": "carousel",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-11-30-buio-1.jpg",
+        "https://cozzuscoach.it/social/media/2026-11-30-buio-2.jpg",
+        "https://cozzuscoach.it/social/media/2026-11-30-buio-3.jpg",
+        "https://cozzuscoach.it/social/media/2026-11-30-buio-4.jpg",
+        "https://cozzuscoach.it/social/media/2026-11-30-buio-5.jpg",
+        "https://cozzuscoach.it/social/media/2026-11-30-buio-6.jpg",
+        "https://cozzuscoach.it/social/media/2026-11-30-buio-7.jpg"
+      ],
+      "stato": "programmato",
+      "didascalia": "Correre col buio: 5 regole da salvare 🔦🏃\n\n1️⃣ Fatti vedere: colori chiari e inserti riflettenti\n2️⃣ Una luce davanti e una lucina rossa dietro\n3️⃣ Fuori città, senza marciapiede: sul margine sinistro, contro il traffico\n4️⃣ Percorsi illuminati e conosciuti, o la pista\n5️⃣ Avvisa qualcuno e tieni la musica bassa\n\nTu corri prima del lavoro o dopo? Scrivilo nei commenti 👇\n\n👉 Richiedi il tuo programma: link in bio o scrivici in DM.\n\n#cozzuscoach #corsa #running #runningitalia #salento #salentorunning #puglia #runner #allenamento #sicurezza #correrealbuio #inverno"
+    },
+    {
+      "id": "2026-11-30-1530-lo-sapevi",
+      "quando": "2026-11-30T15:30",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-11-30-1530-lo-sapevi.jpg"
+      ],
+      "stato": "programmato"
+    },
+    {
+      "id": "2026-11-30-1830-allenamento",
+      "quando": "2026-11-30T18:30",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-11-30-1830-allenamento.jpg"
+      ],
+      "stato": "programmato"
+    },
+    {
+      "id": "2026-11-30-2100-domani",
+      "quando": "2026-11-30T21:00",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-11-30-2100-domani.jpg"
+      ],
+      "stato": "programmato"
+    },
+    {
+      "id": "2026-12-01-0700-consiglio",
+      "quando": "2026-12-01T07:00",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-12-01-0700-consiglio.jpg"
+      ],
+      "stato": "programmato"
+    },
+    {
+      "id": "2026-12-01-allunghi",
+      "quando": "2026-12-01T13:00",
+      "tipo": "reel",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-12-01-allunghi.mp4"
+      ],
+      "stato": "programmato",
+      "didascalia": "Gli allunghi: 20 secondi per un passo più sciolto ⚡🏃\n\nSono brevi accelerazioni in progressione, da fare alla fine di una corsa facile o prima di un lavoro veloce:\n\n⏱️ 15–20 secondi, partendo piano e arrivando veloce\n😌 veloce ma sciolto, mai al massimo\n🚶 recupero completo camminando\n🔁 4–6 ripetizioni, un paio di volte a settimana\n\nRicordano alle gambe come si corre veloci senza aggiungere fatica.\n\n👉 Richiedi il tuo programma: link in bio o scrivici in DM.\n\n#cozzuscoach #corsa #running #runningitalia #salento #salentorunning #puglia #runner #allenamento #tecnicadicorsa #allunghi",
+      "copertina": "https://cozzuscoach.it/social/media/2026-12-01-allunghi-copertina.jpg"
+    },
+    {
+      "id": "2026-12-01-1530-lo-sapevi",
+      "quando": "2026-12-01T15:30",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-12-01-1530-lo-sapevi.jpg"
+      ],
+      "stato": "programmato"
+    },
+    {
+      "id": "2026-12-01-1830-allenamento",
+      "quando": "2026-12-01T18:30",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-12-01-1830-allenamento.jpg"
+      ],
+      "stato": "programmato"
+    },
+    {
+      "id": "2026-12-01-2100-domani",
+      "quando": "2026-12-01T21:00",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-12-01-2100-domani.jpg"
+      ],
+      "stato": "programmato"
+    },
+    {
+      "id": "2026-12-02-0700-consiglio",
+      "quando": "2026-12-02T07:00",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-12-02-0700-consiglio.jpg"
+      ],
+      "stato": "programmato"
+    },
+    {
+      "id": "2026-12-02-fratture",
+      "quando": "2026-12-02T13:00",
+      "tipo": "carousel",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-12-02-fratture-1.jpg",
+        "https://cozzuscoach.it/social/media/2026-12-02-fratture-2.jpg",
+        "https://cozzuscoach.it/social/media/2026-12-02-fratture-3.jpg",
+        "https://cozzuscoach.it/social/media/2026-12-02-fratture-4.jpg",
+        "https://cozzuscoach.it/social/media/2026-12-02-fratture-5.jpg",
+        "https://cozzuscoach.it/social/media/2026-12-02-fratture-6.jpg",
+        "https://cozzuscoach.it/social/media/2026-12-02-fratture-7.jpg"
+      ],
+      "stato": "programmato",
+      "didascalia": "Infortuni del runner · Ep. 7 — Le fratture da stress 🦴\n\nUn dolore in un punto preciso della tibia o del piede che non se ne va? Nelle slide:\n📍 come si presenta\n❓ perché succede\n✅ cosa fare (e cosa non fare)\n🛡️ come prevenirle\n🚩 quando farti vedere\n\nSalvalo e giralo a chi “corre sopra” ogni dolore.\n\nIndicazioni di orientamento: non sostituiscono il parere di un medico o di un fisioterapista.\n\n👉 Richiedi il tuo programma: link in bio o scrivici in DM.\n\n#cozzuscoach #corsa #running #runningitalia #salento #salentorunning #puglia #runner #allenamento #infortuni #fratturadastress #prevenzione"
+    },
+    {
+      "id": "2026-12-02-1530-lo-sapevi",
+      "quando": "2026-12-02T15:30",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-12-02-1530-lo-sapevi.jpg"
+      ],
+      "stato": "programmato"
+    },
+    {
+      "id": "2026-12-02-1830-allenamento",
+      "quando": "2026-12-02T18:30",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-12-02-1830-allenamento.jpg"
+      ],
+      "stato": "programmato"
+    },
+    {
+      "id": "2026-12-02-2100-domani",
+      "quando": "2026-12-02T21:00",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-12-02-2100-domani.jpg"
+      ],
+      "stato": "programmato"
+    },
+    {
+      "id": "2026-12-03-0700-consiglio",
+      "quando": "2026-12-03T07:00",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-12-03-0700-consiglio.jpg"
+      ],
+      "stato": "programmato"
+    },
+    {
+      "id": "2026-12-03-andamento",
+      "quando": "2026-12-03T13:00",
+      "tipo": "reel",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-12-03-andamento.mp4"
+      ],
+      "stato": "programmato",
+      "didascalia": "Come sai se stai migliorando? 📈🏃\n\nNon da una sola uscita: il vento, il sonno, una giornata pesante al lavoro cambiano tutto. Conta la tendenza.\n\nNella sezione Andamento dell’app Cozzu’s Coach trovi:\n📊 i volumi settimana dopo settimana\n🏁 una stima della forma, con i tempi previsti su 5 km, 10 km, mezza e maratona\n🚴 il carico di allenamento di tutti gli sport, non solo della corsa\n\nE il coach guarda gli stessi dati con te.\n\n👉 Richiedi il tuo programma: link in bio o scrivici in DM.\n\n#cozzuscoach #corsa #running #runningitalia #salento #salentorunning #puglia #runner #allenamento #pianodiallenamento #coachdicorsa #progressi",
+      "copertina": "https://cozzuscoach.it/social/media/2026-12-03-andamento-copertina.jpg"
+    },
+    {
+      "id": "2026-12-03-1530-lo-sapevi",
+      "quando": "2026-12-03T15:30",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-12-03-1530-lo-sapevi.jpg"
+      ],
+      "stato": "programmato"
+    },
+    {
+      "id": "2026-12-03-1830-allenamento",
+      "quando": "2026-12-03T18:30",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-12-03-1830-allenamento.jpg"
+      ],
+      "stato": "programmato"
+    },
+    {
+      "id": "2026-12-03-2100-domani",
+      "quando": "2026-12-03T21:00",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-12-03-2100-domani.jpg"
+      ],
+      "stato": "programmato"
+    },
+    {
+      "id": "2026-12-04-0700-consiglio",
+      "quando": "2026-12-04T07:00",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-12-04-0700-consiglio.jpg"
+      ],
+      "stato": "programmato"
+    },
+    {
+      "id": "2026-12-04-gare",
+      "quando": "2026-12-04T13:00",
+      "tipo": "carousel",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-12-04-gare-1.jpg",
+        "https://cozzuscoach.it/social/media/2026-12-04-gare-2.jpg",
+        "https://cozzuscoach.it/social/media/2026-12-04-gare-3.jpg",
+        "https://cozzuscoach.it/social/media/2026-12-04-gare-4.jpg",
+        "https://cozzuscoach.it/social/media/2026-12-04-gare-5.jpg"
+      ],
+      "stato": "programmato",
+      "didascalia": "Gare del weekend: domenica 6 dicembre 🏁\n\n📍 Mezzamaratona Città di Monopoli · Monopoli (BA) · 21,1 km\n📍 10 km di Capo Peloro · Messina · 10 km\n📍 CagliariRespira · Cagliari · 21,1 km\n📍 Mezza Maratona Città di Termini Imerese (PA) · 21,1 km\n📍 Maratona di Latina · 42,2 km\n✈️ E poi Sanremo (maratona e mezza), Como Lake Half Marathon e la Maratona di Valencia. Martedì 8 dicembre la Mezza di San Miniato (PI).\n\nDomenica 13 tocca al Salento: Salento Half Marathon a Collepasso (LE).\n\nControlla sempre orari e iscrizioni sui siti degli organizzatori. Calendario completo su cozzuscoach.it/calendario\n\nChi corre? Scrivi la tua gara nei commenti e tagga chi viene con te 👇\n\n👉 Richiedi il tuo programma: link in bio o scrivici in DM.\n\n#cozzuscoach #corsa #running #runningitalia #salento #salentorunning #puglia #runner #allenamento #monopoli #mezzamaratona #maratona #valenciamarathon #sanremo"
+    },
+    {
+      "id": "2026-12-04-1530-gare",
+      "quando": "2026-12-04T15:30",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-12-04-1530-gare.jpg"
+      ],
+      "stato": "programmato"
+    },
+    {
+      "id": "2026-12-04-1830-allenamento",
+      "quando": "2026-12-04T18:30",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-12-04-1830-allenamento.jpg"
+      ],
+      "stato": "programmato"
+    },
+    {
+      "id": "2026-12-04-2100-domani",
+      "quando": "2026-12-04T21:00",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-12-04-2100-domani.jpg"
+      ],
+      "stato": "programmato"
+    },
+    {
+      "id": "2026-12-05-0700-consiglio",
+      "quando": "2026-12-05T07:00",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-12-05-0700-consiglio.jpg"
+      ],
+      "stato": "programmato"
+    },
+    {
+      "id": "2026-12-05-dicembre",
+      "quando": "2026-12-05T13:00",
+      "tipo": "reel",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-12-05-dicembre.mp4"
+      ],
+      "stato": "programmato",
+      "didascalia": "Dicembre non deve essere perfetto 🎄🏃\n\nPranzi, cene, regali, il buio alle cinque. Qualche uscita salterà, ed è normale. Quello che fa la differenza a gennaio non è la settimana perfetta: è non fermarsi del tutto. Anche 30 minuti facili tengono vivo il filo.\n\nQual è la tua uscita salva-dicembre? Scrivila nei commenti 👇\n\nE buona gara a chi corre domani a Monopoli, Sanremo e Valencia 💙\n\n👉 Richiedi il tuo programma: link in bio o scrivici in DM.\n\n#cozzuscoach #corsa #running #runningitalia #salento #salentorunning #puglia #runner #allenamento #motivazione #costanza #dicembre",
+      "copertina": "https://cozzuscoach.it/social/media/2026-12-05-dicembre-copertina.jpg"
+    },
+    {
+      "id": "2026-12-05-1530-lo-sapevi",
+      "quando": "2026-12-05T15:30",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-12-05-1530-lo-sapevi.jpg"
+      ],
+      "stato": "programmato"
+    },
+    {
+      "id": "2026-12-05-1830-allenamento",
+      "quando": "2026-12-05T18:30",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-12-05-1830-allenamento.jpg"
+      ],
+      "stato": "programmato"
+    },
+    {
+      "id": "2026-12-05-2100-domani",
+      "quando": "2026-12-05T21:00",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-12-05-2100-domani.jpg"
+      ],
+      "stato": "programmato"
+    },
+    {
+      "id": "2026-12-06-0700-consiglio",
+      "quando": "2026-12-06T07:00",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-12-06-0700-consiglio.jpg"
+      ],
+      "stato": "programmato"
+    },
+    {
+      "id": "2026-12-06-settimana",
+      "quando": "2026-12-06T13:00",
+      "tipo": "carousel",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-12-06-settimana-1.jpg",
+        "https://cozzuscoach.it/social/media/2026-12-06-settimana-2.jpg",
+        "https://cozzuscoach.it/social/media/2026-12-06-settimana-3.jpg",
+        "https://cozzuscoach.it/social/media/2026-12-06-settimana-4.jpg",
+        "https://cozzuscoach.it/social/media/2026-12-06-settimana-5.jpg",
+        "https://cozzuscoach.it/social/media/2026-12-06-settimana-6.jpg",
+        "https://cozzuscoach.it/social/media/2026-12-06-settimana-7.jpg"
+      ],
+      "stato": "programmato",
+      "didascalia": "La settimana in 5 consigli 📌\n\n🔦 Al buio: fatti vedere e corri contro il traffico\n⚡ Allunghi: veloci ma sciolti\n🦴 Dolore in un punto dell’osso: fermati e fatti vedere\n📈 Progressi: guarda la tendenza, non il giorno\n🎄 Dicembre: non serve la settimana perfetta\n\nHai corso oggi? Raccontaci com’è andata nei commenti 👇\n\nIndicazioni di orientamento: non sostituiscono il parere di un medico o di un fisioterapista.\n\n👉 Richiedi il tuo programma: link in bio o scrivici in DM.\n\n#cozzuscoach #corsa #running #runningitalia #salento #salentorunning #puglia #runner #allenamento"
+    },
+    {
+      "id": "2026-12-06-1530-lo-sapevi",
+      "quando": "2026-12-06T15:30",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-12-06-1530-lo-sapevi.jpg"
+      ],
+      "stato": "programmato"
+    },
+    {
+      "id": "2026-12-06-1830-allenamento",
+      "quando": "2026-12-06T18:30",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-12-06-1830-allenamento.jpg"
+      ],
+      "stato": "programmato"
+    },
+    {
+      "id": "2026-12-06-2100-domani",
+      "quando": "2026-12-06T21:00",
+      "tipo": "story",
+      "media": [
+        "https://cozzuscoach.it/social/media/2026-12-06-2100-domani.jpg"
       ],
       "stato": "programmato"
     }
