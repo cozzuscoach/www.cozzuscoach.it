@@ -5,6 +5,7 @@
 // Il giudizio guarda SOLO la fase di lavoro: riscaldamento e defaticamento non si commentano.
 // deno-lint-ignore-file no-explicit-any
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { valida } from "./regole.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -195,7 +196,6 @@ async function commentoSeduta(userId: string, workoutId: number, key: string | u
   const note = [w.notes, ck?.notes].filter(Boolean).join(" ").slice(0, 300);
   const dolore = DOLORE.test(note.replace(NEGAZIONE, ""));
   if (note) fatti.push(`Note dell'atleta: "${note}"`);
-  const libero = sp === "corsa" && !!ps && ps.type !== "riposo" && !dolore;
 
   if (sp !== "corsa") {
     caso = "altro_sport";
@@ -210,11 +210,11 @@ async function commentoSeduta(userId: string, workoutId: number, key: string | u
 
     // ► il giudizio guarda la sola fase di lavoro
     const L = faseLavoro(B, w);
-    if (L.distinta && !libero) {
+    if (L.distinta) {
       fatti.push(`LAVORO, è questo che va commentato: ${TIPI[tipo] || tipo}, ${L.km} km in ${fmtT(L.sec)}${L.pace ? `, passo ${pace(L.pace)}/km` : ""}${L.hr ? `, FC media ${L.hr}` : ""}`);
       const cont = [L.risc ? `${L.risc} km di riscaldamento` : "", L.def ? `${L.def} km di defaticamento` : ""].filter(Boolean).join(" e ");
       if (cont) fatti.push(`Contorno da NON giudicare: ${cont}. Totale di giornata ${w.distance_km ?? "?"} km, da non citare come se fosse il lavoro.`);
-    } else if (!libero) {
+    } else {
       fatti.push(`Seduta registrata senza fasi distinte: ${TIPI[tipo] || tipo}, ${w.distance_km ?? "?"} km in ${w.duration_s ? fmtT(w.duration_s) : "?"}${w.avg_pace_s ? `, passo medio ${pace(w.avg_pace_s)}/km` : ""}`);
     }
 
@@ -284,10 +284,13 @@ async function commentoSeduta(userId: string, workoutId: number, key: string | u
   if (gara && caso !== "gara") fatti.push(`Gara obiettivo tra ${daysBetween(w.day, gara.race_date)} giorni: ${gara.name}`);
 
   // modalità libera: l'AI legge il previsto e tutto lo svolto (esclusi riscaldamento e defaticamento) e giudica liberamente
-  const TESTA_LIBERA = `Hai davanti l'allenamento che il coach aveva previsto e tutto ciò che l'atleta ha svolto. Riscaldamento e defaticamento non si giudicano. Scrivi il commento che Biagio farebbe subito dopo: confronta il previsto con lo svolto, blocco per blocco, leggendo ritmi, ripetizioni, FC e fatica percepita. Ragiona su cosa allena davvero questa seduta, se il piano è stato rispettato e dove, e cosa conta per la prossima seduta o per la gara obiettivo. Non inventare dati che non compaiono (per esempio ritmi di tratti interni che non ci sono nei blocchi).`;
-  if (libero) {
-    const righe = String(ps.description || "").split("\n").map((r: string) => r.trim()).filter(Boolean);
-    fatti.push(`ALLENAMENTO PREVISTO dal coach:\n${righe.map((r: string) => "  " + r).join("\n")}`);
+  {
+    const pl = (B || []).filter((b: any) => b.phase === "lavoro" && b.distance_km && b.duration_s);
+    const passoLav = pl.length ? pl.reduce((t: number, b: any) => t + b.duration_s, 0) / pl.reduce((t: number, b: any) => t + b.distance_km, 0) : (w.work_pace_s || w.avg_pace_s);
+    if (passoLav) {
+      const zc = Object.keys(Z).find(c => passoLav >= Z[c].pace_min_s - 3 && passoLav <= Z[c].pace_max_s + 3);
+      fatti.push(zc ? `Passo medio del lavoro ${pace(passoLav)}/km: cade nella zona ${ZNOMI[zc]} (${pace(Z[zc].pace_min_s)}-${pace(Z[zc].pace_max_s)}/km)` : `Passo medio del lavoro ${pace(passoLav)}/km: fuori da tutte le zone`);
+    }
     const svolto = (B || []).filter((b: any) => !["riscaldamento", "defaticamento"].includes(b.phase));
     if (svolto.length) fatti.push(`ALLENAMENTO SVOLTO, blocco per blocco (esclusi riscaldamento e defaticamento):\n${svolto.map((b: any) => `  - ${b.label || b.phase}: ${b.distance_km ? b.distance_km + " km" : ""}${b.duration_s ? " in " + fmtT(b.duration_s) : ""}${b.distance_km && b.duration_s ? ", passo " + pace(b.duration_s / b.distance_km) + "/km" : ""}${b.avg_hr ? ", FC " + b.avg_hr : ""}`).join("\n")}`);
     else fatti.push(`ALLENAMENTO SVOLTO senza blocchi: ${w.distance_km ?? "?"} km in ${w.duration_s ? fmtT(w.duration_s) : "?"}${w.avg_pace_s ? `, passo medio ${pace(w.avg_pace_s)}/km` : ""}${w.avg_hr ? `, FC ${w.avg_hr}` : ""}`);
@@ -300,10 +303,10 @@ async function commentoSeduta(userId: string, workoutId: number, key: string | u
   let testo = "", origin = "riserva";
   if (key) {
     const precedenti = (vecchi.data || []).map((v: any) => `- ${v.body}`).join("\n");
-    const prompt = `Sei la voce di Biagio, allenatore di corsa di Cozzu's Coach, in Salento. Scrivi il commento che Biagio farebbe al suo atleta subito dopo l'allenamento appena registrato.
+    const prompt = (extra: string) => `Sei la voce di Biagio, allenatore di corsa di Cozzu's Coach, in Salento. Scrivi il commento che Biagio farebbe al suo atleta subito dopo l'allenamento appena registrato.
 
-${libero ? TESTA_LIBERA : `IL GIUDIZIO È GIÀ DECISO, non cambiarlo e non aggiungerne altri:
-${CASI[caso]}`}
+IL GIUDIZIO È GIÀ DECISO, non cambiarlo e non aggiungerne altri:
+${CASI[caso]}
 
 DATI DELLA SEDUTA:
 ${fatti.map((f) => "- " + f).join("\n")}
@@ -325,9 +328,23 @@ ${precedenti || "- (nessuno)"}
 ESEMPI DEL TONO DI BIAGIO (ispirati, non copiarli):
 ${ESEMPI[caso].map((e) => "- " + e).join("\n")}
 
+${extra}
 Scrivi solo il commento.`;
-    const r = await gemini(key, prompt, { temperature: 0.95, max: 400 });
-    if (r) { testo = r.text.replace(/^["«]|["»]$/g, "").replace(/\s+/g, " ").trim().slice(0, 600); origin = "ai"; }
+    const pulisci = (t: string) => t.replace(/^["«]|["»]$/g, "").replace(/\s+/g, " ").trim().slice(0, 600);
+    // 1) prima generazione; 2) se non passa i controlli, una seconda con le correzioni; 3) altrimenti il messaggio di riserva
+    const r1 = await gemini(key, prompt(""), { temperature: 0.4, max: 220 });
+    if (r1) {
+      const t1 = pulisci(r1.text);
+      const p1 = valida(t1, fatti, caso);
+      if (!p1.length) { testo = t1; origin = "ai"; }
+      else {
+        const r2 = await gemini(key, prompt(`CORREZIONI OBBLIGATORIE: il testo precedente aveva questi errori (${p1.join("; ")}). Riscrivi evitando questi errori e usa solo i dati elencati.`), { temperature: 0.2, max: 220 });
+        if (r2) {
+          const t2 = pulisci(r2.text);
+          if (!valida(t2, fatti, caso).length) { testo = t2; origin = "ai_corretto"; }
+        }
+      }
+    }
   }
   if (!testo) testo = pick(ESEMPI[caso]);
   testo = conNome(testo);
