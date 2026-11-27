@@ -603,6 +603,7 @@ async function fetchAthlete(id){
     sb.from("workouts").select("shoe_id,distance_km").eq("athlete_id",id).not("shoe_id","is",null),
     sb.from("session_skips").select("*").eq("athlete_id",id).gte("day",from)
   ]);
+  const { data: prep } = await sb.from("session_prep").select("*").eq("athlete_id",id).gte("day",from);
   const shoeKm = {}; (shoeRuns||[]).forEach(r => { shoeKm[r.shoe_id] = (shoeKm[r.shoe_id]||0) + (+r.distance_km||0); });
   const SH = (shoes||[]).map(x => ({ ...x, km: (+x.start_km||0) + (shoeKm[x.id]||0) }));
   const ex = Object.fromEntries((extra||[]).map(e => [e.day,e]));
@@ -610,7 +611,7 @@ async function fetchAthlete(id){
   return {
     races: races.data||[], sessions: sessions.data||[],
     workouts: (workouts.data||[]).map(w => ({ ...w, blocks: (blocks||[]).filter(b => b.workout_id === w.id), feedback: (fb||[]).find(f => f.workout_id === w.id) || null, shoe_name: SH.find(x => x.id === w.shoe_id)?.name || null })),
-    checkins: (checkins.data||[]).map(c => ({...ex[c.day], ...c})), zones: zmap, zonesAll: zones.data||[], plan, msgs: msgs||[], shoes: SH, skips: skips||[]
+    checkins: (checkins.data||[]).map(c => ({...ex[c.day], ...c})), zones: zmap, zonesAll: zones.data||[], plan, msgs: msgs||[], shoes: SH, skips: skips||[], prep: prep||[]
   };
 }
 const nextRace = races => { const f = races.filter(r => r.race_date >= TODAY); return f.find(r => r.priority==="A") || f[0] || null; };
@@ -951,6 +952,7 @@ function renderPlan(){
           ${s.coach_note?`<div class="sub" style="margin-top:6px;color:#8A5510"><b>Coach:</b> ${esc(s.coach_note)}</div>`:""}
           ${s.edited_by_coach?`<span class="tag" style="margin-top:6px">aggiornata dal coach</span>`:""}
           ${aperta ? `<div class="hint" style="margin-top:4px">Non registrata: <button class="link" data-open="workout" data-session="${s.id}">l'ho fatta</button> · <button class="link" data-skip="${s.session_date}">non l'ho fatta</button></div>` : ""}
+          ${prepHtml(s)}
           <div>${msgBtn(S, s.session_date, me.id)}</div></div></details>`;
       }).join("")}</div>`;
   }).join("");
@@ -2454,6 +2456,7 @@ async function renderCoachPlan(){
           <div class="sub" style="white-space:pre-line">${descHtml(x.description||"")}</div>
           ${x.coach_note?`<div class="sub" style="color:#8A5510"><b>Nota:</b> ${esc(x.coach_note)}</div>`:""}
           <button class="link" data-cs="${x.id}" style="margin-top:4px">Modifica</button>
+          ${prepCoachHtml(x.session_date)}
           <div>${msgBtn(CUR.D, x.session_date, CUR.a.id)}</div></div></div>`; }).join("")}</div>`; }).join("")}`;
   box.querySelectorAll("[data-cs]").forEach(b => b.onclick = () => sheetCoachSession(CUR.ses.find(x => x.id == b.dataset.cs)));
   $("cp-add").onclick = () => sheetCoachSession(null);
@@ -3435,6 +3438,63 @@ async function sheetMessaggi(day, athleteId){
     };
   });
 }
+/* =====================================================
+   PREPARAZIONE MENTALE ALLE SEDUTE DI QUALITÀ
+   ===================================================== */
+const PAURE = { ritmo:"Non reggere il ritmo", finire:"Non finire le ripetute", partenza:"Partire troppo forte", fatica:"Fatica troppo presto", gambe:"Gambe pesanti", nervi:"Nervosismo" };
+const STATI = { teso:"Teso", stanco:"Stanco", carico:"Carico / motivato" };
+const KIND_PREP = t => t === "vo2max" ? "ripetute" : t === "lungo_progressivo" ? "lungo" : "medio";
+const prepDi = (D, day) => (D?.prep || []).find(p => p.day === day);
+function prepHtml(s){
+  if (me.role === "coach" || !QUALITY.includes(s.type) || s.session_date < TODAY || sessioneBloccata(s)) return "";
+  return prepDi(S, s.session_date)
+    ? `<div style="margin-top:6px"><span class="tag done">Preparazione inviata</span></div>`
+    : `<div style="margin-top:6px"><button type="button" class="btn soft full" data-prep="${s.session_date}" data-kind="${KIND_PREP(s.type)}">🧠 Prima della seduta</button></div>`;
+}
+function prepCoachHtml(day){
+  const p = prepDi(CUR?.D, day); if (!p) return "";
+  return `<div class="sub" style="color:#8A5510"><b>Preparazione:</b> teme «${esc(PAURE[p.fear] || p.fear)}» · ${esc(STATI[p.feel] || p.feel)}${p.note ? ` · «${esc(p.note)}»` : ""}${p.flagged ? ' · <b>da leggere</b>' : ""}</div>`;
+}
+document.addEventListener("click", e => {
+  const t = e.target.closest("[data-prep]"); if (!t) return;
+  e.preventDefault(); e.stopPropagation(); sheetPrep(t.dataset.prep, t.dataset.kind);
+});
+function sheetPrep(day, kind){
+  const ses = S.sessions.find(x => x.session_date === day);
+  let fear = null, feel = null;
+  const bind = (id, set) => $(id).querySelectorAll(".chip").forEach(c => c.onclick = () => {
+    $(id).querySelectorAll(".chip").forEach(x => x.setAttribute("aria-pressed", String(x === c)));
+    set(c.dataset.v);
+  });
+  openSheet(`<h3>Prima della seduta</h3>
+    ${ses ? `<p class="sub" style="margin:-6px 0 10px">${esc(ses.title)}</p>` : ""}
+    <div class="sub">Cosa temi di più?</div>
+    <div class="chips sm" id="pp-fear" style="margin:6px 0 14px">${Object.entries(PAURE).map(([k, v]) => `<button type="button" class="chip" data-v="${k}" aria-pressed="false">${v}</button>`).join("")}</div>
+    <div class="sub">Come ti senti?</div>
+    <div class="chips sm" id="pp-feel" style="margin:6px 0 14px">${Object.entries(STATI).map(([k, v]) => `<button type="button" class="chip" data-v="${k}" aria-pressed="false">${v}</button>`).join("")}</div>
+    <div class="field"><label for="pp-note">Vuoi aggiungere qualcosa? (facoltativo)</label><textarea id="pp-note" rows="2" maxlength="200"></textarea></div>
+    <button class="btn primary full" id="pp-send">Invia</button><div id="f-prep" class="msg"></div>`, () => {
+    bind("pp-fear", v => fear = v);
+    bind("pp-feel", v => feel = v);
+    $("pp-send").onclick = async () => {
+      if (!fear || !feel){ $("f-prep").className = "msg err"; $("f-prep").textContent = "Scegli cosa temi e come ti senti."; return; }
+      $("pp-send").disabled = true;
+      const note = $("pp-note").value.trim() || null;
+      const { data, error } = await sb.rpc("prep_seduta", { p_day: day, p_kind: kind, p_fear: fear, p_feel: feel, p_note: note });
+      if (error){ $("pp-send").disabled = false; $("f-prep").className = "msg err"; $("f-prep").textContent = "Non inviato: " + error.message; return; }
+      if (data.status === "exists"){ closeSheet(); await loadAthlete(); return; }
+      S.prep = [...(S.prep || []), { day, fear, feel, note, flagged: data.status === "flagged", reply_body: data.body || null }];
+      if (data.status === "sent") (S.msgs = S.msgs || []).push({ athlete_id: me.id, day, author_id: data.coach_id, body: data.body, created_at: new Date().toISOString(), read_at: null });
+      openSheet(`<h3>Preparazione inviata</h3>
+        ${data.status === "flagged"
+          ? `<p>Grazie per averlo scritto. Il coach lo legge e ti risponde a breve.</p><p class="sub" style="margin-top:8px">Se stai molto male o hai bisogno di aiuto subito, chiama il 112 o il Telefono Amico 02 2327 2327.</p>`
+          : `<p>Il messaggio del coach è sotto la seduta.</p>`}
+        <button class="btn primary full" id="pp-ok" style="margin-top:12px">Chiudi</button>`, () => { $("pp-ok").onclick = closeSheet; });
+      aggiornaMessaggi();
+    };
+  });
+}
+
 /* dolore segnalato dall'atleta: resta finché il coach non lo segna come gestito */
 async function renderDolore(){
   const box = $("detail-dol"); if (!box || !CUR?.a) return;
