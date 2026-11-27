@@ -3443,7 +3443,7 @@ async function sheetMessaggi(day, athleteId){
    ===================================================== */
 const PAURE = { ritmo:"Non reggere il ritmo", finire:"Non finire le ripetute", partenza:"Partire troppo forte", fatica:"Fatica troppo presto", gambe:"Gambe pesanti", nervi:"Nervosismo" };
 const STATI = { teso:"Teso", stanco:"Stanco", carico:"Carico / motivato" };
-const KIND_PREP = t => t === "vo2max" ? "ripetute" : t === "lungo_progressivo" ? "lungo" : "medio";
+const KIND_PREP = t => t === "gara" ? "gara" : t === "vo2max" ? "ripetute" : t === "lungo_progressivo" ? "lungo" : "medio";
 const prepDi = (D, day) => (D?.prep || []).find(p => p.day === day);
 function prepHtml(s){
   if (me.role === "coach" || !QUALITY.includes(s.type) || s.session_date < TODAY || sessioneBloccata(s)) return "";
