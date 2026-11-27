@@ -3453,7 +3453,8 @@ function prepHtml(s){
 }
 function prepCoachHtml(day){
   const p = prepDi(CUR?.D, day); if (!p) return "";
-  return `<div class="sub" style="color:#8A5510"><b>Preparazione:</b> teme «${esc(PAURE[p.fear] || p.fear)}» · ${esc(STATI[p.feel] || p.feel)}${p.note ? ` · «${esc(p.note)}»` : ""}${p.flagged ? ' · <b>da leggere</b>' : ""}</div>`;
+  const fears = p.fears?.length ? p.fears : [p.fear], feels = p.feels?.length ? p.feels : [p.feel];
+  return `<div class="sub" style="color:#8A5510"><b>Preparazione:</b> teme «${esc(fears.map(f => PAURE[f] || f).join(", "))}» · ${esc(feels.map(f => STATI[f] || f).join(", "))}${p.note ? ` · «${esc(p.note)}»` : ""}${p.flagged ? ' · <b>da leggere</b>' : ""}</div>`;
 }
 document.addEventListener("click", e => {
   const t = e.target.closest("[data-prep]"); if (!t) return;
@@ -3461,29 +3462,33 @@ document.addEventListener("click", e => {
 });
 function sheetPrep(day, kind){
   const ses = S.sessions.find(x => x.session_date === day);
-  let fear = null, feel = null;
-  const bind = (id, set) => $(id).querySelectorAll(".chip").forEach(c => c.onclick = () => {
-    $(id).querySelectorAll(".chip").forEach(x => x.setAttribute("aria-pressed", String(x === c)));
-    set(c.dataset.v);
+  const fears = [], feels = [];
+  const bind = (id, list, max) => $(id).querySelectorAll(".chip").forEach(c => c.onclick = () => {
+    const v = c.dataset.v;
+    if (list.includes(v)) list.splice(list.indexOf(v), 1);
+    else if (list.length < max) list.push(v);
+    else { $("f-prep").className = "msg err"; $("f-prep").textContent = `Puoi sceglierne al massimo ${max}.`; return; }
+    $("f-prep").textContent = "";
+    c.setAttribute("aria-pressed", String(list.includes(v)));
   });
   openSheet(`<h3>Prima della seduta</h3>
     ${ses ? `<p class="sub" style="margin:-6px 0 10px">${esc(ses.title)}</p>` : ""}
-    <div class="sub">Cosa temi di più?</div>
+    <div class="sub">Cosa temi di più? (fino a 3, in ordine di importanza)</div>
     <div class="chips sm" id="pp-fear" style="margin:6px 0 14px">${Object.entries(PAURE).map(([k, v]) => `<button type="button" class="chip" data-v="${k}" aria-pressed="false">${v}</button>`).join("")}</div>
-    <div class="sub">Come ti senti?</div>
+    <div class="sub">Come ti senti? (puoi sceglierne più di uno)</div>
     <div class="chips sm" id="pp-feel" style="margin:6px 0 14px">${Object.entries(STATI).map(([k, v]) => `<button type="button" class="chip" data-v="${k}" aria-pressed="false">${v}</button>`).join("")}</div>
     <div class="field"><label for="pp-note">Vuoi aggiungere qualcosa? (facoltativo)</label><textarea id="pp-note" rows="2" maxlength="200"></textarea></div>
     <button class="btn primary full" id="pp-send">Invia</button><div id="f-prep" class="msg"></div>`, () => {
-    bind("pp-fear", v => fear = v);
-    bind("pp-feel", v => feel = v);
+    bind("pp-fear", fears, 3);
+    bind("pp-feel", feels, 3);
     $("pp-send").onclick = async () => {
-      if (!fear || !feel){ $("f-prep").className = "msg err"; $("f-prep").textContent = "Scegli cosa temi e come ti senti."; return; }
+      if (!fears.length || !feels.length){ $("f-prep").className = "msg err"; $("f-prep").textContent = "Scegli almeno una cosa che temi e come ti senti."; return; }
       $("pp-send").disabled = true;
       const note = $("pp-note").value.trim() || null;
-      const { data, error } = await sb.rpc("prep_seduta", { p_day: day, p_kind: kind, p_fear: fear, p_feel: feel, p_note: note });
+      const { data, error } = await sb.rpc("prep_seduta", { p_day: day, p_kind: kind, p_fears: fears, p_feels: feels, p_note: note });
       if (error){ $("pp-send").disabled = false; $("f-prep").className = "msg err"; $("f-prep").textContent = "Non inviato: " + error.message; return; }
       if (data.status === "exists"){ closeSheet(); await loadAthlete(); return; }
-      S.prep = [...(S.prep || []), { day, fear, feel, note, flagged: data.status === "flagged", reply_body: data.body || null }];
+      S.prep = [...(S.prep || []), { day, fear: fears[0], feel: feels[0], fears, feels, note, flagged: data.status === "flagged", reply_body: data.body || null }];
       if (data.status === "sent") (S.msgs = S.msgs || []).push({ athlete_id: me.id, day, author_id: data.coach_id, body: data.body, created_at: new Date().toISOString(), read_at: null });
       openSheet(`<h3>Preparazione inviata</h3>
         ${data.status === "flagged"
